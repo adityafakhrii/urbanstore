@@ -1,0 +1,6 @@
+{
+  "name": "UrbanStore — Curated Editorial Fashion",
+  "description": "Online store fashion pria dan wanita kurasi dengan estetika Quiet Luxury, panduan ukuran visual Anti-Zonk, dan checkout sat-set.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

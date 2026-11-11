@@ -1,0 +1,635 @@
+export interface ColorVariant {
+  name: string;
+  hex: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  priceFormatted: string;
+  subtitle: string;
+  category: 'women' | 'men' | 'bags' | 'shoes' | 'accessories';
+  subcategory: 'Dress & Setelan' | 'Outerwear Atelier' | 'Celana Tailored' | 'Knitwear' | 'Tas Kurasi' | 'Sepatu' | 'Aksesori';
+  bestsellerTab?: 'Outerwear' | 'Celana' | 'Dress' | 'Sepatu';
+  image: string;
+  gallery: string[];
+  alt: string;
+  badges: { text: string; variant: 'primary' | 'secondary' | 'surface' }[];
+  fitNote: string;
+  fabricType: 'Linen Organik' | 'Sutra Mulberry' | 'Kasmir Murni' | 'Kulit Calfskin' | 'Cotton Twill';
+  colors: ColorVariant[];
+  sizes: string[];
+  defaultSize: string;
+  disabledSizes?: string[];
+  inStock: boolean;
+  stockLabel?: string;
+  description: string;
+  fabricDetails: string[];
+  careInstructions: string[];
+  modelInfo: string;
+  fitScale: 'Slim Fit' | 'Pas Banget' | 'Relaxed';
+}
+
+export const BRAND_ASSETS = {
+  logo: 'https://lh3.googleusercontent.com/aida/ALJJyrBt5s65uqwk6n29eOl52urUKklI0O-DGI7A8G7PQ942xDTftriArdNBuQVDvAtSXeaJb15a0javsL716txQv_ZTAvLyz8EpBLRTeVJDt_XtkU1lH2dpK0Gkd4nF8NvQ7-6wHxbkw7gPnARHyXu-vQ2nRcZhnph-2He4S_khPvLhSv1vvj_SMp6WMdA7w6m-VbXeuu6cjF6EXMW1EAkBJnujyuDisOb14LvMXrkK6ite3w',
+  avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7rJTmJf41qRBRCovdyIHQbBvjZywgrylnOl3AROoVPjz1E3_txlARVNSeoFqwFqygIYDVwKJ8-3APFkYNlnLCsqPJtnnpdxDXDU92NMaAYeW5pzhjyEPGJoP-d9C-oCh3Lqs9z5LIgrooLUj-1FtA-SCuNI5tHZSHwbPEVl2R8oEjt02BmJs542-qowTLHSDz36INWgYujZrQBGPI8D7IHJFxjkA3IkGC-xt7aeMZ',
+  heroLineup: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDOJdcuPf31_mf3_jx3msrdAVDxIxe_T47pbDEjrI3ej156MgfAAeJITc6Rq4s071p1jYf0aU9m2MMySXyjubSJoXrS6qIBPCJ3KdvmhsatewditQt1Lp-dhrFlXsNrFpYXBgQSE5jbmXLDUvRxUU6yGkfSl-2dF93QouadYnT3q_zySZk9Hlzkap2aQOyoO7IMy8V-9Oho8ddGAP75HUmmaJdiio8AQapiNgrGnL8U',
+  leatherBanner: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_6VwvsXVQVaiDYbpRPxck-liQri5GZIEVI03NdvsC2CwAOdYlqEfUw5sOy-35TQNq-0VXFH3A42ZG3-b-fd6KI0SO2DoVFzCWmKU0Qz4k2Lcb6wNnH-wqB8J5zEzhQzjoeLA_ARAg4fbTKNdhnCIj2xWdzmBYOFaXFa_PJT8pDwVxzwidJFebgmwbbr-FHb5d2a3eV6_FpgDYwFD8MrusZja2CkpP4YMFKizWHcRx',
+  editorialCraft: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDMZx44lLK8_SjgYTLNCT-sUJ75-0-Uh17o_oQ4AHW3-lWVzFvdE8P_zhwqrOd16tPJSEPnrTpu3dDvi-M0be8GcuESknRbUCVKeOB_StSRce_7xpPOiKj8iOxwtMA1FeipZq2Uoi-C-dPXEVilAZUh3qioOIdUE5JIl5kotKOa5YAKNV-6wYzbalEVZxqOoMKJG52KjqZR9f0hB1ryg82BI6AaRZ9nyULPn-26PWGJ',
+};
+
+export const CATEGORY_PORTALS = [
+  {
+    id: 'men',
+    label: 'Pria',
+    count: '120+ Items',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSZfgkDnK-rrgefOYy46n4Lev9UNuxpkdiSxAvtXMNVrzTXPBDjuIk_I4KsnbY2YYtat9fq7TjHXQug1En2RckvrPXl4fNCt4DOIsnSvxmXyTvlGehRYfvo5a2DlIxGis4x8qX9_ihFGUuRpzTMJsRkmFqFHrD5ef4Y3oSzkqwpCRipgvQ5x7zEDzIoXzCQ-KnOTofKCuSZ2RoQY58GUG0rkA9BhjII_98LY2FCj_-',
+    alt: 'Minimalist men fashion portrait wearing a tailored taupe blazer and clean off-white linen tee',
+  },
+  {
+    id: 'women',
+    label: 'Wanita',
+    count: '180+ Items',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvhEF-uIUQXF7sLsOPGzStAUST75dGEzGfjlSEH3u44Dcd5WG6TiCazxIp3Tl7FznkXmuGZPuIdNmMjJIiiE_jHwHRLoAAK6vaqpfwsF57y-ltHhiviKPVVdUeeUjuHsHoFcUJQAFQrSofGpg5D1vULhxMPgpDyZDaBo_9_uzXuPZrRX8aUCFvRtxAk2HgzD_Y6h-l9Ok3ZDy_1mcN5wWxqZkX03rCRUk5UZ_1SbNG',
+    alt: 'Editorial portrait of female model in ivory sleeveless column dress with natural wavy hair',
+  },
+  {
+    id: 'bags',
+    label: 'Tas',
+    count: '45+ Items',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAOLJA9_ICTGd7fNmHUBgL_FpeiBf1BSJFv05qLNT4RkHyYLUaDqGU0JzKOKiPwQMggnDjknXccJidVqO0p8oskSEOWM9FKG7CkpEvPx7kkp0MgUWD8RdxmrcVXNxNSVadZrY7m6qNl3bO5GGnjIWghk-wwY0Gz1qRdo4uhDcEI6oBf19uS8sbxoCDOig8L4K8DBJP8ZoOPSbNWzndSB5lT0xQShzmARtF_KlIh8Yx3',
+    alt: 'Structured taupe pebbled grain leather tote handbag on travertine stone pedestal',
+  },
+  {
+    id: 'shoes',
+    label: 'Sepatu',
+    count: '60+ Items',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDOKXR5syeSPYtP93udfBrsLIGxEusJiUzdIdrivrO3UVnvjcpXK0lrstEVqcKFFp6MDqPlvWXLlsy6ZYcCAILLntCwPhQotyXKQJT0pme4-G-SwdYBP5NFht91gISvVI9rgZ85YeD_gTzjuBvRB34Zz9BQ5VFpTJ1xGLJobRbfgaImNSgdkLfUK8qpFO7ugGGQKYhuTKggu0YvxmiHgVOJIHPECtfupKig08a611s9',
+    alt: 'Pair of hand-burnished tan leather penny loafers resting on warm sandstone architectural slab',
+  },
+  {
+    id: 'accessories',
+    label: 'Aksesori',
+    count: '85+ Items',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAfr27J7yq40VBfz-srl7RMf8IncNlm3hUTuQHm41Lue53_2tA1C4R27A15siAnbb6xFN29BgMGB3DEbrApl2pU-0knJW-__Xenh4yZw3EAOVDP4oEG9eo9Vwkibks9L_c8eAHi2l47Z3BWc2omIJwPjgG7zCtYqaBZtJpBpt5speKKWPdAM-R6OcCqU3fWBVoERRSX5s_Lm6SmiRE0z38oKhgOiOT86_Gj2QwlELy9',
+    alt: 'Luxury minimalist chronograph watch with black dial and taupe saddle leather strap',
+  },
+];
+
+export const PRODUCTS: Product[] = [
+  {
+    id: 'column-dress-overshirt',
+    name: 'The Column Dress & Overshirt',
+    price: 449000,
+    priceFormatted: 'Rp 449.000',
+    subtitle: '100% Raw European Flax · Alabaster White',
+    category: 'women',
+    subcategory: 'Dress & Setelan',
+    bestsellerTab: 'Dress',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAOeakzdaEfUlkwhuxJgWuW4PfQUB_ZH5JIYF577NVdiLAljLDxRzkRkHN7HJLzkfujALdr15ftM8VQYbmRHlXA3OWGB-oGIF7XV_4DaHrK3q1AwHo9fK5lWEmHK2Iq2NgoD0zqyVvsNsowIlbq3HHLdSzsVbQEiS5A8LDhQeIMQs5K75uGcyTMeocjYoOmye4lXlurO85jMXBAQLcTztpuc7QY9LzJfIQnvZO-hejt',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAOeakzdaEfUlkwhuxJgWuW4PfQUB_ZH5JIYF577NVdiLAljLDxRzkRkHN7HJLzkfujALdr15ftM8VQYbmRHlXA3OWGB-oGIF7XV_4DaHrK3q1AwHo9fK5lWEmHK2Iq2NgoD0zqyVvsNsowIlbq3HHLdSzsVbQEiS5A8LDhQeIMQs5K75uGcyTMeocjYoOmye4lXlurO85jMXBAQLcTztpuc7QY9LzJfIQnvZO-hejt',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDinOnlXbPrb9QRLJww96z0bSABTKezfD5sqb6mxIVjJZbUgEotu0389tmZH3DQldwoiuQ7LFs-tTSEOAqZSwPMozIZ3fk9vdVfStA2hw4zNOJx61Z-hJFXxXJHHXNFoao9U1Sc0DVgYPzu1E65HjoAIMYtdk9UaOcoCLsYyCbn4yf2bSDWnLhC2unmUaRAfDIW0aF6AL3C2H5vptVx7hwroWxC2kbGIRdfQmS_ypBv',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBvhEF-uIUQXF7sLsOPGzStAUST75dGEzGfjlSEH3u44Dcd5WG6TiCazxIp3Tl7FznkXmuGZPuIdNmMjJIiiE_jHwHRLoAAK6vaqpfwsF57y-ltHhiviKPVVdUeeUjuHsHoFcUJQAFQrSofGpg5D1vULhxMPgpDyZDaBo_9_uzXuPZrRX8aUCFvRtxAk2HgzD_Y6h-l9Ok3ZDy_1mcN5wWxqZkX03rCRUk5UZ_1SbNG',
+    ],
+    alt: 'Minimalist fashion editorial portrait of a woman wearing an ecru linen column slip dress against warm sand plaster background',
+    badges: [
+      { text: 'DROP BARU', variant: 'primary' },
+      { text: 'ORGANIC FLAX', variant: 'secondary' },
+    ],
+    fitNote: 'Relaxed fit · Model TB 176cm pake size S',
+    fabricType: 'Linen Organik',
+    colors: [
+      { name: 'Alabaster White', hex: '#FAF7F2' },
+      { name: 'Soft Oat', hex: '#E5DFD5' },
+      { name: 'Deep Ink', hex: '#20201D' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    defaultSize: 'S',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Siluet lurus timeless dari 100% linen rami Eropa bersertifikasi GOTS. Didesain dengan potongan leher bersih, jatuhnya adem di kulit, dan dilengkapi overshirt senada yang gampang di-mix-and-match buat ngantor santai atau brunch akhir pekan.',
+    fabricDetails: [
+      '100% Raw European Organic Flax (185 GSM)',
+      'Cutting relaxed column fit — nggak nyeplak di badan',
+      'Jahitan French seam 2mm rapi luar dalam',
+      'Kantong samping tersembunyi yang fungsional',
+    ],
+    careInstructions: [
+      'Cuci santai pakai air dingin (maks 30°C), jangan disikat barbar',
+      'Jemur gantung di tempat teduh biar serat linen tetap lemas alami',
+      'Setrika uap suhu sedang saat kain masih agak lembap',
+    ],
+    modelInfo: 'Model TB 176cm / BB 54kg memakai Size S.',
+    fitScale: 'Relaxed',
+  },
+  {
+    id: 'pleated-silk-midi-skirt',
+    name: 'Pleated Silk Midi Skirt',
+    price: 389000,
+    priceFormatted: 'Rp 389.000',
+    subtitle: 'Mulberry Silk 22mm · Soft Beige Twill',
+    category: 'women',
+    subcategory: 'Dress & Setelan',
+    bestsellerTab: 'Dress',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBwVwD2zyweWWCoSRlpMREqlTfUPr9mh46jwThH-TWGuIhyBOYZ4Ylo5uuASeSlbwvf1OVSjwEqvUuf8GP8GChlhopZw_Y5WZyFlBar8oATKjDbKb8DDdfC908M38j9U75sX6n-YcWzDxTAGzECiH36rwY6C3sV96YtReAWYhSiohLY9cB7pzBo5SyXrcV2_mrPdZ0MYgOzkoMaGkdEOGXVbwQFdnONr8elKurtxJRH',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBwVwD2zyweWWCoSRlpMREqlTfUPr9mh46jwThH-TWGuIhyBOYZ4Ylo5uuASeSlbwvf1OVSjwEqvUuf8GP8GChlhopZw_Y5WZyFlBar8oATKjDbKb8DDdfC908M38j9U75sX6n-YcWzDxTAGzECiH36rwY6C3sV96YtReAWYhSiohLY9cB7pzBo5SyXrcV2_mrPdZ0MYgOzkoMaGkdEOGXVbwQFdnONr8elKurtxJRH',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDWgEOUb2gnI1pfX3PYPk6iVFAyOtoYV7Fu-eiGEyD4KAtgwJXiLpAZ_oFJCqg9DySYL6MgpdhRs1AfyMFZH6D7I_aE625YG1vfxKY6kYmay_UQVyPaAPgiI0b9oa-H3esxHQN8xkuKLmhBmXnn4z5BYB4qfKYfL5ANS9XY2ACkJuzkaKgMGkpHzJNai2PFH8DANnX_tKXMJwbjxCDHr79lV7EfFue2hwup8ezC-faM',
+    ],
+    alt: 'High fashion studio photo of a female model wearing a soft sand beige pleated silk midi skirt paired with minimal cream knitwear',
+    badges: [{ text: 'SILK TWILL', variant: 'surface' }],
+    fitNote: 'Pas di pinggang · High rise drape',
+    fabricType: 'Sutra Mulberry',
+    colors: [
+      { name: 'Soft Beige', hex: '#EADBCE' },
+      { name: 'Deep Ink', hex: '#181816' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    defaultSize: 'S',
+    disabledSizes: ['XL'],
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Rok midi lipit berbahan sutra Mulberry 22-momme dengan kilau matte yang tenang. Pinggang high-rise rapi dengan resleting samping tak terlihat, memberi siluet jenjang tanpa terasa sempit.',
+    fabricDetails: [
+      '100% Grade 6A Mulberry Silk Twill (22mm)',
+      'Lipit plisket presisi tahan bentuk',
+      'Pinggang high-rise dengan hidden side zip',
+      'Full furing breathable nggak menerawang',
+    ],
+    careInstructions: [
+      'Dry clean direkomendasikan atau hand wash air dingin dengan sabun lembut',
+      'Jangan diperas pelintir; cukup tekan perlahan dengan handuk bersih',
+      'Simpan digantung agar lipatan tetap jatuh sempurna',
+    ],
+    modelInfo: 'Model TB 174cm / BB 52kg memakai Size S.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'linen-double-breasted-blazer',
+    name: 'Linen Double-Breasted Blazer',
+    price: 890000,
+    priceFormatted: 'Rp 890.000',
+    subtitle: 'Structured Heavy Linen · Warm Oat',
+    category: 'women',
+    subcategory: 'Outerwear Atelier',
+    bestsellerTab: 'Outerwear',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCW0TnZHMOlEIXEcaKklXSMMModrgOI3qRF_RA2fU4leS5GYRkpZg7qVQW9S1-uU-dpwqEIMUO7zuaGUOz85583LCa7nAuvibD8JK7LZXkBSRqz_DV7S_W3R-QzFEqaW6KinZFVG8s7Su1eDw3mbcuKRM22xaF7BUjzsLorUk406pVD1XDWlFfvJ0vJX-jK35VA8xUDZnLeSQTbFxoBwK8KofRT5qlXW_lwHMBFTNqi',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCW0TnZHMOlEIXEcaKklXSMMModrgOI3qRF_RA2fU4leS5GYRkpZg7qVQW9S1-uU-dpwqEIMUO7zuaGUOz85583LCa7nAuvibD8JK7LZXkBSRqz_DV7S_W3R-QzFEqaW6KinZFVG8s7Su1eDw3mbcuKRM22xaF7BUjzsLorUk406pVD1XDWlFfvJ0vJX-jK35VA8xUDZnLeSQTbFxoBwK8KofRT5qlXW_lwHMBFTNqi',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDMZx44lLK8_SjgYTLNCT-sUJ75-0-Uh17o_oQ4AHW3-lWVzFvdE8P_zhwqrOd16tPJSEPnrTpu3dDvi-M0be8GcuESknRbUCVKeOB_StSRce_7xpPOiKj8iOxwtMA1FeipZq2Uoi-C-dPXEVilAZUh3qioOIdUE5JIl5kotKOa5YAKNV-6wYzbalEVZxqOoMKJG52KjqZR9f0hB1ryg82BI6AaRZ9nyULPn-26PWGJ',
+    ],
+    alt: 'Sophisticated woman wearing a tailored warm oat double-breasted structured linen blazer',
+    badges: [{ text: 'EKSKLUSIF', variant: 'primary' }],
+    fitNote: 'Oversized cut · Padded shoulders',
+    fabricType: 'Linen Organik',
+    colors: [
+      { name: 'Warm Oat', hex: '#D7CEBE' },
+      { name: 'Espresso Umber', hex: '#524B43' },
+      { name: 'Deep Ink', hex: '#1A1A18' },
+    ],
+    sizes: ['S', 'M', 'L'],
+    defaultSize: 'S',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Blazer double-breasted dengan konstruksi bahu tegas namun tetap ringan dipakai seharian di iklim tropis. Menggunakan heavy-weight European linen dan kancing horn alami.',
+    fabricDetails: [
+      '100% Heavyweight European Linen (260 GSM)',
+      'Half-lined menggunakan katun cupro adem',
+      'Kancing corozo alami & saku welt ganda',
+      'Bahu terstruktur lembut (soft tailored shoulder pad)',
+    ],
+    careInstructions: [
+      'Dry clean untuk menjaga struktur bahu tetap tegas',
+      'Uapkan dengan steamer setelah dipakai seharian',
+      'Gunakan hanger bahu lebar saat disimpan di lemari',
+    ],
+    modelInfo: 'Model TB 176cm / BB 55kg memakai Size S.',
+    fitScale: 'Relaxed',
+  },
+  {
+    id: 'minimalist-cashmere-sweater',
+    name: 'Minimalist Cashmere Sweater',
+    price: 429000,
+    priceFormatted: 'Rp 429.000',
+    subtitle: 'Grade-A Mongolian Cashmere · Alabaster',
+    category: 'women',
+    subcategory: 'Knitwear',
+    bestsellerTab: 'Outerwear',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCAhH17Ssf5URZljQt8MUgltBntxGS71UY3HcyK-lyX5y9hg8cj02rBuwN9APeiq7cFA-FbDIq-mY90BW02-sB_dmaTPRB-xRN_bwxkHYzjs-0vcCqGMqVgYn3DGBbX1fKMqT8Ohlg43NSXEvWLlW_ASDh56VXttMrXaToHpgwrR3ZJWbYDqg21zS2ZJy2I3ZnBX6uVsw5UKYlxPR1c4NLP1axo64js7vfFjG6A_7S3',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCAhH17Ssf5URZljQt8MUgltBntxGS71UY3HcyK-lyX5y9hg8cj02rBuwN9APeiq7cFA-FbDIq-mY90BW02-sB_dmaTPRB-xRN_bwxkHYzjs-0vcCqGMqVgYn3DGBbX1fKMqT8Ohlg43NSXEvWLlW_ASDh56VXttMrXaToHpgwrR3ZJWbYDqg21zS2ZJy2I3ZnBX6uVsw5UKYlxPR1c4NLP1axo64js7vfFjG6A_7S3',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuB5UjbzvhaQiTlO4j_Ce-TWF5AvUj1YOGUnJsPrkrR8fbrxX_ev7CJ4oAfPeaxufa72VIGZfG-fCWjFuLE-Ec9tV28_CdjLPy0G2d1nbKqQUDFcM_CfHON92ArbeyJHPW4Ldm_rfYEUCvmOvE2HAAR8rRDtO3xwZIw5yuUAkAedCLMQBB4e4R3A9iEte8hqpOLSHMnNijt5InBbRjTjvbvtHZHgQMXWDweGNitiFhsj',
+    ],
+    alt: 'Close up editorial shot of a woman in an ivory organic Mongolian cashmere crewneck sweater',
+    badges: [{ text: 'TINGGAL DIKIT', variant: 'surface' }],
+    fitNote: 'True to size · Model TB 172cm pake size S',
+    fabricType: 'Kasmir Murni',
+    colors: [
+      { name: 'Alabaster White', hex: '#F5F2EC' },
+      { name: 'Desert Taupe', hex: '#B8A99B' },
+      { name: 'Charcoal Umber', hex: '#37332F' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    defaultSize: 'S',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Knitwear crewneck berbahan Grade-A Mongolian Cashmere 12-gauge yang super lembut tanpa rasa gatal di kulit. Nyaman dipakai di ruangan AC dingin maupun traveling.',
+    fabricDetails: [
+      '100% Grade-A Combed Cashmere & Fine Merino Blend',
+      'Ribbed collar, cuffs, dan hem yang nggak gampang melar',
+      '12-gauge mid-weight knit yang breathable',
+      'Anti-pilling finish untuk pemakaian jangka panjang',
+    ],
+    careInstructions: [
+      'Cuci tangan dengan air dingin & sampo khusus wol/kasmir',
+      'Keringkan mendatar (flat dry) di atas handuk; jangan digantung saat basah',
+      'Simpan terlipat rapi di tempat kering',
+    ],
+    modelInfo: 'Model TB 172cm / BB 51kg memakai Size S.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'wide-leg-pleated-trousers',
+    name: 'Wide-Leg Pleated Trousers',
+    price: 419000,
+    priceFormatted: 'Rp 419.000',
+    subtitle: 'Wool-Blend Gabardine · Sand Taupe',
+    category: 'women',
+    subcategory: 'Celana Tailored',
+    bestsellerTab: 'Celana',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqmixPrnkgNUS_dQqDlOTnTx-uItH5Qk4nRokkjOo7Vbf2CsAkHQD3dSCWZd-8id1c2AT21cgknupyCUhbX9nko0GUNbACy4o0KKZniVmoSigjEzHtlQuQGT4PPDp1MgbNg76VPprD-AbngvJlKGWCd37DSn2eI9AtrLK61KijVJb6GZIaDc9MXZWBXLjCe_Mtf8j23GOd2WCblK0yXch2jL54UH70wclvQpVYt-yk',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDqmixPrnkgNUS_dQqDlOTnTx-uItH5Qk4nRokkjOo7Vbf2CsAkHQD3dSCWZd-8id1c2AT21cgknupyCUhbX9nko0GUNbACy4o0KKZniVmoSigjEzHtlQuQGT4PPDp1MgbNg76VPprD-AbngvJlKGWCd37DSn2eI9AtrLK61KijVJb6GZIaDc9MXZWBXLjCe_Mtf8j23GOd2WCblK0yXch2jL54UH70wclvQpVYt-yk',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCeHCIZ0KByWj3709n4Y8kP9nYgcS8oNG-tjI1YvpXExA2MUOWveD6MOor9vxLL3hlRdULq7QjybRRd3OCfj3X2h8aNXMlzXDAPrvW6ZfPTdSTJEEfD7e3j4OA350b1e_O7p0U_FfzPVG7kUB52xAVIKJi_ricVFBrbkovVI40TZpkS2DZIOhpabpBRAFVmZx4Sa0ita29fkd-_eZaFOQcAkkrUVjC5aY_cTeT0lajL',
+    ],
+    alt: 'Full length editorial shot of woman wearing high-waisted pleated wide-leg trousers in sand taupe',
+    badges: [{ text: 'BEST SELLER', variant: 'primary' }],
+    fitNote: 'High-waisted fit · Double front pleat',
+    fabricType: 'Linen Organik',
+    colors: [
+      { name: 'Sand Taupe', hex: '#C5B7A5' },
+      { name: 'Deep Ink', hex: '#1E1E1C' },
+      { name: 'Burgundy Oxblood', hex: '#622329' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    defaultSize: 'S',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Celana tailored wide-leg dengan detail double pleat di bagian depan yang bikin kaki kelihatan jenjang seketika. Jatuhnya tegas tapi tetap luwes saat melangkah.',
+    fabricDetails: [
+      'Wool-Blend Gabardine anti kusut seharian',
+      'Double front pleats & pengait hook-and-bar tersembunyi',
+      'Potongan high-waist pas di lingkar pinggang alami',
+      'Saku samping miring & 2 saku belakang fungsional',
+    ],
+    careInstructions: [
+      'Cuci mesin mode gentle dengan laundry net atau dry clean',
+      'Jemur gantung dengan penjepit di bagian pinggang',
+      'Setrika mengikuti garis lipatan depan',
+    ],
+    modelInfo: 'Model TB 175cm / BB 53kg memakai Size S.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'cashmere-wrap-coat',
+    name: 'Cashmere Wrap Coat',
+    price: 1150000,
+    priceFormatted: 'Rp 1.150.000',
+    subtitle: 'Double-Faced Wool & Cashmere · Oatmeal',
+    category: 'women',
+    subcategory: 'Outerwear Atelier',
+    bestsellerTab: 'Outerwear',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyiuvvNFNVIWBz4Z5bkxHE0CrZ4ZlSsOEmLJ_GZ_5rqfrDdsN7QHwt6LKsDn7pvKWDBbkcckUQZsNcnelEQ_wB3ejRWzj-CrEBkEmOXDnjNpONvGK1ryoEa0nlYvZxPSWiSEGaApN3WIGvCfb8dF63GEM1XJXqpDYBbzBKYU4j-h6QwxXgnMBNuV2L1_TSshAHo9GRtKlgsCeTbjoxowjTnRKvCLGj6IUuw4Rm6nP9',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDyiuvvNFNVIWBz4Z5bkxHE0CrZ4ZlSsOEmLJ_GZ_5rqfrDdsN7QHwt6LKsDn7pvKWDBbkcckUQZsNcnelEQ_wB3ejRWzj-CrEBkEmOXDnjNpONvGK1ryoEa0nlYvZxPSWiSEGaApN3WIGvCfb8dF63GEM1XJXqpDYBbzBKYU4j-h6QwxXgnMBNuV2L1_TSshAHo9GRtKlgsCeTbjoxowjTnRKvCLGj6IUuw4Rm6nP9',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDkL5v_xgsURh8_PSORh_wuZTwuPIfFRw9zopEE1z69GC4iyqWfcieN3xACw5pp8sFQgM6S2kJnVLR5ISQddKHTd9adF-vRg5mYL1ypqGwcGqV8ESAuu_rqbUMmohXyEDTUu0VqjXS64KUGa3JXyJlJDj4EMWJQ7E5JTH7RW2EuWoWc4kSIOt07COQYx6hOwjkFLL8iuxMMwVHSBxZtgJVQ-jQCg9lnAjBQ_kNARIZS',
+    ],
+    alt: 'Sophisticated woman wearing a luxurious long belted wrap coat made of oatmeal heather double-faced wool cashmere',
+    badges: [{ text: 'ATELIER DROP', variant: 'secondary' }],
+    fitNote: 'Jahitan tangan unlined halus',
+    fabricType: 'Kasmir Murni',
+    colors: [
+      { name: 'Oatmeal Heather', hex: '#C9BEB2' },
+      { name: 'Deep Ink', hex: '#181816' },
+    ],
+    sizes: ['S', 'M', 'L'],
+    defaultSize: 'S',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Outerwear statement dengan konstruksi double-faced wool & cashmere yang dijahit tangan (hand-finished unlined seams). Ringan, hangat, dan dilengkapi sabuk tonal yang bisa diikat santai.',
+    fabricDetails: [
+      '85% Virgin Merino Wool, 15% Mongolian Cashmere',
+      'Double-faced unlined construction — rapi di kedua sisi',
+      'Sabuk pinggang lepasan & kerah lapel lebar klasik',
+      'Panjang di bawah lutut untuk proporsi siluet dramatis',
+    ],
+    careInstructions: [
+      'Khusus dry clean profesional',
+      'Sikat lembut searah serat menggunakan sikat pakaian bulu alami',
+      'Simpan dalam garment bag breathable saat tidak dipakai',
+    ],
+    modelInfo: 'Model TB 177cm / BB 55kg memakai Size S.',
+    fitScale: 'Relaxed',
+  },
+  {
+    id: 'sculptured-leather-shoulder-bag',
+    name: 'Sculptured Leather Shoulder Bag',
+    price: 790000,
+    priceFormatted: 'Rp 790.000',
+    subtitle: 'Full-Grain Italian Calfskin · Desert Tan',
+    category: 'bags',
+    subcategory: 'Tas Kurasi',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-GKvpsM_1uWkVpOq5ze941UZaogc92u8-8dS0op-jXpzediiObkHfRTANkOxPNWQ0bEFLPzF9GdDm4JZPo2DaD8fslmVQGc8K6A1smZ0fYaIXib5otxybobvjy-Lmx7oiOh6VBar4dJp0X5OjCvi8GSL9o7GUR4hOC_KZJx8cr_Pd_IIZpU0iVQ-TAoUBRLv8B6IgyHzv9szBZwecTzNqTte0wOjpTfY3yh5pYVU3',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuA-GKvpsM_1uWkVpOq5ze941UZaogc92u8-8dS0op-jXpzediiObkHfRTANkOxPNWQ0bEFLPzF9GdDm4JZPo2DaD8fslmVQGc8K6A1smZ0fYaIXib5otxybobvjy-Lmx7oiOh6VBar4dJp0X5OjCvi8GSL9o7GUR4hOC_KZJx8cr_Pd_IIZpU0iVQ-TAoUBRLv8B6IgyHzv9szBZwecTzNqTte0wOjpTfY3yh5pYVU3',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuB_6VwvsXVQVaiDYbpRPxck-liQri5GZIEVI03NdvsC2CwAOdYlqEfUw5sOy-35TQNq-0VXFH3A42ZG3-b-fd6KI0SO2DoVFzCWmKU0Qz4k2Lcb6wNnH-wqB8J5zEzhQzjoeLA_ARAg4fbTKNdhnCIj2xWdzmBYOFaXFa_PJT8pDwVxzwidJFebgmwbbr-FHb5d2a3eV6_FpgDYwFD8MrusZja2CkpP4YMFKizWHcRx',
+    ],
+    alt: 'Still life product photography of a sculptural tan leather handbag resting on a smooth cream limestone block',
+    badges: [{ text: 'HANDMADE', variant: 'primary' }],
+    fitNote: 'Penutup magnetik · Interior suede',
+    fabricType: 'Kulit Calfskin',
+    colors: [
+      { name: 'Desert Tan', hex: '#9E693B' },
+      { name: 'Deep Ink', hex: '#181816' },
+      { name: 'Warm Cream', hex: '#E5DCCF' },
+    ],
+    sizes: ['One Size'],
+    defaultSize: 'One Size',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Tas bahu berdesain arsitektural dari kulit anak sapi full-grain Italia yang lentur namun kokoh. Muat esensial harian mulai dari smartphone, dompet kartu, hingga kaca mata hitam.',
+    fabricDetails: [
+      '100% Full-Grain Vegetable-Tanned Calfskin',
+      'Interior berlapis mikro-suede lembut dengan slot kartu',
+      'Tali bahu adjustable & penutup magnetik tersembunyi',
+      'Dimensi: 26 cm × 15 cm × 8 cm',
+    ],
+    careInstructions: [
+      'Bersihkan debu dengan kain microfiber kering yang lembut',
+      'Oleskan leather balm netral setiap 3–4 bulan agar kulit tetap lembap',
+      'Simpan di dalam dustbag bawaan dan isi kertas penyangga',
+    ],
+    modelInfo: 'One Size (Tali strap dapat diatur 28cm – 52cm).',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'silk-studio-shirt',
+    name: 'Silk Studio Shirt',
+    price: 480000,
+    priceFormatted: 'Rp 480.000',
+    subtitle: 'Pure Crepe de Chine · Olive Moss',
+    category: 'women',
+    subcategory: 'Dress & Setelan',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8SBGv4meqGmL1vEeJuCnn9D2ku1diEhjecNLtHu6trfvgeBw1POcw22sccczS425ZcuuC0qlubh-Ag0xe1AA8mtZMYrSY3RRrX_hZEIRFkE52pOfip5WVspdL0BivhN_optH8W03ZrCvYp5lNc0EqsNlD2IMyE85pBeUk4tyPA02SbH4-tlKfMesI0g51mtqMrdlaFXVRPucS937REm_avV7Wbe7dviMm6POgGgJ9',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuB8SBGv4meqGmL1vEeJuCnn9D2ku1diEhjecNLtHu6trfvgeBw1POcw22sccczS425ZcuuC0qlubh-Ag0xe1AA8mtZMYrSY3RRrX_hZEIRFkE52pOfip5WVspdL0BivhN_optH8W03ZrCvYp5lNc0EqsNlD2IMyE85pBeUk4tyPA02SbH4-tlKfMesI0g51mtqMrdlaFXVRPucS937REm_avV7Wbe7dviMm6POgGgJ9',
+    ],
+    alt: 'Chic woman sitting comfortably wearing an oversized silk button-down blouse in muted olive moss green',
+    badges: [{ text: 'WARNA BARU', variant: 'surface' }],
+    fitNote: 'Relaxed drop shoulder · French cuffs',
+    fabricType: 'Sutra Mulberry',
+    colors: [
+      { name: 'Olive Moss', hex: '#5D634E' },
+      { name: 'Alabaster Cream', hex: '#F3EFE9' },
+      { name: 'Deep Ink', hex: '#1C1C19' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    defaultSize: 'S',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Kemeja studio serbaguna dari sutra Crepe de Chine dengan tekstur matte berpasir yang mewah. Potongan bahu turun (drop shoulder) memberikan kesan effortless baik dimasukkan ke celana tailored maupun dilepas santai.',
+    fabricDetails: [
+      '100% Pure Silk Crepe de Chine (19mm)',
+      'Kancing mother-of-pearl asli berkilau lembut',
+      'Relaxed drop-shoulder silhouette dengan manset lebar',
+      'Adem dan tidak mudah kusut saat dipakai beraktivitas',
+    ],
+    careInstructions: [
+      'Cuci tangan dengan air dingin dan deterjen khusus sutra',
+      'Hindari pemutih dan pengering mesin',
+      'Setrika suhu rendah dari bagian dalam kain',
+    ],
+    modelInfo: 'Model TB 173cm / BB 52kg memakai Size S.',
+    fitScale: 'Relaxed',
+  },
+  // Additional Homepage Weekly Edit & Bestseller Items
+  {
+    id: 'handcrafted-leather-watch',
+    name: 'Jam Tangan Kulit Handmade',
+    price: 649000,
+    priceFormatted: 'Rp 649.000',
+    subtitle: 'Cow Leather · Taupe',
+    category: 'accessories',
+    subcategory: 'Aksesori',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzq_8R-fOABqSIR48BVyi3Rl8G40YH2C1zsNHzHREHpxaNdisuUGH9vfZ0UUXNt6UmzkcoN9W2NwOu6RzCVkAp8GjRyPmKk6pP--jFdBJWUOZO2K0baWbQJphzVhjU8K_PPGm8qappYck1yitZM-vKXiVoOtL3CC1C_Q09h5-8EaQLlnYTSROl-wMCkSQPS6zGMr9GoCJcuz8GdSbtx5k0qEuLNBOzUJdNKXHEegqY',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDzq_8R-fOABqSIR48BVyi3Rl8G40YH2C1zsNHzHREHpxaNdisuUGH9vfZ0UUXNt6UmzkcoN9W2NwOu6RzCVkAp8GjRyPmKk6pP--jFdBJWUOZO2K0baWbQJphzVhjU8K_PPGm8qappYck1yitZM-vKXiVoOtL3CC1C_Q09h5-8EaQLlnYTSROl-wMCkSQPS6zGMr9GoCJcuz8GdSbtx5k0qEuLNBOzUJdNKXHEegqY',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAfr27J7yq40VBfz-srl7RMf8IncNlm3hUTuQHm41Lue53_2tA1C4R27A15siAnbb6xFN29BgMGB3DEbrApl2pU-0knJW-__Xenh4yZw3EAOVDP4oEG9eo9Vwkibks9L_c8eAHi2l47Z3BWc2omIJwPjgG7zCtYqaBZtJpBpt5speKKWPdAM-R6OcCqU3fWBVoERRSX5s_Lm6SmiRE0z38oKhgOiOT86_Gj2QwlELy9',
+    ],
+    alt: 'Close up product photograph of minimal black dial wristwatch with gold bezel and warm taupe calfskin leather strap',
+    badges: [{ text: 'STOK READY', variant: 'surface' }],
+    fitNote: 'Case 38mm unisex · Strap kulit sapi asli',
+    fabricType: 'Kulit Calfskin',
+    colors: [
+      { name: 'Warm Taupe', hex: '#8A7968' },
+      { name: 'Espresso Black', hex: '#1C1C19' },
+    ],
+    sizes: ['One Size'],
+    defaultSize: 'One Size',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Jam tangan analog bergaya horologi klasik dengan dial hitam minimalis, bezel brushed gold tipis, dan strap kulit anak sapi taupe jahitan tangan yang makin nyaman mengikuti bentuk pergelangan.',
+    fabricDetails: [
+      'Japanese Quartz Movement presisi tinggi',
+      'Sapphire-coated mineral crystal tahan gores',
+      '316L Stainless Steel Case (Diameter 38mm, Ketebalan 7mm)',
+      'Strap Italian Calfskin 18mm dengan quick-release pin',
+    ],
+    careInstructions: [
+      'Hindari kontak langsung strap kulit dengan air atau parfum',
+      'Lap case dengan kain halus setelah pemakaian',
+      'Garansi mesin 2 tahun penuh di seluruh atelier UrbanStore',
+    ],
+    modelInfo: 'Diameter 38mm cocok untuk lingkar pergelangan 14cm – 20cm.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'tailored-pleated-trouser-men',
+    name: 'Celana Pleated Tailored',
+    price: 389000,
+    priceFormatted: 'Rp 389.000',
+    subtitle: 'Cotton Twill · Cream',
+    category: 'men',
+    subcategory: 'Celana Tailored',
+    bestsellerTab: 'Celana',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeHCIZ0KByWj3709n4Y8kP9nYgcS8oNG-tjI1YvpXExA2MUOWveD6MOor9vxLL3hlRdULq7QjybRRd3OCfj3X2h8aNXMlzXDAPrvW6ZfPTdSTJEEfD7e3j4OA350b1e_O7p0U_FfzPVG7kUB52xAVIKJi_ricVFBrbkovVI40TZpkS2DZIOhpabpBRAFVmZx4Sa0ita29fkd-_eZaFOQcAkkrUVjC5aY_cTeT0lajL',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCeHCIZ0KByWj3709n4Y8kP9nYgcS8oNG-tjI1YvpXExA2MUOWveD6MOor9vxLL3hlRdULq7QjybRRd3OCfj3X2h8aNXMlzXDAPrvW6ZfPTdSTJEEfD7e3j4OA350b1e_O7p0U_FfzPVG7kUB52xAVIKJi_ricVFBrbkovVI40TZpkS2DZIOhpabpBRAFVmZx4Sa0ita29fkd-_eZaFOQcAkkrUVjC5aY_cTeT0lajL',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCSZfgkDnK-rrgefOYy46n4Lev9UNuxpkdiSxAvtXMNVrzTXPBDjuIk_I4KsnbY2YYtat9fq7TjHXQug1En2RckvrPXl4fNCt4DOIsnSvxmXyTvlGehRYfvo5a2DlIxGis4x8qX9_ihFGUuRpzTMJsRkmFqFHrD5ef4Y3oSzkqwpCRipgvQ5x7zEDzIoXzCQ-KnOTofKCuSZ2RoQY58GUG0rkA9BhjII_98LY2FCj_-',
+    ],
+    alt: 'Editorial studio crop of tailored double-pleated cream trousers paired with minimal leather shoes',
+    badges: [{ text: 'SIZE 28-36', variant: 'surface' }],
+    fitNote: 'Relaxed tapered cut · Model TB 184cm pake size 30',
+    fabricType: 'Cotton Twill',
+    colors: [
+      { name: 'Alabaster Cream', hex: '#F3EFE6' },
+      { name: 'Sand Taupe', hex: '#C7BBA8' },
+      { name: 'Charcoal Ink', hex: '#232320' },
+    ],
+    sizes: ['28', '30', '32', '34', '36'],
+    defaultSize: '30',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Celana panjang pria berpotongan relaxed tapered dengan lipit ganda (double pleats) yang memberikan ruang gerak ekstra di paha namun tetap jatuh rapi di mata kaki.',
+    fabricDetails: [
+      '100% Combed Organic Cotton Twill (290 GSM)',
+      'Double front pleats dengan side adjusters di pinggang',
+      'Pre-washed agar tidak menyusut setelah dicuci',
+      'Konstruksi saku dalam dari katun herringbone tebal',
+    ],
+    careInstructions: [
+      'Cuci mesin air dingin dengan warna senada',
+      'Jangan gunakan pemutih klorin',
+      'Setrika suhu sedang untuk mempertahankan garis lipit',
+    ],
+    modelInfo: 'Model Pria TB 184cm / BB 74kg memakai Size 30.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'structured-leather-tote-bag',
+    name: 'Tas Kulit Terstruktur',
+    price: 890000,
+    priceFormatted: 'Rp 890.000',
+    subtitle: 'Pebbled Grain · Desert Tan',
+    category: 'bags',
+    subcategory: 'Tas Kurasi',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDbFZlUqKjgS7vCm3wqJI3OvEOQeOCFwJzcJZGN8_V4g1d0aLn7DvqKMqHrf0ftGNxxrsbf4p8SycS3ngI2eji2m_aey2XYT6cBBZK4YABpZHKwP6eUlrva4xDpe4UMiHMhmcvjVtNnpnO-6Tmud_34Aoe9_KMFr1Yf81v69gG2wI5wH2RImD1YyS_35RwdbalHbr_gdp0YKNfpMoZnL6R51axJuJ7pcVXkrdvhMgFI',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDbFZlUqKjgS7vCm3wqJI3OvEOQeOCFwJzcJZGN8_V4g1d0aLn7DvqKMqHrf0ftGNxxrsbf4p8SycS3ngI2eji2m_aey2XYT6cBBZK4YABpZHKwP6eUlrva4xDpe4UMiHMhmcvjVtNnpnO-6Tmud_34Aoe9_KMFr1Yf81v69gG2wI5wH2RImD1YyS_35RwdbalHbr_gdp0YKNfpMoZnL6R51axJuJ7pcVXkrdvhMgFI',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuB_6VwvsXVQVaiDYbpRPxck-liQri5GZIEVI03NdvsC2CwAOdYlqEfUw5sOy-35TQNq-0VXFH3A42ZG3-b-fd6KI0SO2DoVFzCWmKU0Qz4k2Lcb6wNnH-wqB8J5zEzhQzjoeLA_ARAg4fbTKNdhnCIj2xWdzmBYOFaXFa_PJT8pDwVxzwidJFebgmwbbr-FHb5d2a3eV6_FpgDYwFD8MrusZja2CkpP4YMFKizWHcRx',
+    ],
+    alt: 'Still life product shot of structured tan tote handbag crafted with calfskin leather with polished metallic lock',
+    badges: [{ text: 'STOK MENIPIS', variant: 'secondary' }],
+    fitNote: 'Muat laptop 14 inch · Kunci turn-lock brass',
+    fabricType: 'Kulit Calfskin',
+    colors: [
+      { name: 'Desert Tan', hex: '#A46434' },
+      { name: 'Taupe Stone', hex: '#B7AA9A' },
+      { name: 'Deep Ink', hex: '#1C1C19' },
+    ],
+    sizes: ['One Size'],
+    defaultSize: 'One Size',
+    inStock: true,
+    stockLabel: 'Stok menipis — sisa 3 pcs di atelier, gas bungkus!',
+    description:
+      'Tote bag terstruktur dengan tekstur kulit pebbled grain yang tahan gores dan kunci logam turn-lock berlapis emas muda. Dirancang khusus untuk mobilitas harian dari kerja hingga hangout sore.',
+    fabricDetails: [
+      '100% Pebbled-Grain Calfskin Leather',
+      'Kompartemen utama muat laptop 14 inci & dokumen A4',
+      'Kaki pelindung logam (metal feet) di bagian dasar tas',
+      'Dilengkapi long strap crossbody yang bisa dilepas-pasang',
+    ],
+    careInstructions: [
+      'Lap bersih dengan kain lembap lembut jika terkena noda',
+      'Isi dengan bantal kertas saat disimpan agar struktur tetap tegak',
+      'Hindari paparan panas langsung dalam waktu lama',
+    ],
+    modelInfo: 'Dimensi: 34 cm × 25 cm × 14 cm.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'signature-mini-shoulder-bag',
+    name: 'Signature Mini Shoulder Bag',
+    price: 520000,
+    priceFormatted: 'Rp 520.000',
+    subtitle: 'Warm Tan · Calfskin',
+    category: 'bags',
+    subcategory: 'Tas Kurasi',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB5O0R9NxcaFDK7T7TD4qxCnk8i6UckBij9bcqPWiJyf_jZ_0leM4qiWo_q_kXo1F9Tetxb3efbOgvVkq05K5dLEnixLoOgD3I6YyuX7-P6a4jUgZnwzma1rcaL6ZemsGCY5h0NYet7UaqwzvYDe2XjGZrNKoPR6ftY9jiTi_fKvKdVKqVF1sOJX_L7NkwIBuupiG6H4xThseUJVWLPgcW57pOO_AULxIXihbYpiILH',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuB5O0R9NxcaFDK7T7TD4qxCnk8i6UckBij9bcqPWiJyf_jZ_0leM4qiWo_q_kXo1F9Tetxb3efbOgvVkq05K5dLEnixLoOgD3I6YyuX7-P6a4jUgZnwzma1rcaL6ZemsGCY5h0NYet7UaqwzvYDe2XjGZrNKoPR6ftY9jiTi_fKvKdVKqVF1sOJX_L7NkwIBuupiG6H4xThseUJVWLPgcW57pOO_AULxIXihbYpiILH',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAOLJA9_ICTGd7fNmHUBgL_FpeiBf1BSJFv05qLNT4RkHyYLUaDqGU0JzKOKiPwQMggnDjknXccJidVqO0p8oskSEOWM9FKG7CkpEvPx7kkp0MgUWD8RdxmrcVXNxNSVadZrY7m6qNl3bO5GGnjIWghk-wwY0Gz1qRdo4uhDcEI6oBf19uS8sbxoCDOig8L4K8DBJP8ZoOPSbNWzndSB5lT0xQShzmARtF_KlIh8Yx3',
+    ],
+    alt: 'Editorial model holding handcrafted warm tan leather shoulder bag with clean geometric lines',
+    badges: [{ text: 'RESTOCK LAGI', variant: 'secondary' }],
+    fitNote: 'One Size (24 × 16 cm) · Flap magnetik',
+    fabricType: 'Kulit Calfskin',
+    colors: [
+      { name: 'Warm Tan', hex: '#855224' },
+      { name: 'Deep Ink', hex: '#000000' },
+      { name: 'Sand Stone', hex: '#C8B89E' },
+    ],
+    sizes: ['One Size (24 × 16 cm)'],
+    defaultSize: 'One Size (24 × 16 cm)',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Mini shoulder bag paling diincar yang baru aja restock. Garis geometris bersih tanpa logo mencolok, nyaman diselipkan di bahu maupun diselempangkan.',
+    fabricDetails: [
+      'Smooth Italian Calfskin dengan tepi cat tangan (hand-painted edges)',
+      'Hardware minimalis berlapis brushed brass anti karat',
+      '2 kompartemen dalam + 1 kantong resleting aman',
+      'Dimensi pas: 24 cm × 16 cm × 6.5 cm',
+    ],
+    careInstructions: [
+      'Simpan di dalam dustbag katun setelah dipakai',
+      'Jauhkan dari permukaan kasar dan kelembapan berlebih',
+    ],
+    modelInfo: 'One Size (24 × 16 cm) — muat HP Pro Max, powerbank tipis, dan lip tint.',
+    fitScale: 'Pas Banget',
+  },
+  {
+    id: 'chelsea-leather-ankle-boot',
+    name: 'Chelsea Leather Ankle Boot',
+    price: 780000,
+    priceFormatted: 'Rp 780.000',
+    subtitle: 'Espresso Brown · Italian Leather',
+    category: 'shoes',
+    subcategory: 'Sepatu',
+    bestsellerTab: 'Sepatu',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBdMFl8hC-fxkHoUQJkYwEDaM4MzJ0aESzNrnSRGpeJNs5crYiSiTAkzpKfXgyoKVpah4lsA-EUPDKoEV7HvFFlHLQuAuothIuqAm9kEFVBbn6QKdFLaO-YLQj_8GEixckbZF8ZW84Lj10vaMVK3qBfkYLG2B_Cpqi47Iu3uQnUHnsQ7B6FQrfdwh7J8TWgseQc61FJCriLc3XlJ5u7nYe9QHjGAKL9Q_CISjdGCZTI',
+    gallery: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBdMFl8hC-fxkHoUQJkYwEDaM4MzJ0aESzNrnSRGpeJNs5crYiSiTAkzpKfXgyoKVpah4lsA-EUPDKoEV7HvFFlHLQuAuothIuqAm9kEFVBbn6QKdFLaO-YLQj_8GEixckbZF8ZW84Lj10vaMVK3qBfkYLG2B_Cpqi47Iu3uQnUHnsQ7B6FQrfdwh7J8TWgseQc61FJCriLc3XlJ5u7nYe9QHjGAKL9Q_CISjdGCZTI',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDOKXR5syeSPYtP93udfBrsLIGxEusJiUzdIdrivrO3UVnvjcpXK0lrstEVqcKFFp6MDqPlvWXLlsy6ZYcCAILLntCwPhQotyXKQJT0pme4-G-SwdYBP5NFht91gISvVI9rgZ85YeD_gTzjuBvRB34Zz9BQ5VFpTJ1xGLJobRbfgaImNSgdkLfUK8qpFO7ugGGQKYhuTKggu0YvxmiHgVOJIHPECtfupKig08a611s9',
+    ],
+    alt: 'Editorial product shot of rich espresso brown leather chelsea boots with elastic gusset sitting neatly on an ecru pedestal',
+    badges: [{ text: 'HANDWELTED', variant: 'primary' }],
+    fitNote: 'True to size · Insole empuk memory foam',
+    fabricType: 'Kulit Calfskin',
+    colors: [
+      { name: 'Espresso Brown', hex: '#3B2820' },
+      { name: 'Obsidian Black', hex: '#1A1A1A' },
+    ],
+    sizes: ['40', '41', '42', '43'],
+    defaultSize: '42',
+    inStock: true,
+    stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+    description:
+      'Chelsea ankle boot klasik dari kulit pull-up espresso brown dengan panel karet elastis rapat di samping. Dilengkapi insole berlapis kulit lembut yang langsung nyaman dipakai jalan jauh sejak hari pertama.',
+    fabricDetails: [
+      '100% Full-Grain Italian Pull-Up Leather',
+      'Blake-stitched leather & rubber anti-slip outsole',
+      'Bantalan ortholite memory foam berlapis calfskin',
+      'Pull-tab belakang tenun kuat untuk mudah dipakai',
+    ],
+    careInstructions: [
+      'Sikat debu dengan horsehair brush setelah dipakai',
+      'Gunakan shoe tree kayu cedar agar bentuk depan tidak melipat',
+      'Aplikasikan wax semir netral atau dark brown sesuai kebutuhan',
+    ],
+    modelInfo: 'Ukuran standar EU (40 = 25.5cm, 41 = 26.5cm, 42 = 27.5cm, 43 = 28.5cm).',
+    fitScale: 'Pas Banget',
+  },
+];
