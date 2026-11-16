@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BRAND_ASSETS } from '../data/products';
 import { handleImageError } from '../utils/storage';
+import { useAuth } from '../context/AuthContext';
 
-export type ActivePage = 'home' | 'women' | 'men' | 'bags' | 'shoes' | 'curated-drops' | 'pdp' | 'checkout';
+export type ActivePage = 'home' | 'women' | 'men' | 'bags' | 'shoes' | 'curated-drops' | 'pdp' | 'checkout' | 'admin';
 
 interface HeaderProps {
   activePage: ActivePage;
@@ -11,6 +12,7 @@ interface HeaderProps {
   wishlistCount: number;
   onOpenCart: () => void;
   onOpenOrders: () => void;
+  onOpenAuth: () => void;
   onOpenWishlist: () => void;
   onOpenSizeGuide: () => void;
   searchQuery: string;
@@ -24,11 +26,13 @@ export const Header: React.FC<HeaderProps> = ({
   wishlistCount,
   onOpenCart,
   onOpenOrders,
+  onOpenAuth,
   onOpenWishlist,
   onOpenSizeGuide,
   searchQuery,
   onSearchChange,
 }) => {
+  const { user, profile, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currencyNotice, setCurrencyNotice] = useState(false);
   const currencyRef = useRef<HTMLDivElement>(null);
@@ -140,6 +144,19 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 );
               })}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('admin')}
+                  className={`font-label-uppercase text-label-uppercase uppercase transition-all pb-1 whitespace-nowrap shrink-0 cursor-pointer ${
+                    activePage === 'admin'
+                      ? 'text-secondary font-semibold border-b border-secondary'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  Admin
+                </button>
+              )}
             </nav>
           </div>
 
@@ -225,7 +242,17 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={onOpenOrders}
                 title="Riwayat Pesanan Kamu"
                 aria-label="Riwayat Pesanan"
-                className="pl-1 cursor-pointer"
+                className="p-1.5 text-on-surface hover:text-secondary transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[22px]">receipt_long</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                title={user ? `${profile?.full_name || user.email} (${isAdmin ? 'Admin' : 'Customer'})` : 'Masuk / Daftar'}
+                aria-label="Akun Saya"
+                className="flex items-center gap-1.5 pl-1 cursor-pointer"
               >
                 <img
                   alt="Profile"
@@ -234,6 +261,9 @@ export const Header: React.FC<HeaderProps> = ({
                   onError={handleImageError}
                   src={BRAND_ASSETS.avatar}
                 />
+                <span className="hidden sm:inline-block font-label-uppercase text-[10px] uppercase tracking-wider px-2 py-0.5 border border-border-ecru bg-surface-card text-primary">
+                  {user ? (isAdmin ? 'ADMIN' : 'MEMBER') : 'MASUK'}
+                </span>
               </button>
             </div>
           </div>
@@ -276,6 +306,28 @@ export const Header: React.FC<HeaderProps> = ({
                   {item.label}
                 </button>
               ))}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigate('admin');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-left font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-secondary font-semibold"
+                >
+                  Admin Atelier Dashboard →
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenAuth();
+                  setMobileMenuOpen(false);
+                }}
+                className="text-left font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-primary"
+              >
+                {user ? `Akun: ${profile?.full_name || user.email} (${isAdmin ? 'Admin' : 'Customer'})` : 'Masuk / Daftar Akun →'}
+              </button>
               <button
                 type="button"
                 onClick={() => {

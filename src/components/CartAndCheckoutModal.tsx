@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Product } from '../data/products';
 import { handleImageError, useModalEffects } from '../utils/storage';
+import { useAuth } from '../context/AuthContext';
+import { validatePromoInDb, placeOrderInDb, formatRupiah } from '../services/supabaseService';
 
 export interface CartItem {
   product: Product;
@@ -20,11 +22,14 @@ export interface OrderRecord {
   paymentMethod: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
   total: number;
   itemsCount: number;
+  status?: 'pending' | 'paid' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
+  trackingNumber?: string;
 }
 
 interface CartAndCheckoutModalProps {
   isOpen: boolean;
   initialMode: 'bag' | 'checkout' | 'orders';
+  useSupabaseDb: boolean;
   onClose: () => void;
   cartItems: CartItem[];
   orders: OrderRecord[];
@@ -38,6 +43,7 @@ interface CartAndCheckoutModalProps {
 export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
   isOpen,
   initialMode,
+  useSupabaseDb,
   onClose,
   cartItems,
   orders,
@@ -47,9 +53,10 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
   onOrderComplete,
   onExploreCatalog,
 }) => {
+  const { profile, user } = useAuth();
   const [mode, setMode] = useState<'bag' | 'checkout' | 'confirmation' | 'orders'>(initialMode);
   const [promoCode, setPromoCode] = useState<string>('');
-  const [promoApplied, setPromoApplied] = useState<string | null>(null);
+  const [promoApplied, setPromoApplied] = useState<{ code: string; amount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
 
   // 4-Step Checkout Form State
@@ -63,19 +70,32 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
   const [courier, setCourier] = useState<'reguler' | 'sameday' | 'instant'>('reguler');
   const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard'>('QRIS');
   const [confirmedOrder, setConfirmedOrder] = useState<OrderRecord | null>(null);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
+      setCheckoutError(null);
     }
   }, [isOpen, initialMode]);
+
+  React.useEffect(() => {
+    if (!isOpen || !profile) return;
+    if (!fullName && profile.full_name) setFullName(profile.full_name);
+    if (!email && (profile.email || user?.email)) setEmail(profile.email || user?.email || '');
+    if (!whatsapp && profile.whatsapp) setWhatsapp(profile.whatsapp);
+    if (!address && profile.default_address) setAddress(profile.default_address);
+    if (!city && profile.default_city) setCity(profile.default_city);
+    if (!postalCode && profile.default_postal_code) setPostalCode(profile.default_postal_code);
+  }, [isOpen, profile, user, fullName, email, whatsapp, address, city, postalCode]);
 
   useModalEffects(isOpen, onClose);
 
   if (!isOpen) return null;
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const discount = promoApplied ? 50000 : 0;
+  const discount = promoApplied ? promoApplied.amount : 0;
   const shippingCost =
     subtotal === 0
       ? 0
@@ -88,13 +108,25 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
       : 18000;
   const grandTotal = Math.max(0, subtotal - discount + shippingCost);
 
-  const formatRupiah = (num: number) => `Rp ${num.toLocaleString('id-ID')}`;
-
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned = promoCode.trim().toUpperCase();
+    if (!cleaned) return;
+
+    if (useSupabaseDb) {
+      const res = await validatePromoInDb(cleaned, subtotal);
+      if (res.valid && res.code && res.discountAmount) {
+        setPromoApplied({ code: res.code, amount: res.discountAmount });
+        setPromoError(null);
+      } else {
+        setPromoApplied(null);
+        setPromoError(res.message || 'Kode promo ini nggak valid atau udah lewat masanya.');
+      }
+      return;
+    }
+
     if (['ANTIZONK', 'URBAN10', 'DROP01', 'HEMAT50'].includes(cleaned)) {
-      setPromoApplied(cleaned);
+      setPromoApplied({ code: cleaned, amount: 50000 });
       setPromoError(null);
     } else {
       setPromoApplied(null);
@@ -102,9 +134,9 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
     }
   };
 
-  const handleCompleteCheckout = (e: React.FormEvent) => {
+  const handleCompleteCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || submitting) return;
 
     const digitsOnly = whatsapp.replace(/\D/g, '');
     const isValidWhatsapp =
@@ -118,6 +150,39 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
     }
 
     setWhatsappError(null);
+    setCheckoutError(null);
+
+    if (useSupabaseDb) {
+      setSubmitting(true);
+      const res = await placeOrderInDb({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        whatsapp: whatsapp.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        postalCode: postalCode.trim(),
+        courier,
+        paymentMethod,
+        promoCode: promoApplied?.code ?? null,
+        items: cartItems,
+      });
+      setSubmitting(false);
+
+      if (res.error || !res.order) {
+        setCheckoutError(res.error || 'Jaringan lagi ngadat nih. Santai, klik coba lagi ya.');
+        return;
+      }
+
+      setConfirmedOrder(res.order);
+      onOrderComplete(res.order);
+      setPromoCode('');
+      setPromoApplied(null);
+      setPromoError(null);
+      setMode('confirmation');
+      onClearCart();
+      return;
+    }
+
     const newOrder: OrderRecord = {
       id: `US-${Math.floor(100000 + Math.random() * 900000)}`,
       createdAt: new Date().toLocaleDateString('id-ID', {
@@ -133,6 +198,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
       paymentMethod,
       total: grandTotal,
       itemsCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+      status: 'pending',
     };
 
     setConfirmedOrder(newOrder);
@@ -321,7 +387,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                       {promoError && <p className="text-error text-xs mt-1.5">{promoError}</p>}
                       {promoApplied && (
                         <p className="text-status-stock text-xs mt-1.5 font-medium">
-                          ✓ Kode {promoApplied} aktif! Potongan Rp 50.000 otomatis kepasang.
+                          ✓ Kode {promoApplied.code} aktif! Potongan {formatRupiah(promoApplied.amount)} otomatis kepasang.
                         </p>
                       )}
                     </form>
@@ -334,8 +400,8 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                       </div>
                       {promoApplied && (
                         <div className="flex justify-between text-status-stock">
-                          <span>Potongan Promo ({promoApplied})</span>
-                          <span className="tabular-nums">- Rp 50.000</span>
+                          <span>Potongan Promo ({promoApplied.code})</span>
+                          <span className="tabular-nums">- {formatRupiah(promoApplied.amount)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-text-muted">
@@ -539,8 +605,8 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                   </div>
                   {promoApplied && (
                     <div className="flex justify-between text-status-stock">
-                      <span>Kode Promo ({promoApplied})</span>
-                      <span className="tabular-nums">- Rp 50.000</span>
+                      <span>Kode Promo ({promoApplied.code})</span>
+                      <span className="tabular-nums">- {formatRupiah(promoApplied.amount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-text-muted">
@@ -553,7 +619,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                     <span>Biaya Layanan / Admin</span>
                     <span className="tabular-nums text-status-stock">Rp 0 (Bebas Drama)</span>
                   </div>
-                  <div className="pt-3 border-t border-border-ecru flex justify-between items-baseline">
+                    <div className="pt-3 border-t border-border-ecru flex justify-between items-baseline">
                     <span className="font-label-uppercase text-label-uppercase uppercase text-primary">
                       Total Tagihan
                     </span>
@@ -562,6 +628,11 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                     </span>
                   </div>
                 </div>
+                {checkoutError && (
+                  <div className="p-3 bg-error-container/60 border border-error/30 text-error text-xs">
+                    {checkoutError}
+                  </div>
+                )}
               </form>
             )}
 
@@ -650,6 +721,15 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                         <span className="text-text-muted">Metode &amp; Item</span>
                         <span className="text-primary">{ord.paymentMethod} · {ord.itemsCount} item</span>
                       </div>
+                      {ord.status && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-text-muted">Status</span>
+                          <span className="uppercase font-label-uppercase text-[10px] text-secondary font-semibold">
+                            {ord.status}
+                            {ord.trackingNumber ? ` · Resi: ${ord.trackingNumber}` : ''}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between pt-2 border-t border-border-ecru font-medium">
                         <span className="text-text-muted">Total</span>
                         <span className="font-price-md text-primary tabular-nums">{formatRupiah(ord.total)}</span>
@@ -685,10 +765,10 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                 <button
                   type="submit"
                   form="checkout-form"
-                  disabled={cartItems.length === 0}
+                  disabled={cartItems.length === 0 || submitting}
                   className="flex-1 h-12 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  Gas Checkout — {formatRupiah(grandTotal)}
+                  {submitting ? 'Memproses Order...' : `Gas Checkout — ${formatRupiah(grandTotal)}`}
                 </button>
               </div>
             )}

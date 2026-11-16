@@ -1,10 +1,11 @@
 import React from 'react';
-import { PRODUCTS, Product } from '../data/products';
+import { Product } from '../data/products';
 import { handleImageError, useModalEffects } from '../utils/storage';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  products: Product[];
   wishlistIds: string[];
   onToggleWishlist: (productId: string) => void;
   onSelectProduct: (product: Product) => void;
@@ -14,6 +15,7 @@ interface WishlistDrawerProps {
 export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   isOpen,
   onClose,
+  products,
   wishlistIds,
   onToggleWishlist,
   onSelectProduct,
@@ -23,7 +25,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const wishlistedProducts = PRODUCTS.filter((p) => wishlistIds.includes(p.id));
+  const wishlistedProducts = products.filter((p) => wishlistIds.includes(p.id));
 
   return (
     <div aria-modal="true" className="fixed inset-0 z-50" role="dialog">

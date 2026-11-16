@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { BRAND_ASSETS, CATEGORY_PORTALS, PRODUCTS, Product } from '../data/products';
+import { BRAND_ASSETS, CATEGORY_PORTAL_META, Product } from '../data/products';
 import { ActivePage } from './Header';
 import { handleImageError } from '../utils/storage';
 
 interface HomeViewProps {
+  products: Product[];
   onNavigate: (page: ActivePage) => void;
   onSelectProduct: (product: Product) => void;
   onAddToBag: (product: Product, size: string, colorName?: string) => void;
@@ -15,6 +16,7 @@ interface HomeViewProps {
 type BestsellerTab = 'Semua' | 'Outerwear' | 'Celana' | 'Dress' | 'Tas' | 'Sepatu';
 
 export const HomeView: React.FC<HomeViewProps> = ({
+  products,
   onNavigate,
   onSelectProduct,
   onAddToBag,
@@ -31,7 +33,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   });
 
   const getProduct = (id: string): Product =>
-    PRODUCTS.find((p) => p.id === id) || PRODUCTS[0];
+    products.find((p) => p.id === id) || products[0];
+
+  const categoryPortals = CATEGORY_PORTAL_META.map((portal) => ({
+    ...portal,
+    count: `${products.filter((p) => p.category === portal.id).length} Kurasi`,
+  }));
 
   const columnDress = getProduct('column-dress-overshirt');
   const leatherWatch = getProduct('handcrafted-leather-watch');
@@ -49,7 +56,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const visibleBestsellerProducts =
     bestsellerFilter === 'Semua'
       ? featuredAllIds.map(getProduct)
-      : PRODUCTS.filter((p) => p.bestsellerTab === bestsellerFilter);
+      : products.filter((p) => p.bestsellerTab === bestsellerFilter);
 
   const weeklyEditSideCards = [
     {
@@ -151,7 +158,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <section className="w-full bg-surface py-12 lg:py-16 border-b border-border-ecru">
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin">
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-6 sm:gap-8 justify-items-center">
-            {CATEGORY_PORTALS.map((portal, index) => (
+            {categoryPortals.map((portal, index) => (
               <button
                 key={portal.id}
                 type="button"
@@ -527,7 +534,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               onClick={() => onNavigate('curated-drops')}
               className="inline-flex items-center justify-center px-10 py-3.5 border border-primary text-primary hover:bg-primary hover:text-on-primary font-label-uppercase text-label-uppercase tracking-[0.14em] uppercase transition-all duration-300 cursor-pointer"
             >
-              Lihat Semua Koleksi ({PRODUCTS.length} Kurasi)
+              Lihat Semua Koleksi ({products.length} Kurasi)
             </button>
           </div>
         </div>

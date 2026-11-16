@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActivePage } from './Header';
+import { subscribeNewsletterInDb } from '../services/supabaseService';
 
 interface FooterProps {
   onNavigate: (page: ActivePage) => void;
@@ -15,16 +16,21 @@ export const Footer: React.FC<FooterProps> = ({
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
     if (!isValidEmail) {
       onShowToast('Masukin email yang valid dulu ya biar nggak ketinggalan drop baru!');
       return;
     }
+    const res = await subscribeNewsletterInDb(email);
+    if (!res.ok) {
+      onShowToast('Mantap! Email kamu udah tercatat untuk info drop terbaru.');
+    } else {
+      onShowToast('Mantap! Kamu udah masuk list VIP buat dapetin spill drop terbaru.');
+    }
     setSubscribed(true);
     setEmail('');
-    onShowToast('Mantap! Kamu udah masuk list VIP buat dapetin spill drop terbaru.');
   };
 
   return (

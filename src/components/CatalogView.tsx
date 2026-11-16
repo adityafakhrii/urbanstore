@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BRAND_ASSETS, PRODUCTS, Product } from '../data/products';
+import { BRAND_ASSETS, Product } from '../data/products';
 import { ActivePage } from './Header';
 import { handleImageError, useModalEffects } from '../utils/storage';
 
 interface CatalogViewProps {
+  products: Product[];
   activePage: ActivePage;
   onNavigate: (page: ActivePage) => void;
   onSelectProduct: (product: Product) => void;
@@ -27,6 +28,7 @@ const COLOR_SWATCHES = [
 const PAGE_SIZE = 8;
 
 export const CatalogView: React.FC<CatalogViewProps> = ({
+  products,
   activePage,
   onNavigate,
   onSelectProduct,
@@ -61,19 +63,19 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   // Base products per navigation category (no cross-category padding)
   const baseCatalogProducts = useMemo(() => {
     if (activePage === 'men') {
-      return PRODUCTS.filter((p) => p.category === 'men' || p.category === 'accessories');
+      return products.filter((p) => p.category === 'men' || p.category === 'accessories');
     }
     if (activePage === 'bags') {
-      return PRODUCTS.filter((p) => p.category === 'bags');
+      return products.filter((p) => p.category === 'bags');
     }
     if (activePage === 'shoes') {
-      return PRODUCTS.filter((p) => p.category === 'shoes');
+      return products.filter((p) => p.category === 'shoes');
     }
     if (activePage === 'curated-drops') {
-      return PRODUCTS;
+      return products;
     }
-    return PRODUCTS.filter((p) => p.category === 'women');
-  }, [activePage]);
+    return products.filter((p) => p.category === 'women');
+  }, [activePage, products]);
 
   // Header metadata based on active navigation tab
   const collectionMeta = useMemo(() => {
@@ -156,7 +158,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   const filteredProducts = useMemo(() => {
     let list = searchQuery.trim()
-      ? PRODUCTS.filter((p) => {
+      ? products.filter((p) => {
           const q = searchQuery.toLowerCase();
           return (
             p.name.toLowerCase().includes(q) ||
@@ -227,6 +229,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
     return list;
   }, [
+    products,
     baseCatalogProducts,
     searchQuery,
     selectedSubcategory,

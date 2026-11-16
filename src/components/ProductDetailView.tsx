@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PRODUCTS, Product } from '../data/products';
+import { Product } from '../data/products';
 import { ActivePage } from './Header';
 import { handleImageError } from '../utils/storage';
 
@@ -13,6 +13,7 @@ const CATEGORY_ROUTE_MAP: Record<Product['category'], { page: ActivePage; label:
 
 interface ProductDetailViewProps {
   product: Product;
+  products: Product[];
   onNavigate: (page: ActivePage) => void;
   onSelectProduct: (product: Product) => void;
   onAddToBag: (product: Product, size: string, colorName?: string) => void;
@@ -24,6 +25,7 @@ interface ProductDetailViewProps {
 
 export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   product,
+  products,
   onNavigate,
   onSelectProduct,
   onAddToBag,
@@ -73,8 +75,8 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     onBuyNow(product, selectedSize, selectedColor);
   };
 
-  const sameCategory = PRODUCTS.filter((p) => p.id !== product.id && p.category === product.category);
-  const otherCategory = PRODUCTS.filter((p) => p.id !== product.id && p.category !== product.category);
+  const sameCategory = products.filter((p) => p.id !== product.id && p.category === product.category);
+  const otherCategory = products.filter((p) => p.id !== product.id && p.category !== product.category);
   const relatedProducts = [...sameCategory, ...otherCategory].slice(0, 4);
 
   return (
