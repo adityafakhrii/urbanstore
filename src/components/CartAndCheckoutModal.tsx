@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../data/products';
+import { handleImageError, useModalEffects } from '../utils/storage';
 
 export interface CartItem {
   product: Product;
@@ -8,14 +9,29 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface OrderRecord {
+  id: string;
+  createdAt: string;
+  fullName: string;
+  whatsapp: string;
+  address: string;
+  city: string;
+  courier: 'reguler' | 'sameday' | 'instant';
+  paymentMethod: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
+  total: number;
+  itemsCount: number;
+}
+
 interface CartAndCheckoutModalProps {
   isOpen: boolean;
-  initialMode: 'bag' | 'checkout';
+  initialMode: 'bag' | 'checkout' | 'orders';
   onClose: () => void;
   cartItems: CartItem[];
-  onUpdateQuantity: (productId: string, size: string, delta: number) => void;
-  onRemoveItem: (productId: string, size: string) => void;
+  orders: OrderRecord[];
+  onUpdateQuantity: (productId: string, size: string, color: string, delta: number) => void;
+  onRemoveItem: (productId: string, size: string, color: string) => void;
   onClearCart: () => void;
+  onOrderComplete: (order: OrderRecord) => void;
   onExploreCatalog: () => void;
 }
 
@@ -24,34 +40,37 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
   initialMode,
   onClose,
   cartItems,
+  orders,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  onOrderComplete,
   onExploreCatalog,
 }) => {
-  const [mode, setMode] = useState<'bag' | 'checkout' | 'confirmation'>(initialMode);
+  const [mode, setMode] = useState<'bag' | 'checkout' | 'confirmation' | 'orders'>(initialMode);
   const [promoCode, setPromoCode] = useState<string>('');
   const [promoApplied, setPromoApplied] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
 
   // 4-Step Checkout Form State
-  const [fullName, setFullName] = useState<string>('Nadia Putri');
-  const [email, setEmail] = useState<string>('nadia.putri@email.com');
-  const [whatsapp, setWhatsapp] = useState<string>('081288994411');
+  const [fullName, setFullName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [whatsapp, setWhatsapp] = useState<string>('');
   const [whatsappError, setWhatsappError] = useState<string | null>(null);
-  const [address, setAddress] = useState<string>('Jl. Senopati Dalam No. 14, Kebayoran Baru');
-  const [city, setCity] = useState<string>('Jakarta Selatan');
-  const [postalCode, setPostalCode] = useState<string>('12190');
+  const [address, setAddress] = useState<string>('');
+  const [city, setCity] = useState<string>('');
+  const [postalCode, setPostalCode] = useState<string>('');
   const [courier, setCourier] = useState<'reguler' | 'sameday' | 'instant'>('reguler');
   const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard'>('QRIS');
-  const [confirmedOrderId, setConfirmedOrderId] = useState<string>('');
-  const [confirmedTotal, setConfirmedTotal] = useState<number>(0);
+  const [confirmedOrder, setConfirmedOrder] = useState<OrderRecord | null>(null);
 
   React.useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
     }
   }, [isOpen, initialMode]);
+
+  useModalEffects(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -85,14 +104,42 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
 
   const handleCompleteCheckout = (e: React.FormEvent) => {
     e.preventDefault();
+    if (cartItems.length === 0) return;
+
     const digitsOnly = whatsapp.replace(/\D/g, '');
-    if (digitsOnly.length < 9 || !digitsOnly.startsWith('08') && !digitsOnly.startsWith('62')) {
-      setWhatsappError('Masukin nomor WhatsApp yang aktif ya buat info pengiriman.');
+    const isValidWhatsapp =
+      digitsOnly.length >= 9 &&
+      digitsOnly.length <= 15 &&
+      (digitsOnly.startsWith('08') || digitsOnly.startsWith('62'));
+
+    if (!isValidWhatsapp) {
+      setWhatsappError('Masukin nomor WhatsApp yang aktif ya (diawali 08 atau 62).');
       return;
     }
+
     setWhatsappError(null);
-    setConfirmedTotal(grandTotal);
-    setConfirmedOrderId(`US-${Math.floor(100000 + Math.random() * 900000)}`);
+    const newOrder: OrderRecord = {
+      id: `US-${Math.floor(100000 + Math.random() * 900000)}`,
+      createdAt: new Date().toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+      fullName: fullName.trim(),
+      whatsapp: whatsapp.trim(),
+      address: address.trim(),
+      city: city.trim(),
+      courier,
+      paymentMethod,
+      total: grandTotal,
+      itemsCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    };
+
+    setConfirmedOrder(newOrder);
+    onOrderComplete(newOrder);
+    setPromoCode('');
+    setPromoApplied(null);
+    setPromoError(null);
     setMode('confirmation');
     onClearCart();
   };
@@ -119,6 +166,8 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                   ? 'URBANSTORE SHOPPING BAG'
                   : mode === 'checkout'
                   ? 'CHECKOUT SAT-SET NO DRAMA'
+                  : mode === 'orders'
+                  ? 'RIWAYAT PESANAN'
                   : 'ORDER CONFIRMED'}
               </span>
               <h3 className="font-headline-sm text-headline-sm text-primary">
@@ -126,12 +175,15 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                   ? `Shopping Bag (${cartItems.reduce((a, b) => a + b.quantity, 0)})`
                   : mode === 'checkout'
                   ? 'Rincian Pengiriman & Pembayaran'
+                  : mode === 'orders'
+                  ? `Pesanan Kamu (${orders.length})`
                   : 'Done! Orderan kamu udah kami terima.'}
               </h3>
             </div>
             <button
               type="button"
               onClick={onClose}
+              aria-label="Tutup panel"
               className="p-1.5 text-on-surface hover:text-secondary cursor-pointer"
             >
               <span className="material-symbols-outlined text-[24px]">close</span>
@@ -184,11 +236,12 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                     {/* Itemized list */}
                     <div className="divide-y divide-border-ecru">
                       {cartItems.map((item) => (
-                        <div key={`${item.product.id}-${item.size}`} className="py-4 flex gap-4">
+                        <div key={`${item.product.id}-${item.size}-${item.color}`} className="py-4 flex gap-4">
                           <img
                             src={item.product.image}
                             alt={item.product.name}
                             referrerPolicy="no-referrer"
+                            onError={handleImageError}
                             className="w-20 h-26 object-cover object-top bg-surface-container-low border border-border-ecru shrink-0"
                           />
                           <div className="flex-1 flex flex-col justify-between">
@@ -199,9 +252,10 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                                 </h4>
                                 <button
                                   type="button"
-                                  onClick={() => onRemoveItem(item.product.id, item.size)}
+                                  onClick={() => onRemoveItem(item.product.id, item.size, item.color)}
                                   className="text-text-muted hover:text-error cursor-pointer"
                                   title="Hapus"
+                                  aria-label={`Hapus ${item.product.name}`}
                                 >
                                   <span className="material-symbols-outlined text-[16px]">delete</span>
                                 </button>
@@ -216,7 +270,8 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                               <div className="inline-flex items-center border border-border-ecru bg-surface-card">
                                 <button
                                   type="button"
-                                  onClick={() => onUpdateQuantity(item.product.id, item.size, -1)}
+                                  aria-label="Kurangi jumlah"
+                                  onClick={() => onUpdateQuantity(item.product.id, item.size, item.color, -1)}
                                   className="w-7 h-7 flex items-center justify-center text-primary hover:bg-surface-container cursor-pointer"
                                 >
                                   −
@@ -226,7 +281,8 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() => onUpdateQuantity(item.product.id, item.size, 1)}
+                                  aria-label="Tambah jumlah"
+                                  onClick={() => onUpdateQuantity(item.product.id, item.size, item.color, 1)}
                                   className="w-7 h-7 flex items-center justify-center text-primary hover:bg-surface-container cursor-pointer"
                                 >
                                   +
@@ -328,6 +384,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Nama lengkap penerima"
                         className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
                       />
                     </div>
@@ -338,6 +395,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        placeholder="nama@email.com"
                         className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
                       />
                     </div>
@@ -371,6 +429,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Contoh: Jl. Senopati No. 14, RT 02/03"
                       className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
                     />
                   </div>
@@ -382,6 +441,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                         type="text"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
+                        placeholder="Jakarta Selatan"
                         className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
                       />
                     </div>
@@ -390,8 +450,11 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                       <input
                         required
                         type="text"
+                        inputMode="numeric"
+                        maxLength={5}
                         value={postalCode}
                         onChange={(e) => setPostalCode(e.target.value)}
+                        placeholder="12190"
                         className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
                       />
                     </div>
@@ -502,45 +565,98 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
               </form>
             )}
 
-            {mode === 'confirmation' && (
+            {mode === 'confirmation' && confirmedOrder && (
               <div className="py-8 space-y-6">
                 <div className="p-6 bg-surface-sand border border-border-ecru text-center">
                   <div className="w-12 h-12 rounded-full bg-status-stock text-white flex items-center justify-center mx-auto mb-4">
                     <span className="material-symbols-outlined text-[24px]">check</span>
                   </div>
                   <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
-                    ORDER ID #{confirmedOrderId}
+                    ORDER ID #{confirmedOrder.id}
                   </span>
                   <h4 className="font-headline-sm text-headline-sm text-primary mb-2">
                     Done! Orderan kamu udah kami terima.
                   </h4>
                   <p className="font-body-md text-body-md text-text-muted">
-                    Duduk manis ya, outfit barumu lagi disiapin dari atelier.
+                    Ini adalah simulasi konfirmasi pesanan (belum terhubung ke payment gateway).
                   </p>
                 </div>
 
                 <div className="p-5 bg-surface-card border border-border-ecru space-y-3 text-body-sm">
                   <div className="flex justify-between py-1 border-b border-border-ecru">
                     <span className="text-text-muted">Penerima</span>
-                    <span className="font-medium text-primary">{fullName} ({whatsapp})</span>
+                    <span className="font-medium text-primary">{confirmedOrder.fullName} ({confirmedOrder.whatsapp})</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border-ecru">
                     <span className="text-text-muted">Tujuan Kirim</span>
-                    <span className="font-medium text-primary text-right max-w-[220px]">{address}, {city}</span>
+                    <span className="font-medium text-primary text-right max-w-[220px]">
+                      {confirmedOrder.address}, {confirmedOrder.city}
+                    </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border-ecru">
                     <span className="text-text-muted">Metode Bayar</span>
-                    <span className="font-medium text-primary">{paymentMethod}</span>
+                    <span className="font-medium text-primary">{confirmedOrder.paymentMethod}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-text-muted">Total Dibayar</span>
-                    <span className="font-price-md text-primary tabular-nums">{formatRupiah(confirmedTotal)}</span>
+                    <span className="text-text-muted">Total Tagihan</span>
+                    <span className="font-price-md text-primary tabular-nums">{formatRupiah(confirmedOrder.total)}</span>
                   </div>
                 </div>
 
                 <div className="p-4 bg-[#FCEAE6] border border-border-ecru text-xs text-primary">
-                  Info resi otomatis dikirim ke WhatsApp <strong>{whatsapp}</strong> begitu paket dijemput kurir.
+                  Order tersimpan di riwayat browser kamu. Kamu bisa cek lagi lewat ikon profil di pojok kanan atas.
                 </div>
+              </div>
+            )}
+
+            {mode === 'orders' && (
+              <div className="space-y-4">
+                {orders.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="w-14 h-14 rounded-full bg-surface-sand border border-border-ecru flex items-center justify-center mx-auto mb-4 text-text-muted">
+                      <span className="material-symbols-outlined text-[26px]">receipt_long</span>
+                    </div>
+                    <h4 className="font-headline-sm text-headline-sm text-primary mb-2">
+                      Belum ada riwayat pesanan
+                    </h4>
+                    <p className="font-body-sm text-body-sm text-text-muted mb-6 max-w-xs mx-auto">
+                      Pesanan yang kamu selesaikan bakal muncul di sini biar gampang dipantau.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onExploreCatalog();
+                      }}
+                      className="px-8 py-3 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-wider rounded-DEFAULT hover:bg-neutral-800 transition-colors cursor-pointer"
+                    >
+                      Eksplor Koleksi
+                    </button>
+                  </div>
+                ) : (
+                  orders.map((ord) => (
+                    <div key={ord.id} className="p-4 bg-surface-sand border border-border-ecru space-y-2 text-body-sm">
+                      <div className="flex items-center justify-between border-b border-border-ecru pb-2">
+                        <span className="font-label-uppercase text-[11px] font-semibold text-primary">
+                          #{ord.id}
+                        </span>
+                        <span className="text-xs text-text-muted">{ord.createdAt}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-text-muted">Penerima</span>
+                        <span className="text-primary font-medium">{ord.fullName}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-text-muted">Metode &amp; Item</span>
+                        <span className="text-primary">{ord.paymentMethod} · {ord.itemsCount} item</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-border-ecru font-medium">
+                        <span className="text-text-muted">Total</span>
+                        <span className="font-price-md text-primary tabular-nums">{formatRupiah(ord.total)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -569,14 +685,15 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                 <button
                   type="submit"
                   form="checkout-form"
-                  className="flex-1 h-12 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-neutral-800 transition-colors cursor-pointer"
+                  disabled={cartItems.length === 0}
+                  className="flex-1 h-12 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-40"
                 >
                   Gas Checkout — {formatRupiah(grandTotal)}
                 </button>
               </div>
             )}
 
-            {mode === 'confirmation' && (
+            {(mode === 'confirmation' || mode === 'orders') && (
               <button
                 type="button"
                 onClick={() => {

@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { PRODUCTS, Product } from '../data/products';
 import { ActivePage } from './Header';
+import { handleImageError } from '../utils/storage';
+
+const CATEGORY_ROUTE_MAP: Record<Product['category'], { page: ActivePage; label: string }> = {
+  women: { page: 'women', label: 'Wanita' },
+  men: { page: 'men', label: 'Pria' },
+  bags: { page: 'bags', label: 'Tas' },
+  shoes: { page: 'shoes', label: 'Sepatu' },
+  accessories: { page: 'curated-drops', label: 'Aksesori' },
+};
 
 interface ProductDetailViewProps {
   product: Product;
@@ -30,14 +39,21 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const [openAccordion, setOpenAccordion] = useState<'fabric' | 'care' | 'shipping' | null>('fabric');
 
   useEffect(() => {
+    const firstAvailableSize =
+      product.sizes.find((sz) => !product.disabledSizes?.includes(sz)) || product.defaultSize || '';
+    const initialSize = product.disabledSizes?.includes(product.defaultSize)
+      ? firstAvailableSize
+      : product.defaultSize || firstAvailableSize;
+
     setActiveImage(product.image);
     setSelectedColor(product.colors[0]?.name || '');
-    setSelectedSize(product.defaultSize || '');
+    setSelectedSize(initialSize);
     setSizeError(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [product]);
 
   const isWishlisted = wishlistIds.includes(product.id);
+  const categoryMeta = CATEGORY_ROUTE_MAP[product.category];
 
   const handleAddClick = () => {
     if (!selectedSize) {
@@ -57,7 +73,9 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     onBuyNow(product, selectedSize, selectedColor);
   };
 
-  const relatedProducts = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
+  const sameCategory = PRODUCTS.filter((p) => p.id !== product.id && p.category === product.category);
+  const otherCategory = PRODUCTS.filter((p) => p.id !== product.id && p.category !== product.category);
+  const relatedProducts = [...sameCategory, ...otherCategory].slice(0, 4);
 
   return (
     <div className="flex flex-col w-full bg-surface">
@@ -74,10 +92,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           <span className="text-surface-dim">/</span>
           <button
             type="button"
-            onClick={() => onNavigate(product.category === 'men' ? 'men' : 'women')}
+            onClick={() => onNavigate(categoryMeta.page)}
             className="hover:text-primary transition-colors cursor-pointer uppercase"
           >
-            {product.category === 'men' ? 'Pria' : product.category === 'bags' ? 'Tas' : 'Wanita'}
+            {categoryMeta.label}
           </button>
           <span className="text-surface-dim">/</span>
           <span className="text-primary font-semibold truncate">{product.name}</span>
@@ -104,6 +122,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     src={imgUrl}
                     alt={`${product.name} angle ${idx + 1}`}
                     referrerPolicy="no-referrer"
+                    onError={handleImageError}
                     className="w-full h-full object-cover object-top"
                   />
                 </button>
@@ -116,6 +135,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 src={activeImage}
                 alt={product.alt}
                 referrerPolicy="no-referrer"
+                onError={handleImageError}
                 className="w-full h-full object-cover object-top transition-all duration-500"
               />
               <div className="absolute top-4 left-4 flex flex-col gap-1.5">
@@ -153,7 +173,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               <span className="font-label-uppercase text-label-uppercase uppercase tracking-widest text-secondary">
                 {product.subcategory} · {product.fabricType}
               </span>
-              <span className="font-label-uppercase text-[10px] text-text-muted uppercase">SKU-US04</span>
+              <span className="font-label-uppercase text-[10px] text-text-muted uppercase">{product.sku}</span>
             </div>
 
             <h1 className="font-headline-md text-headline-md text-primary mb-2">{product.name}</h1>
@@ -404,7 +424,9 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 <img
                   src={rel.image}
                   alt={rel.alt}
+                  loading="lazy"
                   referrerPolicy="no-referrer"
+                  onError={handleImageError}
                   className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                 />
               </div>

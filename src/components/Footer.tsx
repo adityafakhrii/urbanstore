@@ -17,7 +17,8 @@ export const Footer: React.FC<FooterProps> = ({
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !email.includes('@')) {
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    if (!isValidEmail) {
       onShowToast('Masukin email yang valid dulu ya biar nggak ketinggalan drop baru!');
       return;
     }
@@ -175,7 +176,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         <div className="border-t border-border-ecru pt-space-lg flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-text-muted">
-          <div>© 2025 UrbanStore Editorial Atelier. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} UrbanStore Editorial Atelier. All rights reserved.</div>
           <div className="flex flex-wrap items-center gap-space-md font-label-uppercase text-[10px] tracking-wider uppercase">
             <span className="border border-border-ecru bg-surface-card px-2 py-0.5 rounded-DEFAULT">
               BCA Virtual Account

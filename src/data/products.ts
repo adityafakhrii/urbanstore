@@ -5,13 +5,14 @@ export interface ColorVariant {
 
 export interface Product {
   id: string;
+  sku: string;
   name: string;
   price: number;
   priceFormatted: string;
   subtitle: string;
   category: 'women' | 'men' | 'bags' | 'shoes' | 'accessories';
   subcategory: 'Dress & Setelan' | 'Outerwear Atelier' | 'Celana Tailored' | 'Knitwear' | 'Tas Kurasi' | 'Sepatu' | 'Aksesori';
-  bestsellerTab?: 'Outerwear' | 'Celana' | 'Dress' | 'Sepatu';
+  bestsellerTab?: 'Outerwear' | 'Celana' | 'Dress' | 'Sepatu' | 'Tas';
   image: string;
   gallery: string[];
   alt: string;
@@ -39,47 +40,43 @@ export const BRAND_ASSETS = {
   editorialCraft: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDMZx44lLK8_SjgYTLNCT-sUJ75-0-Uh17o_oQ4AHW3-lWVzFvdE8P_zhwqrOd16tPJSEPnrTpu3dDvi-M0be8GcuESknRbUCVKeOB_StSRce_7xpPOiKj8iOxwtMA1FeipZq2Uoi-C-dPXEVilAZUh3qioOIdUE5JIl5kotKOa5YAKNV-6wYzbalEVZxqOoMKJG52KjqZR9f0hB1ryg82BI6AaRZ9nyULPn-26PWGJ',
 };
 
-export const CATEGORY_PORTALS = [
+export const CATEGORY_PORTAL_META = [
   {
     id: 'men',
     label: 'Pria',
-    count: '120+ Items',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSZfgkDnK-rrgefOYy46n4Lev9UNuxpkdiSxAvtXMNVrzTXPBDjuIk_I4KsnbY2YYtat9fq7TjHXQug1En2RckvrPXl4fNCt4DOIsnSvxmXyTvlGehRYfvo5a2DlIxGis4x8qX9_ihFGUuRpzTMJsRkmFqFHrD5ef4Y3oSzkqwpCRipgvQ5x7zEDzIoXzCQ-KnOTofKCuSZ2RoQY58GUG0rkA9BhjII_98LY2FCj_-',
     alt: 'Minimalist men fashion portrait wearing a tailored taupe blazer and clean off-white linen tee',
   },
   {
     id: 'women',
     label: 'Wanita',
-    count: '180+ Items',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvhEF-uIUQXF7sLsOPGzStAUST75dGEzGfjlSEH3u44Dcd5WG6TiCazxIp3Tl7FznkXmuGZPuIdNmMjJIiiE_jHwHRLoAAK6vaqpfwsF57y-ltHhiviKPVVdUeeUjuHsHoFcUJQAFQrSofGpg5D1vULhxMPgpDyZDaBo_9_uzXuPZrRX8aUCFvRtxAk2HgzD_Y6h-l9Ok3ZDy_1mcN5wWxqZkX03rCRUk5UZ_1SbNG',
     alt: 'Editorial portrait of female model in ivory sleeveless column dress with natural wavy hair',
   },
   {
     id: 'bags',
     label: 'Tas',
-    count: '45+ Items',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAOLJA9_ICTGd7fNmHUBgL_FpeiBf1BSJFv05qLNT4RkHyYLUaDqGU0JzKOKiPwQMggnDjknXccJidVqO0p8oskSEOWM9FKG7CkpEvPx7kkp0MgUWD8RdxmrcVXNxNSVadZrY7m6qNl3bO5GGnjIWghk-wwY0Gz1qRdo4uhDcEI6oBf19uS8sbxoCDOig8L4K8DBJP8ZoOPSbNWzndSB5lT0xQShzmARtF_KlIh8Yx3',
     alt: 'Structured taupe pebbled grain leather tote handbag on travertine stone pedestal',
   },
   {
     id: 'shoes',
     label: 'Sepatu',
-    count: '60+ Items',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDOKXR5syeSPYtP93udfBrsLIGxEusJiUzdIdrivrO3UVnvjcpXK0lrstEVqcKFFp6MDqPlvWXLlsy6ZYcCAILLntCwPhQotyXKQJT0pme4-G-SwdYBP5NFht91gISvVI9rgZ85YeD_gTzjuBvRB34Zz9BQ5VFpTJ1xGLJobRbfgaImNSgdkLfUK8qpFO7ugGGQKYhuTKggu0YvxmiHgVOJIHPECtfupKig08a611s9',
     alt: 'Pair of hand-burnished tan leather penny loafers resting on warm sandstone architectural slab',
   },
   {
     id: 'accessories',
     label: 'Aksesori',
-    count: '85+ Items',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAfr27J7yq40VBfz-srl7RMf8IncNlm3hUTuQHm41Lue53_2tA1C4R27A15siAnbb6xFN29BgMGB3DEbrApl2pU-0knJW-__Xenh4yZw3EAOVDP4oEG9eo9Vwkibks9L_c8eAHi2l47Z3BWc2omIJwPjgG7zCtYqaBZtJpBpt5speKKWPdAM-R6OcCqU3fWBVoERRSX5s_Lm6SmiRE0z38oKhgOiOT86_Gj2QwlELy9',
     alt: 'Luxury minimalist chronograph watch with black dial and taupe saddle leather strap',
   },
-];
+] as const;
 
 export const PRODUCTS: Product[] = [
   {
     id: 'column-dress-overshirt',
+    sku: 'US-W01',
     name: 'The Column Dress & Overshirt',
     price: 449000,
     priceFormatted: 'Rp 449.000',
@@ -127,6 +124,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'pleated-silk-midi-skirt',
+    sku: 'US-W02',
     name: 'Pleated Silk Midi Skirt',
     price: 389000,
     priceFormatted: 'Rp 389.000',
@@ -170,6 +168,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'linen-double-breasted-blazer',
+    sku: 'US-W03',
     name: 'Linen Double-Breasted Blazer',
     price: 890000,
     priceFormatted: 'Rp 890.000',
@@ -213,6 +212,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'minimalist-cashmere-sweater',
+    sku: 'US-W04',
     name: 'Minimalist Cashmere Sweater',
     price: 429000,
     priceFormatted: 'Rp 429.000',
@@ -256,6 +256,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'wide-leg-pleated-trousers',
+    sku: 'US-W05',
     name: 'Wide-Leg Pleated Trousers',
     price: 419000,
     priceFormatted: 'Rp 419.000',
@@ -299,6 +300,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'cashmere-wrap-coat',
+    sku: 'US-W06',
     name: 'Cashmere Wrap Coat',
     price: 1150000,
     priceFormatted: 'Rp 1.150.000',
@@ -341,12 +343,14 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'sculptured-leather-shoulder-bag',
+    sku: 'US-B01',
     name: 'Sculptured Leather Shoulder Bag',
     price: 790000,
     priceFormatted: 'Rp 790.000',
     subtitle: 'Full-Grain Italian Calfskin · Desert Tan',
     category: 'bags',
     subcategory: 'Tas Kurasi',
+    bestsellerTab: 'Tas',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-GKvpsM_1uWkVpOq5ze941UZaogc92u8-8dS0op-jXpzediiObkHfRTANkOxPNWQ0bEFLPzF9GdDm4JZPo2DaD8fslmVQGc8K6A1smZ0fYaIXib5otxybobvjy-Lmx7oiOh6VBar4dJp0X5OjCvi8GSL9o7GUR4hOC_KZJx8cr_Pd_IIZpU0iVQ-TAoUBRLv8B6IgyHzv9szBZwecTzNqTte0wOjpTfY3yh5pYVU3',
     gallery: [
       'https://lh3.googleusercontent.com/aida-public/AB6AXuA-GKvpsM_1uWkVpOq5ze941UZaogc92u8-8dS0op-jXpzediiObkHfRTANkOxPNWQ0bEFLPzF9GdDm4JZPo2DaD8fslmVQGc8K6A1smZ0fYaIXib5otxybobvjy-Lmx7oiOh6VBar4dJp0X5OjCvi8GSL9o7GUR4hOC_KZJx8cr_Pd_IIZpU0iVQ-TAoUBRLv8B6IgyHzv9szBZwecTzNqTte0wOjpTfY3yh5pYVU3',
@@ -383,6 +387,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'silk-studio-shirt',
+    sku: 'US-W07',
     name: 'Silk Studio Shirt',
     price: 480000,
     priceFormatted: 'Rp 480.000',
@@ -425,6 +430,7 @@ export const PRODUCTS: Product[] = [
   // Additional Homepage Weekly Edit & Bestseller Items
   {
     id: 'handcrafted-leather-watch',
+    sku: 'US-A01',
     name: 'Jam Tangan Kulit Handmade',
     price: 649000,
     priceFormatted: 'Rp 649.000',
@@ -466,6 +472,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'tailored-pleated-trouser-men',
+    sku: 'US-M01',
     name: 'Celana Pleated Tailored',
     price: 389000,
     priceFormatted: 'Rp 389.000',
@@ -509,12 +516,14 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'structured-leather-tote-bag',
+    sku: 'US-B02',
     name: 'Tas Kulit Terstruktur',
     price: 890000,
     priceFormatted: 'Rp 890.000',
     subtitle: 'Pebbled Grain · Desert Tan',
     category: 'bags',
     subcategory: 'Tas Kurasi',
+    bestsellerTab: 'Tas',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDbFZlUqKjgS7vCm3wqJI3OvEOQeOCFwJzcJZGN8_V4g1d0aLn7DvqKMqHrf0ftGNxxrsbf4p8SycS3ngI2eji2m_aey2XYT6cBBZK4YABpZHKwP6eUlrva4xDpe4UMiHMhmcvjVtNnpnO-6Tmud_34Aoe9_KMFr1Yf81v69gG2wI5wH2RImD1YyS_35RwdbalHbr_gdp0YKNfpMoZnL6R51axJuJ7pcVXkrdvhMgFI',
     gallery: [
       'https://lh3.googleusercontent.com/aida-public/AB6AXuDbFZlUqKjgS7vCm3wqJI3OvEOQeOCFwJzcJZGN8_V4g1d0aLn7DvqKMqHrf0ftGNxxrsbf4p8SycS3ngI2eji2m_aey2XYT6cBBZK4YABpZHKwP6eUlrva4xDpe4UMiHMhmcvjVtNnpnO-6Tmud_34Aoe9_KMFr1Yf81v69gG2wI5wH2RImD1YyS_35RwdbalHbr_gdp0YKNfpMoZnL6R51axJuJ7pcVXkrdvhMgFI',
@@ -551,12 +560,14 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'signature-mini-shoulder-bag',
+    sku: 'US-B03',
     name: 'Signature Mini Shoulder Bag',
     price: 520000,
     priceFormatted: 'Rp 520.000',
     subtitle: 'Warm Tan · Calfskin',
     category: 'bags',
     subcategory: 'Tas Kurasi',
+    bestsellerTab: 'Tas',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB5O0R9NxcaFDK7T7TD4qxCnk8i6UckBij9bcqPWiJyf_jZ_0leM4qiWo_q_kXo1F9Tetxb3efbOgvVkq05K5dLEnixLoOgD3I6YyuX7-P6a4jUgZnwzma1rcaL6ZemsGCY5h0NYet7UaqwzvYDe2XjGZrNKoPR6ftY9jiTi_fKvKdVKqVF1sOJX_L7NkwIBuupiG6H4xThseUJVWLPgcW57pOO_AULxIXihbYpiILH',
     gallery: [
       'https://lh3.googleusercontent.com/aida-public/AB6AXuB5O0R9NxcaFDK7T7TD4qxCnk8i6UckBij9bcqPWiJyf_jZ_0leM4qiWo_q_kXo1F9Tetxb3efbOgvVkq05K5dLEnixLoOgD3I6YyuX7-P6a4jUgZnwzma1rcaL6ZemsGCY5h0NYet7UaqwzvYDe2XjGZrNKoPR6ftY9jiTi_fKvKdVKqVF1sOJX_L7NkwIBuupiG6H4xThseUJVWLPgcW57pOO_AULxIXihbYpiILH',
@@ -592,6 +603,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'chelsea-leather-ankle-boot',
+    sku: 'US-S01',
     name: 'Chelsea Leather Ankle Boot',
     price: 780000,
     priceFormatted: 'Rp 780.000',
@@ -633,3 +645,11 @@ export const PRODUCTS: Product[] = [
     fitScale: 'Pas Banget',
   },
 ];
+
+export const CATEGORY_PORTALS = CATEGORY_PORTAL_META.map((portal) => {
+  const count = PRODUCTS.filter((p) => p.category === portal.id).length;
+  return {
+    ...portal,
+    count: `${count} Kurasi`,
+  };
+});

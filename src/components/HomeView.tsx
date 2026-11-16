@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BRAND_ASSETS, CATEGORY_PORTALS, PRODUCTS, Product } from '../data/products';
 import { ActivePage } from './Header';
+import { handleImageError } from '../utils/storage';
 
 interface HomeViewProps {
   onNavigate: (page: ActivePage) => void;
@@ -11,6 +12,8 @@ interface HomeViewProps {
   onOpenSizeGuide: () => void;
 }
 
+type BestsellerTab = 'Semua' | 'Outerwear' | 'Celana' | 'Dress' | 'Tas' | 'Sepatu';
+
 export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   onSelectProduct,
@@ -19,7 +22,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   wishlistIds,
   onOpenSizeGuide,
 }) => {
-  const [bestsellerFilter, setBestsellerFilter] = useState<'Semua' | 'Outerwear' | 'Celana' | 'Dress' | 'Sepatu'>('Semua');
+  const [bestsellerFilter, setBestsellerFilter] = useState<BestsellerTab>('Semua');
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({
     'minimalist-cashmere-sweater': 'S',
     'pleated-silk-midi-skirt': 'M',
@@ -27,109 +30,57 @@ export const HomeView: React.FC<HomeViewProps> = ({
     'chelsea-leather-ankle-boot': '42',
   });
 
-  const columnDress = PRODUCTS.find((p) => p.id === 'column-dress-overshirt')!;
-  const leatherWatch = PRODUCTS.find((p) => p.id === 'handcrafted-leather-watch')!;
-  const pleatedTrouserMen = PRODUCTS.find((p) => p.id === 'tailored-pleated-trouser-men')!;
-  const structuredTote = PRODUCTS.find((p) => p.id === 'structured-leather-tote-bag')!;
-  const cashmereCoat = PRODUCTS.find((p) => p.id === 'cashmere-wrap-coat')!;
+  const getProduct = (id: string): Product =>
+    PRODUCTS.find((p) => p.id === id) || PRODUCTS[0];
 
-  const bestsellerCardData = [
-    {
-      product: PRODUCTS.find((p) => p.id === 'minimalist-cashmere-sweater')!,
-      tag: 'DROP BARU',
-      tagVariant: 'primary' as const,
-      kicker: 'Atelier Knit',
-      displayTitle: 'Minimalist Cashmere Sweater',
-      displaySubtitle: 'Alabaster White',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuB5UjbzvhaQiTlO4j_Ce-TWF5AvUj1YOGUnJsPrkrR8fbrxX_ev7CJ4oAfPeaxufa72VIGZfG-fCWjFuLE-Ec9tV28_CdjLPy0G2d1nbKqQUDFcM_CfHON92ArbeyJHPW4Ldm_rfYEUCvmOvE2HAAR8rRDtO3xwZIw5yuUAkAedCLMQBB4e4R3A9iEte8hqpOLSHMnNijt5InBbRjTjvbvtHZHgQMXWDweGNitiFhsj',
-      swatches: ['#F5F2EB', '#3D3A37'],
-      sizes: ['XS', 'S', 'M', 'L'],
-      disabledSize: undefined,
-      tab: 'Outerwear' as const,
-    },
-    {
-      product: PRODUCTS.find((p) => p.id === 'pleated-silk-midi-skirt')!,
-      tag: undefined,
-      tagVariant: undefined,
-      kicker: 'Silks',
-      displayTitle: 'Pleated Midi Silk Skirt',
-      displaySubtitle: 'Soft Beige · Silk Twill',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDWgEOUb2gnI1pfX3PYPk6iVFAyOtoYV7Fu-eiGEyD4KAtgwJXiLpAZ_oFJCqg9DySYL6MgpdhRs1AfyMFZH6D7I_aE625YG1vfxKY6kYmay_UQVyPaAPgiI0b9oa-H3esxHQN8xkuKLmhBmXnn4z5BYB4qfKYfL5ANS9XY2ACkJuzkaKgMGkpHzJNai2PFH8DANnX_tKXMJwbjxCDHr79lV7EfFue2hwup8ezC-faM',
-      swatches: ['#E8DFD8', '#1C1C19'],
-      sizes: ['S', 'M', 'L', 'XL'],
-      disabledSize: 'XL',
-      tab: 'Dress' as const,
-    },
-    {
-      product: PRODUCTS.find((p) => p.id === 'signature-mini-shoulder-bag')!,
-      tag: 'RESTOCK LAGI',
-      tagVariant: 'secondary' as const,
-      kicker: 'Leather Goods',
-      displayTitle: 'Signature Mini Shoulder Bag',
-      displaySubtitle: 'Warm Tan · Calfskin',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuB5O0R9NxcaFDK7T7TD4qxCnk8i6UckBij9bcqPWiJyf_jZ_0leM4qiWo_q_kXo1F9Tetxb3efbOgvVkq05K5dLEnixLoOgD3I6YyuX7-P6a4jUgZnwzma1rcaL6ZemsGCY5h0NYet7UaqwzvYDe2XjGZrNKoPR6ftY9jiTi_fKvKdVKqVF1sOJX_L7NkwIBuupiG6H4xThseUJVWLPgcW57pOO_AULxIXihbYpiILH',
-      swatches: ['#855224', '#000000', '#C8B89E'],
-      sizes: ['One Size (24 × 16 cm)'],
-      disabledSize: undefined,
-      tab: 'Outerwear' as const,
-    },
-    {
-      product: PRODUCTS.find((p) => p.id === 'chelsea-leather-ankle-boot')!,
-      tag: undefined,
-      tagVariant: undefined,
-      kicker: 'Footwear',
-      displayTitle: 'Chelsea Leather Ankle Boot',
-      displaySubtitle: 'Espresso Brown · Italian Leather',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBdMFl8hC-fxkHoUQJkYwEDaM4MzJ0aESzNrnSRGpeJNs5crYiSiTAkzpKfXgyoKVpah4lsA-EUPDKoEV7HvFFlHLQuAuothIuqAm9kEFVBbn6QKdFLaO-YLQj_8GEixckbZF8ZW84Lj10vaMVK3qBfkYLG2B_Cpqi47Iu3uQnUHnsQ7B6FQrfdwh7J8TWgseQc61FJCriLc3XlJ5u7nYe9QHjGAKL9Q_CISjdGCZTI',
-      swatches: ['#3B2820', '#1A1A1A'],
-      sizes: ['40', '41', '42', '43'],
-      disabledSize: undefined,
-      tab: 'Sepatu' as const,
-    },
+  const columnDress = getProduct('column-dress-overshirt');
+  const leatherWatch = getProduct('handcrafted-leather-watch');
+  const pleatedTrouserMen = getProduct('tailored-pleated-trouser-men');
+  const structuredTote = getProduct('structured-leather-tote-bag');
+  const cashmereCoat = getProduct('cashmere-wrap-coat');
+
+  const featuredAllIds = [
+    'minimalist-cashmere-sweater',
+    'pleated-silk-midi-skirt',
+    'signature-mini-shoulder-bag',
+    'chelsea-leather-ankle-boot',
   ];
 
-  const extraFilteredBestsellers =
-    bestsellerFilter === 'Celana'
-      ? [
-          {
-            product: PRODUCTS.find((p) => p.id === 'wide-leg-pleated-trousers')!,
-            tag: 'BEST SELLER',
-            tagVariant: 'primary' as const,
-            kicker: 'Tailored Pants',
-            displayTitle: 'Wide-Leg Pleated Trousers',
-            displaySubtitle: 'Sand Taupe · Gabardine',
-            image: PRODUCTS.find((p) => p.id === 'wide-leg-pleated-trousers')!.image,
-            swatches: ['#C5B7A5', '#1E1E1C', '#622329'],
-            sizes: ['XS', 'S', 'M', 'L'],
-            disabledSize: undefined,
-            tab: 'Celana' as const,
-          },
-          {
-            product: pleatedTrouserMen,
-            tag: 'CORE FIT',
-            tagVariant: 'primary' as const,
-            kicker: 'Men Tailoring',
-            displayTitle: 'Celana Pleated Tailored',
-            displaySubtitle: 'Cream · Cotton Twill',
-            image: pleatedTrouserMen.image,
-            swatches: ['#F3EFE6', '#C7BBA8', '#232320'],
-            sizes: ['28', '30', '32', '34'],
-            disabledSize: undefined,
-            tab: 'Celana' as const,
-          },
-        ]
-      : [];
-
-  const visibleBestsellers =
+  const visibleBestsellerProducts =
     bestsellerFilter === 'Semua'
-      ? bestsellerCardData
-      : bestsellerFilter === 'Celana'
-      ? extraFilteredBestsellers
-      : bestsellerCardData.filter((item) => item.tab === bestsellerFilter);
+      ? featuredAllIds.map(getProduct)
+      : PRODUCTS.filter((p) => p.bestsellerTab === bestsellerFilter);
+
+  const weeklyEditSideCards = [
+    {
+      product: leatherWatch,
+      image: leatherWatch.image,
+      alt: leatherWatch.alt,
+      metaText: 'Stok Ready',
+      metaClass: 'text-status-stock',
+    },
+    {
+      product: pleatedTrouserMen,
+      image: pleatedTrouserMen.image,
+      alt: pleatedTrouserMen.alt,
+      metaText: 'Size 28-36',
+      metaClass: 'text-text-muted',
+    },
+    {
+      product: structuredTote,
+      image: structuredTote.image,
+      alt: structuredTote.alt,
+      metaText: 'Stok Menipis',
+      metaClass: 'text-secondary font-semibold',
+    },
+    {
+      product: cashmereCoat,
+      image: cashmereCoat.gallery[1] || cashmereCoat.image,
+      alt: cashmereCoat.alt,
+      metaText: 'Atelier Fit',
+      metaClass: 'text-text-muted',
+    },
+  ];
 
   const handlePortalClick = (id: string) => {
     if (id === 'men') onNavigate('men');
@@ -188,6 +139,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               className="w-full h-[360px] sm:h-[480px] lg:h-[580px] object-cover object-top"
               alt="Editorial fashion studio lookbook lineup of eight diverse stylish models standing shoulder to shoulder wearing minimalist cream, sand, and taupe tailored blazers"
               referrerPolicy="no-referrer"
+              onError={handleImageError}
               src={BRAND_ASSETS.heroLineup}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent opacity-30 pointer-events-none"></div>
@@ -213,7 +165,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     <img
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       alt={portal.alt}
+                      loading="lazy"
                       referrerPolicy="no-referrer"
+                      onError={handleImageError}
                       src={portal.image}
                     />
                   </div>
@@ -265,18 +219,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
                 <img
                   className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-                  alt="Full body shot of elegant woman wearing a relaxed sleeveless cream linen column dress holding ceramic vase in sunlit Parisian apartment atelier"
+                  alt={columnDress.alt}
+                  loading="lazy"
                   referrerPolicy="no-referrer"
-                  src={columnDress.gallery[1]}
+                  onError={handleImageError}
+                  src={columnDress.gallery[1] || columnDress.image}
                 />
                 {/* Quick Add Overlay Trigger */}
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddToBag(columnDress, columnDress.defaultSize);
+                    onAddToBag(columnDress, columnDress.defaultSize, columnDress.colors[0]?.name);
                   }}
                   title="Tambah ke Bag"
+                  aria-label={`Tambah ${columnDress.name} ke Bag`}
                   className="absolute bottom-4 right-4 z-10 w-10 h-10 rounded-full bg-surface-card/90 backdrop-blur-sm border border-border-ecru flex items-center justify-center text-primary shadow-sm hover:bg-primary hover:text-on-primary transition-all duration-200 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[20px]">add</span>
@@ -286,17 +243,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div onClick={() => onSelectProduct(columnDress)} className="cursor-pointer">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="inline-block px-2 py-0.5 text-[10px] font-label-uppercase uppercase tracking-wider bg-surface-sand text-secondary font-medium">
-                      FIT PAS BANGET
+                      {columnDress.fitScale}
                     </span>
-                    <span className="text-body-sm text-[12px] text-text-muted">100% Linen Alami</span>
+                    <span className="text-body-sm text-[12px] text-text-muted">{columnDress.fabricType}</span>
                   </div>
                   <h3 className="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors">
-                    The Column Dress &amp; Overshirt
+                    {columnDress.name}
                   </h3>
-                  <p className="font-body-md text-body-md text-text-muted">Organic Linen · Natural Alabaster</p>
+                  <p className="font-body-md text-body-md text-text-muted">{columnDress.subtitle}</p>
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-border-ecru mt-4">
-                  <span className="font-price-lg text-price-lg text-primary">Rp 449.000</span>
+                  <span className="font-price-lg text-price-lg text-primary">{columnDress.priceFormatted}</span>
                   <button
                     type="button"
                     onClick={() => onSelectProduct(columnDress)}
@@ -310,189 +267,55 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             {/* Right Column: 2x2 Modular Grid (7 cols) */}
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
-              {/* Item 1: Handcrafted Leather Watch */}
-              <div className="bg-surface-card border border-border-ecru flex flex-col group">
-                <div
-                  onClick={() => onSelectProduct(leatherWatch)}
-                  className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
-                >
-                  <img
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    alt={leatherWatch.alt}
-                    referrerPolicy="no-referrer"
-                    src={leatherWatch.image}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleWishlist(leatherWatch.id);
-                    }}
-                    className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
-                      wishlistIds.includes(leatherWatch.id)
-                        ? 'text-error'
-                        : 'text-on-surface-variant hover:text-error'
-                    }`}
+              {weeklyEditSideCards.map((card) => (
+                <div key={card.product.id} className="bg-surface-card border border-border-ecru flex flex-col group">
+                  <div
+                    onClick={() => onSelectProduct(card.product)}
+                    className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[20px]">favorite</span>
-                  </button>
-                </div>
-                <div
-                  onClick={() => onSelectProduct(leatherWatch)}
-                  className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
-                >
-                  <div>
-                    <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
-                      Jam Tangan Kulit Handmade
-                    </h4>
-                    <p className="font-body-sm text-body-sm text-text-muted">Cow Leather · Taupe</p>
+                    <img
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt={card.alt}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={handleImageError}
+                      src={card.image}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Toggle wishlist"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleWishlist(card.product.id);
+                      }}
+                      className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
+                        wishlistIds.includes(card.product.id)
+                          ? 'text-error'
+                          : 'text-on-surface-variant hover:text-error'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">favorite</span>
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
-                    <span className="font-price-md text-price-md text-primary">Rp 649.000</span>
-                    <span className="font-label-uppercase text-[10px] tracking-wider text-status-stock uppercase">
-                      Stok Ready
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Item 2: Tailored Pleated Trouser */}
-              <div className="bg-surface-card border border-border-ecru flex flex-col group">
-                <div
-                  onClick={() => onSelectProduct(pleatedTrouserMen)}
-                  className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
-                >
-                  <img
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    alt={pleatedTrouserMen.alt}
-                    referrerPolicy="no-referrer"
-                    src={pleatedTrouserMen.image}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleWishlist(pleatedTrouserMen.id);
-                    }}
-                    className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
-                      wishlistIds.includes(pleatedTrouserMen.id)
-                        ? 'text-error'
-                        : 'text-on-surface-variant hover:text-error'
-                    }`}
+                  <div
+                    onClick={() => onSelectProduct(card.product)}
+                    className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[20px]">favorite</span>
-                  </button>
-                </div>
-                <div
-                  onClick={() => onSelectProduct(pleatedTrouserMen)}
-                  className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
-                >
-                  <div>
-                    <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
-                      Celana Pleated Tailored
-                    </h4>
-                    <p className="font-body-sm text-body-sm text-text-muted">Cotton Twill · Cream</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
-                    <span className="font-price-md text-price-md text-primary">Rp 389.000</span>
-                    <span className="font-label-uppercase text-[10px] tracking-wider text-text-muted uppercase">
-                      Size 28-36
-                    </span>
+                    <div>
+                      <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
+                        {card.product.name}
+                      </h4>
+                      <p className="font-body-sm text-body-sm text-text-muted">{card.product.subtitle}</p>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
+                      <span className="font-price-md text-price-md text-primary">{card.product.priceFormatted}</span>
+                      <span className={`font-label-uppercase text-[10px] tracking-wider uppercase ${card.metaClass}`}>
+                        {card.metaText}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Item 3: Structured Leather Tote Bag */}
-              <div className="bg-surface-card border border-border-ecru flex flex-col group">
-                <div
-                  onClick={() => onSelectProduct(structuredTote)}
-                  className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
-                >
-                  <img
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    alt={structuredTote.alt}
-                    referrerPolicy="no-referrer"
-                    src={structuredTote.image}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleWishlist(structuredTote.id);
-                    }}
-                    className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
-                      wishlistIds.includes(structuredTote.id)
-                        ? 'text-error'
-                        : 'text-on-surface-variant hover:text-error'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[20px]">favorite</span>
-                  </button>
-                </div>
-                <div
-                  onClick={() => onSelectProduct(structuredTote)}
-                  className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
-                >
-                  <div>
-                    <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
-                      Tas Kulit Terstruktur
-                    </h4>
-                    <p className="font-body-sm text-body-sm text-text-muted">Pebbled Grain · Desert Tan</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
-                    <span className="font-price-md text-price-md text-primary">Rp 890.000</span>
-                    <span className="font-label-uppercase text-[10px] tracking-wider text-secondary uppercase font-semibold">
-                      Stok Menipis
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Item 4: Cashmere Blend Wrap Coat */}
-              <div className="bg-surface-card border border-border-ecru flex flex-col group">
-                <div
-                  onClick={() => onSelectProduct(cashmereCoat)}
-                  className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
-                >
-                  <img
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    alt="Front editorial crop of a camel beige double-faced cashmere trench wrap coat styled with a matching tonal silk scarf"
-                    referrerPolicy="no-referrer"
-                    src={cashmereCoat.gallery[1]}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleWishlist(cashmereCoat.id);
-                    }}
-                    className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
-                      wishlistIds.includes(cashmereCoat.id)
-                        ? 'text-error'
-                        : 'text-on-surface-variant hover:text-error'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[20px]">favorite</span>
-                  </button>
-                </div>
-                <div
-                  onClick={() => onSelectProduct(cashmereCoat)}
-                  className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
-                >
-                  <div>
-                    <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
-                      Cashmere Wrap Coat
-                    </h4>
-                    <p className="font-body-sm text-body-sm text-text-muted">Wool &amp; Cashmere · Oatmeal</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
-                    <span className="font-price-md text-price-md text-primary">Rp 1.150.000</span>
-                    <span className="font-label-uppercase text-[10px] tracking-wider text-text-muted uppercase">
-                      Atelier Fit
-                    </span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -523,7 +346,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <img
                   className="w-full h-full object-cover"
                   alt="Editorial luxury display of caramel brown structured leather handbag placed gracefully on warm sunlit textured travertine plinth"
+                  loading="lazy"
                   referrerPolicy="no-referrer"
+                  onError={handleImageError}
                   src={BRAND_ASSETS.leatherBanner}
                 />
               </div>
@@ -548,7 +373,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             {/* Filter Pill Chips */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {(['Semua', 'Outerwear', 'Celana', 'Dress', 'Sepatu'] as const).map((tab) => (
+              {(['Semua', 'Outerwear', 'Celana', 'Dress', 'Tas', 'Sepatu'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -567,35 +392,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           {/* 4-Column Product Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {visibleBestsellers.map((card) => {
-              const currentSize = selectedSizes[card.product.id] || card.product.defaultSize;
-              const isWishlisted = wishlistIds.includes(card.product.id);
+            {visibleBestsellerProducts.map((product) => {
+              const firstAvailable =
+                product.sizes.find((sz) => !product.disabledSizes?.includes(sz)) || product.defaultSize;
+              const currentSize = selectedSizes[product.id] || firstAvailable;
+              const isWishlisted = wishlistIds.includes(product.id);
+              const firstBadge = product.badges[0];
 
               return (
                 <div
-                  key={card.product.id}
+                  key={product.id}
                   className="bg-surface-card border border-border-ecru flex flex-col group transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
                 >
                   <div
-                    onClick={() => onSelectProduct(card.product)}
+                    onClick={() => onSelectProduct(product)}
                     className="relative w-full aspect-[3/4] overflow-hidden bg-surface-container cursor-pointer"
                   >
-                    {card.tag && (
+                    {firstBadge && (
                       <span
                         className={`absolute top-3 left-3 z-10 font-label-uppercase text-[10px] tracking-wider px-2 py-0.5 font-semibold ${
-                          card.tagVariant === 'secondary'
+                          firstBadge.variant === 'secondary'
                             ? 'bg-secondary text-on-secondary'
                             : 'bg-primary text-on-primary'
                         }`}
                       >
-                        {card.tag}
+                        {firstBadge.text}
                       </span>
                     )}
                     <button
                       type="button"
+                      aria-label="Toggle wishlist"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleWishlist(card.product.id);
+                        onToggleWishlist(product.id);
                       }}
                       className={`absolute top-3 right-3 z-10 p-1.5 rounded-full bg-surface-card/80 backdrop-blur-sm transition-colors cursor-pointer ${
                         isWishlisted ? 'text-error' : 'text-on-surface hover:text-error'
@@ -605,9 +434,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     </button>
                     <img
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt={card.product.alt}
+                      alt={product.alt}
+                      loading="lazy"
                       referrerPolicy="no-referrer"
-                      src={card.image}
+                      onError={handleImageError}
+                      src={product.image}
                     />
                   </div>
 
@@ -615,35 +446,36 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-body-sm text-[11px] font-label-uppercase text-text-muted uppercase tracking-wider">
-                          {card.kicker}
+                          {product.subcategory}
                         </span>
                         <div className="flex items-center gap-1">
-                          {card.swatches.map((hex) => (
+                          {product.colors.map((c) => (
                             <span
-                              key={hex}
-                              style={{ backgroundColor: hex }}
+                              key={c.name}
+                              title={c.name}
+                              style={{ backgroundColor: c.hex }}
                               className="w-3 h-3 rounded-full border border-border-ecru"
                             />
                           ))}
                         </div>
                       </div>
                       <h3
-                        onClick={() => onSelectProduct(card.product)}
+                        onClick={() => onSelectProduct(product)}
                         className="font-body-md text-body-md font-medium text-primary line-clamp-1 cursor-pointer hover:text-secondary transition-colors"
                       >
-                        {card.displayTitle}
+                        {product.name}
                       </h3>
-                      <p className="font-body-sm text-body-sm text-text-muted mb-4">{card.displaySubtitle}</p>
+                      <p className="font-body-sm text-body-sm text-text-muted mb-4">{product.subtitle}</p>
 
                       {/* Quick Size Selector Chips */}
-                      <div className="flex items-center gap-1.5 mb-4">
-                        {card.sizes.length === 1 ? (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                        {product.sizes.length === 1 ? (
                           <span className="px-2.5 py-1 text-[11px] font-body-sm bg-surface-container border border-border-ecru text-text-muted">
-                            {card.sizes[0]}
+                            {product.sizes[0]}
                           </span>
                         ) : (
-                          card.sizes.map((sz) => {
-                            const isDisabled = card.disabledSize === sz;
+                          product.sizes.map((sz) => {
+                            const isDisabled = product.disabledSizes?.includes(sz);
                             const isSelected = currentSize === sz;
                             return (
                               <button
@@ -653,12 +485,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
                                 onClick={() =>
                                   setSelectedSizes((prev) => ({
                                     ...prev,
-                                    [card.product.id]: sz,
+                                    [product.id]: sz,
                                   }))
                                 }
                                 className={`w-8 h-8 flex items-center justify-center text-[11px] font-body-sm border transition-colors ${
                                   isDisabled
-                                    ? 'border-border-ecru opacity-40 cursor-not-allowed'
+                                    ? 'border-border-ecru opacity-40 cursor-not-allowed line-through'
                                     : isSelected
                                     ? 'bg-primary text-on-primary border-primary cursor-pointer'
                                     : 'border-border-ecru hover:border-primary cursor-pointer'
@@ -673,10 +505,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     </div>
 
                     <div className="pt-3 border-t border-border-ecru flex items-center justify-between">
-                      <span className="font-price-md text-price-md text-primary">{card.product.priceFormatted}</span>
+                      <span className="font-price-md text-price-md text-primary">{product.priceFormatted}</span>
                       <button
                         type="button"
-                        onClick={() => onAddToBag(card.product, currentSize)}
+                        onClick={() => onAddToBag(product, currentSize, product.colors[0]?.name)}
                         className="font-label-uppercase text-[11px] tracking-wider uppercase text-primary font-semibold hover:text-secondary transition-colors cursor-pointer"
                       >
                         + Masukin Bag
@@ -692,10 +524,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="mt-12 text-center">
             <button
               type="button"
-              onClick={() => onNavigate('women')}
+              onClick={() => onNavigate('curated-drops')}
               className="inline-flex items-center justify-center px-10 py-3.5 border border-primary text-primary hover:bg-primary hover:text-on-primary font-label-uppercase text-label-uppercase tracking-[0.14em] uppercase transition-all duration-300 cursor-pointer"
             >
-              Lihat 420+ Outfit Pilihan
+              Lihat Semua Koleksi ({PRODUCTS.length} Kurasi)
             </button>
           </div>
         </div>

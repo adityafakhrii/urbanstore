@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PRODUCTS, Product } from './data/products';
 import { Header, ActivePage } from './components/Header';
 import { Footer } from './components/Footer';
@@ -11,41 +11,52 @@ import { HomeView } from './components/HomeView';
 import { CatalogView } from './components/CatalogView';
 import { ProductDetailView } from './components/ProductDetailView';
 import { SizeGuideModal } from './components/SizeGuideModal';
-import { CartAndCheckoutModal, CartItem } from './components/CartAndCheckoutModal';
+import { CartAndCheckoutModal, CartItem, OrderRecord } from './components/CartAndCheckoutModal';
 import { WishlistDrawer } from './components/WishlistDrawer';
+import { STORAGE_KEYS, loadFromStorage, saveToStorage } from './utils/storage';
 
 export default function App() {
   const [activePage, setActivePage] = useState<ActivePage>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product>(PRODUCTS[0]);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Pre-populated with 2 curated items so the header badge "02" matches the reference screen
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      product: PRODUCTS[0], // The Column Dress & Overshirt
-      size: 'S',
-      color: 'Alabaster White',
-      quantity: 1,
-    },
-    {
-      product: PRODUCTS[1], // Pleated Silk Midi Skirt
-      size: 'S',
-      color: 'Soft Beige',
-      quantity: 1,
-    },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() =>
+    loadFromStorage<CartItem[]>(STORAGE_KEYS.cart, [])
+  );
+  const [wishlistIds, setWishlistIds] = useState<string[]>(() =>
+    loadFromStorage<string[]>(STORAGE_KEYS.wishlist, [])
+  );
+  const [orders, setOrders] = useState<OrderRecord[]>(() =>
+    loadFromStorage<OrderRecord[]>(STORAGE_KEYS.orders, [])
+  );
 
-  const [wishlistIds, setWishlistIds] = useState<string[]>(['minimalist-cashmere-sweater']);
   const [sizeGuideOpen, setSizeGuideOpen] = useState<boolean>(false);
   const [cartModalOpen, setCartModalOpen] = useState<boolean>(false);
-  const [cartInitialMode, setCartInitialMode] = useState<'bag' | 'checkout'>('bag');
+  const [cartInitialMode, setCartInitialMode] = useState<'bag' | 'checkout' | 'orders'>('bag');
   const [wishlistOpen, setWishlistOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.cart, cartItems);
+  }, [cartItems]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.wishlist, wishlistIds);
+  }, [wishlistIds]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.orders, orders);
+  }, [orders]);
 
   const showToast = (msg: string) => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
     setToastMessage(msg);
-    window.setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+      toastTimerRef.current = null;
     }, 3200);
   };
 
@@ -64,7 +75,7 @@ export default function App() {
     const color = colorName || product.colors[0]?.name || 'Default';
     setCartItems((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.product.id === product.id && item.size === size
+        (item) => item.product.id === product.id && item.size === size && item.color === color
       );
       if (existingIndex > -1) {
         const updated = [...prev];
@@ -76,7 +87,7 @@ export default function App() {
       }
       return [...prev, { product, size, color, quantity: 1 }];
     });
-    showToast(`✓ ${product.name} (Size ${size}) udah masuk ke Bag kamu!`);
+    showToast(`✓ ${product.name} (${color}, Size ${size}) masuk ke Bag!`);
   };
 
   const handleBuyNow = (product: Product, size: string, colorName?: string) => {
@@ -85,11 +96,11 @@ export default function App() {
     setCartModalOpen(true);
   };
 
-  const handleUpdateQuantity = (productId: string, size: string, delta: number) => {
+  const handleUpdateQuantity = (productId: string, size: string, color: string, delta: number) => {
     setCartItems((prev) =>
       prev
         .map((item) => {
-          if (item.product.id === productId && item.size === size) {
+          if (item.product.id === productId && item.size === size && item.color === color) {
             const nextQty = item.quantity + delta;
             return nextQty > 0 ? { ...item, quantity: nextQty } : null;
           }
@@ -99,10 +110,14 @@ export default function App() {
     );
   };
 
-  const handleRemoveCartItem = (productId: string, size: string) => {
+  const handleRemoveCartItem = (productId: string, size: string, color: string) => {
     setCartItems((prev) =>
-      prev.filter((item) => !(item.product.id === productId && item.size === size))
+      prev.filter((item) => !(item.product.id === productId && item.size === size && item.color === color))
     );
+  };
+
+  const handleOrderComplete = (order: OrderRecord) => {
+    setOrders((prev) => [order, ...prev]);
   };
 
   const handleToggleWishlist = (productId: string) => {
@@ -130,6 +145,10 @@ export default function App() {
         wishlistCount={wishlistIds.length}
         onOpenCart={() => {
           setCartInitialMode('bag');
+          setCartModalOpen(true);
+        }}
+        onOpenOrders={() => {
+          setCartInitialMode('orders');
           setCartModalOpen(true);
         }}
         onOpenWishlist={() => setWishlistOpen(true)}
@@ -200,10 +219,12 @@ export default function App() {
         initialMode={cartInitialMode}
         onClose={() => setCartModalOpen(false)}
         cartItems={cartItems}
+        orders={orders}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveCartItem}
         onClearCart={() => setCartItems([])}
-        onExploreCatalog={() => handleNavigate('women')}
+        onOrderComplete={handleOrderComplete}
+        onExploreCatalog={() => handleNavigate('curated-drops')}
       />
 
       <WishlistDrawer

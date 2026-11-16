@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BRAND_ASSETS, PRODUCTS, Product } from '../data/products';
 import { ActivePage } from './Header';
+import { handleImageError, useModalEffects } from '../utils/storage';
 
 interface CatalogViewProps {
   activePage: ActivePage;
@@ -15,22 +16,15 @@ interface CatalogViewProps {
   onShowToast: (msg: string) => void;
 }
 
-const SUBCATEGORIES = [
-  'Semua Outfit',
-  'Dress & Setelan',
-  'Outerwear Atelier',
-  'Celana Tailored',
-  'Knitwear',
-  'Tas Kurasi',
-] as const;
-
 const COLOR_SWATCHES = [
-  { name: 'Alabaster Cream', hex: '#FAF7F2' },
-  { name: 'Soft Oat', hex: '#E8E0D5' },
-  { name: 'Desert Taupe', hex: '#C2B2A3' },
-  { name: 'Olive Earth', hex: '#646A55' },
-  { name: 'Deep Ink', hex: '#1C1C19' },
+  { name: 'Alabaster Cream', hex: '#FAF7F2', keywords: ['alabaster', 'cream', 'white'] },
+  { name: 'Soft Oat', hex: '#E8E0D5', keywords: ['oat', 'beige', 'sand', 'oatmeal', 'stone'] },
+  { name: 'Desert Taupe', hex: '#C2B2A3', keywords: ['taupe', 'tan', 'brown', 'oxblood'] },
+  { name: 'Olive Earth', hex: '#646A55', keywords: ['olive', 'moss'] },
+  { name: 'Deep Ink', hex: '#1C1C19', keywords: ['ink', 'black', 'charcoal', 'umber'] },
 ];
+
+const PAGE_SIZE = 8;
 
 export const CatalogView: React.FC<CatalogViewProps> = ({
   activePage,
@@ -44,24 +38,46 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   onClearSearch,
   onShowToast,
 }) => {
-  const [filterDrawerOpen, setFilterDrawerOpen] = useState(true);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [gridCols, setGridCols] = useState<3 | 4>(4);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('Semua Outfit');
   const [sortBy, setSortBy] = useState<string>('Kurasi / Favorit');
 
-  // Filter Drawer states matching code_03270c42.html initial appearance
-  const [selectedSize, setSelectedSize] = useState<string | null>('S');
-  const [selectedColor, setSelectedColor] = useState<string>('Alabaster Cream');
-  const [selectedFabrics, setSelectedFabrics] = useState<string[]>(['Linen Organik']);
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>('500rb - 1jt');
-  const [readyStockOnly, setReadyStockOnly] = useState<boolean>(true);
-  const [userModifiedFilters, setUserModifiedFilters] = useState<boolean>(false);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
+  const [readyStockOnly, setReadyStockOnly] = useState<boolean>(false);
   const [activePageNumber, setActivePageNumber] = useState<number>(1);
-  const [loadedExtra, setLoadedExtra] = useState<boolean>(false);
   const [manifestoModalOpen, setManifestoModalOpen] = useState<boolean>(false);
+
+  useModalEffects(manifestoModalOpen, () => setManifestoModalOpen(false));
+
+  useEffect(() => {
+    setSelectedSubcategory('Semua Outfit');
+    setActivePageNumber(1);
+  }, [activePage]);
+
+  // Base products per navigation category (no cross-category padding)
+  const baseCatalogProducts = useMemo(() => {
+    if (activePage === 'men') {
+      return PRODUCTS.filter((p) => p.category === 'men' || p.category === 'accessories');
+    }
+    if (activePage === 'bags') {
+      return PRODUCTS.filter((p) => p.category === 'bags');
+    }
+    if (activePage === 'shoes') {
+      return PRODUCTS.filter((p) => p.category === 'shoes');
+    }
+    if (activePage === 'curated-drops') {
+      return PRODUCTS;
+    }
+    return PRODUCTS.filter((p) => p.category === 'women');
+  }, [activePage]);
 
   // Header metadata based on active navigation tab
   const collectionMeta = useMemo(() => {
+    const countLabel = `${baseCatalogProducts.length} Kurasi Pilihan`;
     switch (activePage) {
       case 'men':
         return {
@@ -71,7 +87,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           title: 'Kapsul Kurasi Cowok',
           description:
             'Potongan relaxed tailoring dari katun twill organik, linen Eropa, dan aksesori kulit calfskin. Fit rapi tanpa kaku, langsung siap dipakai harian.',
-          totalText: 'Nampilin 24 dari 120 Outfit Pilihan',
+          totalText: countLabel,
         };
       case 'bags':
         return {
@@ -81,7 +97,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           title: 'Koleksi Tas Kulit Kurasi',
           description:
             'Siluet struktural dari full-grain Italian calfskin dengan hardware brass minimalis. Tahan banting buat ngantor sampe hangout malam.',
-          totalText: 'Nampilin 18 dari 45 Tas Pilihan',
+          totalText: countLabel,
         };
       case 'shoes':
         return {
@@ -91,7 +107,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           title: 'Sepatu Kulit & Loafers',
           description:
             'Konstruksi Blake-stitched dengan bantalan insole memory foam berlapis calfskin. Empuk dari langkah pertama tanpa drama lecet.',
-          totalText: 'Nampilin 16 dari 60 Sepatu Pilihan',
+          totalText: countLabel,
         };
       case 'curated-drops':
         return {
@@ -101,7 +117,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           title: 'Edisi Terbatas Minggu Ini',
           description:
             'Rangkaian kapsul lengkap pria dan wanita dari rilisan terbaru UrbanStore Atelier. Diproduksi terbatas dalam batch kecil.',
-          totalText: 'Nampilin 24 dari 128 Outfit Pilihan',
+          totalText: countLabel,
         };
       default:
         return {
@@ -111,94 +127,102 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           title: 'Kapsul Kurasi Cewek',
           description:
             'Siluet timeless dari bahan linen alami Eropa, sutra twill halus, dan kasmir organik. Cutting relaxed fit yang nyaman di badan, auto-approved buat daily wear.',
-          totalText: 'Nampilin 24 dari 128 Outfit Pilihan',
+          totalText: countLabel,
         };
     }
-  }, [activePage]);
+  }, [activePage, baseCatalogProducts.length]);
 
-  // The 8 exact catalog products from code_03270c42.html in order
-  const baseCatalogProducts = useMemo(() => {
-    const core8Ids = [
-      'column-dress-overshirt',
-      'pleated-silk-midi-skirt',
-      'linen-double-breasted-blazer',
-      'minimalist-cashmere-sweater',
-      'wide-leg-pleated-trousers',
-      'cashmere-wrap-coat',
-      'sculptured-leather-shoulder-bag',
-      'silk-studio-shirt',
-    ];
-    const core8 = core8Ids
-      .map((id) => PRODUCTS.find((p) => p.id === id))
-      .filter((p): p is Product => Boolean(p));
+  const availableSubcategories = useMemo(() => {
+    const subs = Array.from(new Set(baseCatalogProducts.map((p) => p.subcategory)));
+    return ['Semua Outfit', ...subs];
+  }, [baseCatalogProducts]);
 
-    if (activePage === 'men') {
-      const menItems = PRODUCTS.filter((p) => p.category === 'men' || p.category === 'accessories' || p.category === 'shoes');
-      return [...menItems, ...core8.slice(0, 5)];
-    }
-    if (activePage === 'bags') {
-      const bagItems = PRODUCTS.filter((p) => p.category === 'bags');
-      return [...bagItems, ...core8.filter((p) => p.category !== 'bags').slice(0, 5)];
-    }
-    if (activePage === 'shoes') {
-      const shoeItems = PRODUCTS.filter((p) => p.category === 'shoes');
-      return [...shoeItems, ...core8.slice(0, 7)];
-    }
-    if (activePage === 'curated-drops') {
-      return PRODUCTS;
-    }
-    return core8;
-  }, [activePage]);
+  const availableSizes = useMemo(() => {
+    const set = new Set<string>();
+    baseCatalogProducts.forEach((p) => p.sizes.forEach((sz) => set.add(sz)));
+    return Array.from(set);
+  }, [baseCatalogProducts]);
+
+  const availableFabrics = useMemo(() => {
+    const counts = new Map<string, number>();
+    baseCatalogProducts.forEach((p) => {
+      counts.set(p.fabricType, (counts.get(p.fabricType) || 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([value, count]) => ({
+      value,
+      label: `${value} (${count})`,
+    }));
+  }, [baseCatalogProducts]);
 
   const filteredProducts = useMemo(() => {
-    let list = [...baseCatalogProducts];
+    let list = searchQuery.trim()
+      ? PRODUCTS.filter((p) => {
+          const q = searchQuery.toLowerCase();
+          return (
+            p.name.toLowerCase().includes(q) ||
+            p.subtitle.toLowerCase().includes(q) ||
+            p.subcategory.toLowerCase().includes(q) ||
+            p.fabricType.toLowerCase().includes(q)
+          );
+        })
+      : [...baseCatalogProducts];
 
-    // Search query filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = PRODUCTS.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.subtitle.toLowerCase().includes(q) ||
-          p.subcategory.toLowerCase().includes(q) ||
-          p.fabricType.toLowerCase().includes(q)
-      );
-    }
-
-    // Subcategory pill filter
     if (selectedSubcategory !== 'Semua Outfit') {
       list = list.filter((p) => p.subcategory === selectedSubcategory);
     }
 
-    // Only apply strict drawer filters when user actively clicks to filter
-    if (userModifiedFilters) {
-      if (selectedSize) {
-        list = list.filter((p) => p.sizes.includes(selectedSize) || p.sizes.includes('One Size'));
-      }
-      if (selectedFabrics.length > 0) {
-        list = list.filter((p) => selectedFabrics.includes(p.fabricType));
-      }
-      if (selectedPriceRange === '< 500rb') {
-        list = list.filter((p) => p.price < 500000);
-      } else if (selectedPriceRange === '500rb - 1jt') {
-        list = list.filter((p) => p.price >= 400000 && p.price <= 1000000);
-      } else if (selectedPriceRange === '> 1jt') {
-        list = list.filter((p) => p.price > 1000000);
+    if (selectedSize) {
+      list = list.filter(
+        (p) => p.sizes.includes(selectedSize) && !p.disabledSizes?.includes(selectedSize)
+      );
+    }
+
+    if (selectedColor) {
+      const swatch = COLOR_SWATCHES.find((s) => s.name === selectedColor);
+      if (swatch) {
+        list = list.filter((p) =>
+          p.colors.some((c) =>
+            swatch.keywords.some((kw) => c.name.toLowerCase().includes(kw))
+          )
+        );
       }
     }
 
-    // Sorting
+    if (selectedFabrics.length > 0) {
+      list = list.filter((p) => selectedFabrics.includes(p.fabricType));
+    }
+
+    if (selectedPriceRange === '< 500rb') {
+      list = list.filter((p) => p.price < 500000);
+    } else if (selectedPriceRange === '500rb - 1jt') {
+      list = list.filter((p) => p.price >= 500000 && p.price <= 1000000);
+    } else if (selectedPriceRange === '> 1jt') {
+      list = list.filter((p) => p.price > 1000000);
+    }
+
+    if (readyStockOnly) {
+      list = list.filter((p) => p.inStock);
+    }
+
     if (sortBy === 'Harga: Rendah ke Tinggi') {
       list.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'Harga: Tinggi ke Rendah') {
       list.sort((a, b) => b.price - a.price);
     } else if (sortBy === 'Drop Terbaru') {
-      list.sort((a, b) => (b.badges[0]?.text === 'DROP BARU' ? 1 : -1));
-    }
-
-    if (loadedExtra) {
-      const extraItems = PRODUCTS.filter((p) => !list.some((existing) => existing.id === p.id));
-      list = [...list, ...extraItems];
+      list.sort(
+        (a, b) =>
+          (b.badges[0]?.text === 'DROP BARU' ? 1 : 0) -
+          (a.badges[0]?.text === 'DROP BARU' ? 1 : 0)
+      );
+    } else if (sortBy === 'Paling Dicari') {
+      const priority = (p: Product) => {
+        const badge = p.badges[0]?.text;
+        if (badge === 'BEST SELLER') return 3;
+        if (badge === 'RESTOCK LAGI' || badge === 'TINGGAL DIKIT') return 2;
+        if (badge === 'DROP BARU') return 1;
+        return 0;
+      };
+      list.sort((a, b) => priority(b) - priority(a));
     }
 
     return list;
@@ -206,19 +230,36 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
     baseCatalogProducts,
     searchQuery,
     selectedSubcategory,
-    userModifiedFilters,
     selectedSize,
+    selectedColor,
     selectedFabrics,
     selectedPriceRange,
+    readyStockOnly,
     sortBy,
-    loadedExtra,
   ]);
 
-  const firstSectionProducts = filteredProducts.slice(0, 4);
-  const secondSectionProducts = filteredProducts.slice(4);
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const safePageNumber = Math.min(activePageNumber, totalPages);
+  const paginatedProducts = filteredProducts.slice(
+    (safePageNumber - 1) * PAGE_SIZE,
+    safePageNumber * PAGE_SIZE
+  );
+
+  const firstSectionProducts = paginatedProducts.slice(0, 4);
+  const secondSectionProducts = paginatedProducts.slice(4);
+
+  const hasActiveFilters = Boolean(
+    selectedSize ||
+      selectedColor ||
+      selectedFabrics.length > 0 ||
+      selectedPriceRange ||
+      readyStockOnly ||
+      selectedSubcategory !== 'Semua Outfit' ||
+      searchQuery.trim()
+  );
 
   const toggleFabric = (fabric: string) => {
-    setUserModifiedFilters(true);
+    setActivePageNumber(1);
     setSelectedFabrics((prev) =>
       prev.includes(fabric) ? prev.filter((f) => f !== fabric) : [...prev, fabric]
     );
@@ -226,16 +267,20 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   const handleResetFilters = () => {
     setSelectedSize(null);
+    setSelectedColor(null);
     setSelectedFabrics([]);
     setSelectedPriceRange(null);
+    setReadyStockOnly(false);
     setSelectedSubcategory('Semua Outfit');
-    setUserModifiedFilters(false);
+    setActivePageNumber(1);
     if (searchQuery) onClearSearch();
     onShowToast('Semua filter udah di-reset. Nampilin koleksi lengkap!');
   };
 
   const renderProductCard = (product: Product) => {
     const isWishlisted = wishlistIds.includes(product.id);
+    const quickAddSize =
+      product.sizes.find((sz) => !product.disabledSizes?.includes(sz)) || product.defaultSize;
 
     return (
       <article
@@ -249,7 +294,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           <img
             className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
             alt={product.alt}
+            loading="lazy"
             referrerPolicy="no-referrer"
+            onError={handleImageError}
             src={product.image}
           />
           {/* Micro Badges */}
@@ -285,13 +332,13 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             <span className="material-symbols-outlined text-[18px]">favorite</span>
           </button>
 
-          {/* Quick Add Overlay (appears on desktop hover) */}
-          <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {/* Quick Add Overlay (always visible on touch/mobile, hover on sm+) */}
+          <div className="absolute inset-x-3 bottom-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onAddToBag(product, product.defaultSize);
+                onAddToBag(product, quickAddSize, product.colors[0]?.name);
               }}
               className="w-full bg-primary text-on-primary py-2.5 font-label-uppercase text-label-uppercase uppercase tracking-wider rounded-DEFAULT hover:bg-primary-container shadow-md flex items-center justify-center gap-1 cursor-pointer"
             >
@@ -406,13 +453,16 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-space-md">
           {/* Subcategory Pills */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-            {SUBCATEGORIES.map((sub) => {
+            {availableSubcategories.map((sub) => {
               const isSelected = selectedSubcategory === sub;
               return (
                 <button
                   key={sub}
                   type="button"
-                  onClick={() => setSelectedSubcategory(sub)}
+                  onClick={() => {
+                    setSelectedSubcategory(sub);
+                    setActivePageNumber(1);
+                  }}
                   className={
                     isSelected
                       ? 'px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-uppercase text-label-uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer'
@@ -434,7 +484,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             >
               <span className="material-symbols-outlined text-[17px]">tune</span>
               <span>Filters</span>
-              {(selectedSize || selectedFabrics.length > 0 || selectedPriceRange) && (
+              {hasActiveFilters && (
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary ml-0.5"></span>
               )}
             </button>
@@ -492,27 +542,24 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                     UKURAN
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {(['XS', 'S', 'M', 'L', 'XL'] as const).map((sz) => {
-                      const isDisabled = sz === 'XL';
+                    {availableSizes.map((sz) => {
                       const isSelected = selectedSize === sz;
+                      const label = sz.startsWith('One Size') ? 'One Size' : sz;
                       return (
                         <button
                           key={sz}
                           type="button"
-                          disabled={isDisabled}
                           onClick={() => {
-                            setUserModifiedFilters(true);
+                            setActivePageNumber(1);
                             setSelectedSize(isSelected ? null : sz);
                           }}
                           className={
-                            isDisabled
-                              ? 'w-8 h-8 rounded-DEFAULT bg-surface-card text-on-surface font-body-sm text-xs opacity-40 cursor-not-allowed'
-                              : isSelected
-                              ? 'w-8 h-8 rounded-DEFAULT bg-primary text-on-primary font-body-sm text-xs cursor-pointer'
-                              : 'w-8 h-8 rounded-DEFAULT bg-surface-card text-on-surface font-body-sm text-xs hover:bg-primary hover:text-on-primary transition-colors cursor-pointer'
+                            isSelected
+                              ? 'min-w-8 h-8 px-2 rounded-DEFAULT bg-primary text-on-primary font-body-sm text-xs cursor-pointer'
+                              : 'min-w-8 h-8 px-2 rounded-DEFAULT bg-surface-card text-on-surface font-body-sm text-xs hover:bg-primary hover:text-on-primary transition-colors cursor-pointer'
                           }
                         >
-                          {sz}
+                          {label}
                         </button>
                       );
                     })}
@@ -531,12 +578,16 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                         <button
                           key={swatch.name}
                           type="button"
-                          onClick={() => setSelectedColor(swatch.name)}
+                          onClick={() => {
+                            setActivePageNumber(1);
+                            setSelectedColor(isSelected ? null : swatch.name);
+                          }}
                           style={{ backgroundColor: swatch.hex }}
-                          className={`w-6 h-6 rounded-full cursor-pointer ${
+                          className={`w-6 h-6 rounded-full cursor-pointer border border-border-ecru ${
                             isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-1 hover:ring-primary'
                           }`}
                           title={swatch.name}
+                          aria-label={swatch.name}
                         />
                       );
                     })}
@@ -549,11 +600,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                     BAHAN UTAMA
                   </span>
                   <div className="flex flex-col gap-1 text-xs font-body-sm">
-                    {[
-                      { label: 'Linen Organik (14)', value: 'Linen Organik' },
-                      { label: 'Sutra Mulberry (8)', value: 'Sutra Mulberry' },
-                      { label: 'Kasmir Murni (6)', value: 'Kasmir Murni' },
-                    ].map((fab) => (
+                    {availableFabrics.map((fab) => (
                       <label key={fab.value} className="inline-flex items-center gap-2 text-on-surface cursor-pointer">
                         <input
                           checked={selectedFabrics.includes(fab.value)}
@@ -580,7 +627,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                           key={range}
                           type="button"
                           onClick={() => {
-                            setUserModifiedFilters(true);
+                            setActivePageNumber(1);
                             setSelectedPriceRange(isSelected ? null : range);
                           }}
                           className={
@@ -605,7 +652,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                     <label className="inline-flex items-center gap-2 text-xs font-body-sm text-status-stock font-medium cursor-pointer">
                       <input
                         checked={readyStockOnly}
-                        onChange={(e) => setReadyStockOnly(e.target.checked)}
+                        onChange={(e) => {
+                          setActivePageNumber(1);
+                          setReadyStockOnly(e.target.checked);
+                        }}
                         className="rounded-DEFAULT accent-status-stock w-3.5 h-3.5"
                         type="checkbox"
                       />
@@ -623,68 +673,88 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               </div>
 
               {/* Active Filter Pills Strip */}
-              <div className="flex items-center gap-2 pt-3 mt-3 overflow-x-auto">
-                <span className="font-label-uppercase text-[10px] tracking-wider text-text-muted uppercase shrink-0">
-                  Aktif:
-                </span>
-                {selectedSize && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
-                    Ukuran: {selectedSize}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedSize(null);
-                        setUserModifiedFilters(true);
-                      }}
-                      className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
-                    >
-                      close
-                    </button>
+              {hasActiveFilters && (
+                <div className="flex items-center gap-2 pt-3 mt-3 overflow-x-auto">
+                  <span className="font-label-uppercase text-[10px] tracking-wider text-text-muted uppercase shrink-0">
+                    Aktif:
                   </span>
-                )}
-                {selectedFabrics.map((fab) => (
-                  <span
-                    key={fab}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface"
-                  >
-                    Bahan: {fab}
-                    <button
-                      type="button"
-                      onClick={() => toggleFabric(fab)}
-                      className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                  {selectedSize && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
+                      Ukuran: {selectedSize}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSize(null)}
+                        className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                      >
+                        close
+                      </button>
+                    </span>
+                  )}
+                  {selectedColor && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
+                      Warna: {selectedColor}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedColor(null)}
+                        className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                      >
+                        close
+                      </button>
+                    </span>
+                  )}
+                  {selectedFabrics.map((fab) => (
+                    <span
+                      key={fab}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface"
                     >
-                      close
-                    </button>
-                  </span>
-                ))}
-                {selectedPriceRange && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
-                    {selectedPriceRange}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedPriceRange(null);
-                        setUserModifiedFilters(true);
-                      }}
-                      className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
-                    >
-                      close
-                    </button>
-                  </span>
-                )}
-                {searchQuery && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
-                    Cari: &ldquo;{searchQuery}&rdquo;
-                    <button
-                      type="button"
-                      onClick={onClearSearch}
-                      className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
-                    >
-                      close
-                    </button>
-                  </span>
-                )}
-              </div>
+                      Bahan: {fab}
+                      <button
+                        type="button"
+                        onClick={() => toggleFabric(fab)}
+                        className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                      >
+                        close
+                      </button>
+                    </span>
+                  ))}
+                  {selectedPriceRange && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
+                      {selectedPriceRange}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPriceRange(null)}
+                        className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                      >
+                        close
+                      </button>
+                    </span>
+                  )}
+                  {readyStockOnly && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
+                      Ready Stock
+                      <button
+                        type="button"
+                        onClick={() => setReadyStockOnly(false)}
+                        className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                      >
+                        close
+                      </button>
+                    </span>
+                  )}
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface-card rounded-full font-body-sm text-xs text-on-surface">
+                      Cari: &ldquo;{searchQuery}&rdquo;
+                      <button
+                        type="button"
+                        onClick={onClearSearch}
+                        className="material-symbols-outlined text-[13px] cursor-pointer hover:text-error"
+                      >
+                        close
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -732,7 +802,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                 <img
                   className="w-full h-full object-cover"
                   alt="Macro close up photography of high quality European woven flax fabric and bespoke tailor tape measure on wooden workbench"
+                  loading="lazy"
                   referrerPolicy="no-referrer"
+                  onError={handleImageError}
                   src={BRAND_ASSETS.editorialCraft}
                 />
               </div>
@@ -816,88 +888,64 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
         </section>
       )}
 
-      {/* Load More & Editorial Pagination Container */}
+      {/* Honest Summary & Real Pagination Container */}
       <section className="w-full pb-space-2xl bg-surface-bright">
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin text-center">
-          {/* Progress Bar indicator */}
           <div className="max-w-xs mx-auto mb-4">
             <div className="flex items-center justify-between font-label-uppercase text-[11px] text-text-muted mb-1.5">
-              <span>Nampilin {filteredProducts.length} dari 128 Outfit</span>
-              <span>Halaman {activePageNumber} dari 16</span>
+              <span>
+                Nampilin {paginatedProducts.length} dari {filteredProducts.length} Kurasi
+              </span>
+              <span>
+                Halaman {safePageNumber} dari {totalPages}
+              </span>
             </div>
             <div className="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full transition-all duration-300"
-                style={{ width: loadedExtra ? '30%' : '15%' }}
+                style={{ width: `${Math.round((safePageNumber / totalPages) * 100)}%` }}
               ></div>
             </div>
           </div>
 
-          {/* Load More Button */}
-          <div className="inline-flex flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setLoadedExtra(true);
-                onShowToast('Nampilin seluruh arsip kurasi terbaru!');
-              }}
-              className="px-8 py-3.5 bg-surface-card hover:bg-surface-container text-primary font-label-uppercase text-label-uppercase uppercase tracking-wider rounded-DEFAULT shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <span>{loadedExtra ? 'SEMUA DROP MINGGU INI UDAH TAMPIL' : 'LOAD 12 OUTFIT LAGI'}</span>
-              <span className="material-symbols-outlined text-[16px]">expand_more</span>
-            </button>
-            <span className="font-body-sm text-[12px] text-text-muted flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px] text-status-stock">check_circle</span>
-              ✓ Garansi tuker size santai dijemput kurir dalam 30 hari
-            </span>
-          </div>
+          <span className="font-body-sm text-[12px] text-text-muted inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px] text-status-stock">check_circle</span>
+            Garansi tuker size santai dijemput kurir dalam 30 hari
+          </span>
 
-          {/* Minimal Page Selector */}
-          <div className="flex items-center justify-center gap-2 mt-8 font-label-uppercase text-[12px]">
-            {[1, 2, 3].map((num) => (
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 font-label-uppercase text-[12px]">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => {
+                    setActivePageNumber(num);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`w-8 h-8 rounded-DEFAULT transition-colors cursor-pointer ${
+                    safePageNumber === num
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-card text-on-surface hover:bg-surface-container'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
               <button
-                key={num}
                 type="button"
+                aria-label="Halaman berikutnya"
                 onClick={() => {
-                  setActivePageNumber(num);
+                  const next = safePageNumber < totalPages ? safePageNumber + 1 : 1;
+                  setActivePageNumber(next);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`w-8 h-8 rounded-DEFAULT transition-colors cursor-pointer ${
-                  activePageNumber === num
-                    ? 'bg-primary text-on-primary'
-                    : 'bg-surface-card text-on-surface hover:bg-surface-container'
-                }`}
+                className="p-1 rounded-DEFAULT bg-surface-card text-on-surface hover:bg-surface-container transition-colors ml-1 cursor-pointer"
               >
-                {num}
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
               </button>
-            ))}
-            <span className="px-1 text-text-muted">...</span>
-            <button
-              type="button"
-              onClick={() => {
-                setActivePageNumber(16);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className={`w-8 h-8 rounded-DEFAULT transition-colors cursor-pointer ${
-                activePageNumber === 16
-                  ? 'bg-primary text-on-primary'
-                  : 'bg-surface-card text-on-surface hover:bg-surface-container'
-              }`}
-            >
-              16
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const next = activePageNumber < 16 ? activePageNumber + 1 : 1;
-                setActivePageNumber(next);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="p-1 rounded-DEFAULT bg-surface-card text-on-surface hover:bg-surface-container transition-colors ml-1 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </section>
 

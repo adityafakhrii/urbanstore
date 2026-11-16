@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BRAND_ASSETS } from '../data/products';
+import { handleImageError } from '../utils/storage';
 
 export type ActivePage = 'home' | 'women' | 'men' | 'bags' | 'shoes' | 'curated-drops' | 'pdp' | 'checkout';
 
@@ -9,6 +10,7 @@ interface HeaderProps {
   cartCount: number;
   wishlistCount: number;
   onOpenCart: () => void;
+  onOpenOrders: () => void;
   onOpenWishlist: () => void;
   onOpenSizeGuide: () => void;
   searchQuery: string;
@@ -21,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   cartCount,
   wishlistCount,
   onOpenCart,
+  onOpenOrders,
   onOpenWishlist,
   onOpenSizeGuide,
   searchQuery,
@@ -28,6 +31,25 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currencyNotice, setCurrencyNotice] = useState(false);
+  const currencyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!currencyNotice) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (currencyRef.current && !currencyRef.current.contains(e.target as Node)) {
+        setCurrencyNotice(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCurrencyNotice(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [currencyNotice]);
 
   const navItems: { id: ActivePage; label: string }[] = [
     { id: 'home', label: 'Home' },
@@ -41,8 +63,9 @@ export const Header: React.FC<HeaderProps> = ({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (activePage === 'home' || activePage === 'pdp' || activePage === 'checkout') {
-      onNavigate('women');
+      onNavigate('curated-drops');
     }
+    setMobileMenuOpen(false);
   };
 
   const formattedCartCount = cartCount < 10 ? `0${cartCount}` : `${cartCount}`;
@@ -53,13 +76,14 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="w-full bg-[#FCEAE6] border-b border-border-ecru py-1.5 px-margin-mobile lg:px-margin">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between text-on-surface">
           <div className="hidden md:block w-28"></div>
-          <div
+          <button
+            type="button"
             onClick={onOpenSizeGuide}
             className="flex-1 text-center font-label-uppercase text-[11px] tracking-widest text-on-surface cursor-pointer hover:text-secondary transition-colors"
           >
             GRATIS ONGKIR MIN. 500RB — SALAH SIZE? TUKER AJA DALEM 30 HARI
-          </div>
-          <div className="relative">
+          </button>
+          <div className="relative" ref={currencyRef}>
             <button
               type="button"
               onClick={() => setCurrencyNotice((prev) => !prev)}
@@ -130,6 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
                 alt="UrbanStore Editorial Logo"
                 className="h-8 w-auto object-contain"
                 referrerPolicy="no-referrer"
+                onError={handleImageError}
                 src={BRAND_ASSETS.logo}
               />
               <span className="font-headline-sm text-headline-sm tracking-tight text-primary hidden sm:inline-block whitespace-nowrap">
@@ -150,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={(e) => {
                   onSearchChange(e.target.value);
                   if (activePage === 'home' && e.target.value.trim().length > 0) {
-                    onNavigate('women');
+                    onNavigate('curated-drops');
                   }
                 }}
                 className="bg-transparent w-full text-body-sm font-body-sm text-on-surface placeholder:text-text-muted focus:outline-none"
@@ -197,14 +222,16 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 type="button"
-                onClick={onOpenCart}
-                title="Profil & Pesanan Kamu"
+                onClick={onOpenOrders}
+                title="Riwayat Pesanan Kamu"
+                aria-label="Riwayat Pesanan"
                 className="pl-1 cursor-pointer"
               >
                 <img
                   alt="Profile"
                   className="w-8 h-8 rounded-full object-cover border border-border-ecru"
                   referrerPolicy="no-referrer"
+                  onError={handleImageError}
                   src={BRAND_ASSETS.avatar}
                 />
               </button>
@@ -222,7 +249,12 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="material-symbols-outlined text-[18px] text-text-muted mr-2">search</span>
               <input
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(e) => {
+                  onSearchChange(e.target.value);
+                  if (activePage === 'home' && e.target.value.trim().length > 0) {
+                    onNavigate('curated-drops');
+                  }
+                }}
                 className="bg-transparent w-full text-body-sm font-body-sm text-on-surface placeholder:text-text-muted focus:outline-none"
                 placeholder="Cari racun outfit..."
                 type="text"

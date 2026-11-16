@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useModalEffects } from '../utils/storage';
 
 interface SizeGuideModalProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
   const [fitPreference, setFitPreference] = useState<'slim' | 'core' | 'relaxed'>('core');
   const [heightCm, setHeightCm] = useState<string>('170');
   const [weightKg, setWeightKg] = useState<string>('58');
+
+  useModalEffects(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -145,36 +148,28 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-ecru tabular-nums">
-                  <tr className={recommended === 'XS' ? 'bg-surface-container/60 font-medium' : ''}>
-                    <td className="py-2.5 font-semibold">XS</td>
-                    <td className="py-2.5 text-text-muted">92</td>
-                    <td className="py-2.5 text-text-muted">74</td>
-                    <td className="py-2.5 text-text-muted">68</td>
-                  </tr>
-                  <tr className={recommended === 'S' ? 'bg-surface-container/60 font-medium' : 'bg-surface-sand/40'}>
-                    <td className="py-2.5 font-semibold">S</td>
-                    <td className="py-2.5 text-text-muted">96</td>
-                    <td className="py-2.5 text-text-muted">78</td>
-                    <td className="py-2.5 text-text-muted">70</td>
-                  </tr>
-                  <tr className="font-medium bg-surface-container/50">
-                    <td className="py-2.5 font-bold text-secondary">M (Core)</td>
-                    <td className="py-2.5">100</td>
-                    <td className="py-2.5">82</td>
-                    <td className="py-2.5">72</td>
-                  </tr>
-                  <tr className={recommended === 'L' ? 'bg-surface-container/60 font-medium' : ''}>
-                    <td className="py-2.5 font-semibold">L</td>
-                    <td className="py-2.5 text-text-muted">106</td>
-                    <td className="py-2.5 text-text-muted">88</td>
-                    <td className="py-2.5 text-text-muted">74</td>
-                  </tr>
-                  <tr className={recommended === 'XL' ? 'bg-surface-container/60 font-medium' : ''}>
-                    <td className="py-2.5 font-semibold">XL</td>
-                    <td className="py-2.5 text-text-muted">112</td>
-                    <td className="py-2.5 text-text-muted">94</td>
-                    <td className="py-2.5 text-text-muted">76</td>
-                  </tr>
+                  {[
+                    { size: 'XS', chest: '92', waist: '74', length: '68' },
+                    { size: 'S', chest: '96', waist: '78', length: '70' },
+                    { size: 'M (Core)', chest: '100', waist: '82', length: '72' },
+                    { size: 'L', chest: '106', waist: '88', length: '74' },
+                    { size: 'XL', chest: '112', waist: '94', length: '76' },
+                  ].map((row) => {
+                    const isRecommended = recommended === row.size;
+                    return (
+                      <tr
+                        key={row.size}
+                        className={isRecommended ? 'bg-surface-sand font-semibold text-primary' : ''}
+                      >
+                        <td className={`py-2.5 font-semibold ${isRecommended ? 'text-secondary' : ''}`}>
+                          {row.size}
+                        </td>
+                        <td className="py-2.5 text-text-muted">{row.chest}</td>
+                        <td className="py-2.5 text-text-muted">{row.waist}</td>
+                        <td className="py-2.5 text-text-muted">{row.length}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { PRODUCTS, Product } from '../data/products';
+import { handleImageError, useModalEffects } from '../utils/storage';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
@@ -7,7 +8,7 @@ interface WishlistDrawerProps {
   wishlistIds: string[];
   onToggleWishlist: (productId: string) => void;
   onSelectProduct: (product: Product) => void;
-  onAddToBag: (product: Product, size: string) => void;
+  onAddToBag: (product: Product, size: string, colorName?: string) => void;
 }
 
 export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
@@ -18,6 +19,8 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   onSelectProduct,
   onAddToBag,
 }) => {
+  useModalEffects(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const wishlistedProducts = PRODUCTS.filter((p) => wishlistIds.includes(p.id));
@@ -72,6 +75,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                       src={product.image}
                       alt={product.name}
                       referrerPolicy="no-referrer"
+                      onError={handleImageError}
                       className="w-20 h-26 object-cover object-top bg-surface-container-low border border-border-ecru cursor-pointer shrink-0"
                     />
                     <div className="flex-1 flex flex-col justify-between">
@@ -103,7 +107,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                       <div className="mt-2">
                         <button
                           type="button"
-                          onClick={() => onAddToBag(product, product.defaultSize)}
+                          onClick={() => onAddToBag(product, product.defaultSize, product.colors[0]?.name)}
                           className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider rounded-DEFAULT hover:bg-neutral-800 transition-colors cursor-pointer"
                         >
                           + Masukin Bag ({product.defaultSize})
