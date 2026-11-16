@@ -21,12 +21,14 @@ import {
   updateVariantStockAdmin,
   updateProductPriceStockAdmin,
   createProductAdmin,
+  updateProductAdmin,
   deleteProductAdmin,
   uploadProductImageAdmin,
   createPromoAdmin,
   togglePromoAdmin,
   formatRupiah,
 } from '../services/supabaseService';
+import { MAX_IMAGE_SIZE_BYTES, formatBytes } from '../utils/image';
 
 interface AdminDashboardViewProps {
   products: Product[];
@@ -69,9 +71,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     Record<string, { price: number; inStock: boolean }>
   >({});
 
-  // Add Product Form State
-  const [showAddForm, setShowAddForm] = useState(false);
+  // Create / Edit Product Form State
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
   const [newName, setNewName] = useState('');
   const [newSku, setNewSku] = useState('');
@@ -83,6 +87,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [newFitScale, setNewFitScale] = useState<Product['fitScale']>('Pas Banget');
   const [newBestsellerTab, setNewBestsellerTab] = useState<string>('');
   const [newImage, setNewImage] = useState('');
+  const [newGalleryUrls, setNewGalleryUrls] = useState<string[]>([]);
   const [newBadge, setNewBadge] = useState('DROP BARU');
   const [newColorName, setNewColorName] = useState('Natural Cream');
   const [newColorHex, setNewColorHex] = useState('#F5F2EB');
@@ -217,21 +222,98 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     await loadAdminData();
   };
 
-  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const resetProductForm = () => {
+    setEditingProductId(null);
+    setCompressionInfo(null);
+    setNewName('');
+    setNewSku('');
+    setNewPrice('450000');
+    setNewSubtitle('');
+    setNewCategory('women');
+    setNewSubcategory('Dress & Setelan');
+    setNewFabric('Linen Organik');
+    setNewFitScale('Pas Banget');
+    setNewBestsellerTab('');
+    setNewImage('');
+    setNewGalleryUrls([]);
+    setNewBadge('DROP BARU');
+    setNewColorName('Natural Cream');
+    setNewColorHex('#F5F2EB');
+    setNewSizesText('S, M, L');
+    setNewInitialStock('10');
+    setNewFitNote('True to size');
+    setNewModelInfo('Model TB 170cm memakai Size S.');
+    setNewDescription('');
+    setNewFabricDetailsText('');
+    setNewCareText('');
+  };
+
+  const handleStartEditProduct = (p: Product) => {
+    setEditingProductId(p.id);
+    setCompressionInfo(null);
+    setNewName(p.name);
+    setNewSku(p.sku);
+    setNewPrice(String(p.price));
+    setNewSubtitle(p.subtitle);
+    setNewCategory(p.category);
+    setNewSubcategory(p.subcategory);
+    setNewFabric(p.fabricType);
+    setNewFitScale(p.fitScale);
+    setNewBestsellerTab(p.bestsellerTab || '');
+    setNewImage(p.image);
+    setNewGalleryUrls(p.gallery.filter((url) => url !== p.image));
+    setNewBadge(p.badges[0]?.text || '');
+    setNewColorName(p.colors[0]?.name || 'Default');
+    setNewColorHex(p.colors[0]?.hex || '#F5F2EB');
+    setNewSizesText(p.sizes.join(', '));
+    setNewInitialStock('10');
+    setNewFitNote(p.fitNote);
+    setNewModelInfo(p.modelInfo);
+    setNewDescription(p.description);
+    setNewFabricDetailsText(p.fabricDetails.join('\n'));
+    setNewCareText(p.careInstructions.join('\n'));
+    setShowProductForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>, target: 'main' | 'gallery' = 'main') => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      onShowToast('Format file harus berupa gambar.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      onShowToast('Ukuran gambar maksimal 5 MB.');
+      return;
+    }
+
     setUploadingImg(true);
     const res = await uploadProductImageAdmin(file);
     setUploadingImg(false);
+
     if (res.error || !res.url) {
       onShowToast(`Upload gambar gagal: ${res.error || 'Pastikan bucket product-images sudah dibuat.'}`);
       return;
     }
-    setNewImage(res.url);
-    onShowToast('Foto produk berhasil di-upload ke Supabase Storage!');
+
+    if (res.originalBytes && res.compressedBytes) {
+      setCompressionInfo(
+        `WebP terkompresi: ${formatBytes(res.originalBytes)} → ${formatBytes(res.compressedBytes)}`
+      );
+    }
+
+    if (target === 'main') {
+      setNewImage(res.url);
+    } else {
+      setNewGalleryUrls((prev) => [...prev, res.url!]);
+    }
+    onShowToast('Foto dikompres ke WebP & berhasil di-upload!');
   };
 
-  const handleCreateProduct = async (e: React.FormEvent) => {
+  const handleSaveProductForm = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedSizes = newSizesText
       .split(',')
@@ -247,16 +329,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       return;
     }
 
-    const slugBase = newName
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-    const productId = `${slugBase || 'produk'}-${Date.now().toString(36).slice(-4)}`;
-
-    setSavingProduct(true);
-    const res = await createProductAdmin({
-      id: productId,
+    const commonPayload = {
       sku: newSku.trim().toUpperCase(),
       name: newName.trim(),
       price: Math.max(0, Number(newPrice) || 0),
@@ -265,7 +338,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       subcategory: newSubcategory,
       bestsellerTab: newBestsellerTab ? (newBestsellerTab as Product['bestsellerTab']) : undefined,
       image: newImage.trim(),
-      gallery: [newImage.trim()],
+      gallery: [newImage.trim(), ...newGalleryUrls.filter((u) => u && u !== newImage.trim())],
       badgeText: newBadge.trim() || undefined,
       fitNote: newFitNote.trim() || 'True to size',
       fabricType: newFabric,
@@ -286,26 +359,38 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       modelInfo: newModelInfo.trim() || 'Lihat panduan ukuran Anti-Zonk.',
       fitScale: newFitScale,
       initialStock: Math.max(0, Number(newInitialStock) || 0),
-    });
+    };
+
+    setSavingProduct(true);
+    let res: { error?: string };
+    if (editingProductId) {
+      res = await updateProductAdmin(editingProductId, commonPayload);
+    } else {
+      const slugBase = newName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      const productId = `${slugBase || 'produk'}-${Date.now().toString(36).slice(-4)}`;
+      res = await createProductAdmin({ id: productId, ...commonPayload });
+    }
     setSavingProduct(false);
 
     if (res.error) {
-      onShowToast(`Gagal menambah produk: ${res.error}`);
+      onShowToast(`Gagal menyimpan produk: ${res.error}`);
       return;
     }
 
-    setNewName('');
-    setNewSku('');
-    setNewSubtitle('');
-    setNewImage('');
-    setNewDescription('');
-    setNewFabricDetailsText('');
-    setNewCareText('');
-    setShowAddForm(false);
+    resetProductForm();
+    setShowProductForm(false);
 
     await onRefreshCatalog();
     await loadAdminData();
-    onShowToast('Produk real berhasil ditambahkan ke database Supabase!');
+    onShowToast(
+      editingProductId
+        ? 'Perubahan produk berhasil disimpan ke Supabase!'
+        : 'Produk real berhasil ditambahkan ke database Supabase!'
+    );
   };
 
   const handleDeleteProduct = async (product: Product) => {
@@ -534,19 +619,29 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </h2>
                 <button
                   type="button"
-                  onClick={() => setShowAddForm((prev) => !prev)}
+                  onClick={() => {
+                    if (showProductForm) {
+                      resetProductForm();
+                      setShowProductForm(false);
+                    } else {
+                      resetProductForm();
+                      setShowProductForm(true);
+                    }
+                  }}
                   className="px-4 py-2 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:bg-neutral-800 cursor-pointer"
                 >
-                  {showAddForm ? 'Tutup Form' : '+ Tambah Produk Baru'}
+                  {showProductForm ? 'Tutup Form' : '+ Tambah Produk Baru'}
                 </button>
               </div>
 
-              {showAddForm && (
+              {showProductForm && (
                 <form
-                  onSubmit={handleCreateProduct}
+                  onSubmit={handleSaveProductForm}
                   className="p-6 bg-surface-sand border border-border-ecru space-y-4 text-xs"
                 >
-                  <h3 className="font-headline-sm text-headline-sm text-primary">Tambah Produk Real</h3>
+                  <h3 className="font-headline-sm text-headline-sm text-primary">
+                    {editingProductId ? 'Edit Produk' : 'Tambah Produk Real'}
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-text-muted mb-1">Nama Produk *</label>
@@ -682,7 +777,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div className="sm:col-span-2">
-                      <label className="block text-text-muted mb-1">Foto Produk (URL atau Upload) *</label>
+                      <label className="block text-text-muted mb-1">
+                        Foto Utama (Upload max 5 MB → Auto WebP, atau URL) *
+                      </label>
                       <div className="flex gap-2">
                         <input
                           required
@@ -692,17 +789,57 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           placeholder="https://..."
                           className="flex-1 h-10 px-3 bg-surface-card border border-border-ecru text-primary"
                         />
-                        <label className="h-10 px-3 border border-primary bg-surface-card text-primary flex items-center cursor-pointer hover:bg-primary hover:text-on-primary transition-colors">
-                          <span>{uploadingImg ? 'Uploading...' : 'Upload'}</span>
+                        <label className="h-10 px-3 border border-primary bg-surface-card text-primary flex items-center cursor-pointer hover:bg-primary hover:text-on-primary transition-colors shrink-0">
+                          <span>{uploadingImg ? 'Compressing...' : 'Upload WebP'}</span>
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={handleUploadImage}
+                            onChange={(e) => void handleUploadImage(e, 'main')}
+                            className="hidden"
+                            disabled={uploadingImg}
+                          />
+                        </label>
+                        <label className="h-10 px-3 border border-border-ecru bg-surface-card text-primary flex items-center cursor-pointer hover:border-primary transition-colors shrink-0">
+                          <span>+ Galeri</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => void handleUploadImage(e, 'gallery')}
                             className="hidden"
                             disabled={uploadingImg}
                           />
                         </label>
                       </div>
+                      {compressionInfo && (
+                        <p className="text-[11px] text-status-stock mt-1 font-medium">{compressionInfo}</p>
+                      )}
+                      {(newImage || newGalleryUrls.length > 0) && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {newImage && (
+                            <img
+                              src={newImage}
+                              alt="Preview utama"
+                              className="w-12 h-16 object-cover border border-primary"
+                            />
+                          )}
+                          {newGalleryUrls.map((gUrl, idx) => (
+                            <div key={idx} className="relative">
+                              <img
+                                src={gUrl}
+                                alt={`Galeri ${idx + 1}`}
+                                className="w-12 h-16 object-cover border border-border-ecru"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setNewGalleryUrls((prev) => prev.filter((_, i) => i !== idx))}
+                                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-error text-white text-[10px] flex items-center justify-center cursor-pointer"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-text-muted mb-1">Warna Utama &amp; Hex</label>
@@ -807,17 +944,24 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => setShowAddForm(false)}
+                      onClick={() => {
+                        resetProductForm();
+                        setShowProductForm(false);
+                      }}
                       className="px-4 py-2 border border-border-ecru bg-surface-card text-primary cursor-pointer"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
-                      disabled={savingProduct}
+                      disabled={savingProduct || uploadingImg}
                       className="px-6 py-2 bg-primary text-on-primary font-label-uppercase uppercase tracking-wider cursor-pointer disabled:opacity-50"
                     >
-                      {savingProduct ? 'Menyimpan...' : 'Simpan Produk ke Database'}
+                      {savingProduct
+                        ? 'Menyimpan...'
+                        : editingProductId
+                        ? 'Simpan Perubahan Produk'
+                        : 'Simpan Produk ke Database'}
                     </button>
                   </div>
                 </form>
@@ -883,6 +1027,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase cursor-pointer"
                               >
                                 Update
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditProduct(p)}
+                                className="px-3 py-1.5 border border-primary text-primary hover:bg-surface-sand font-label-uppercase text-[10px] uppercase cursor-pointer"
+                              >
+                                Edit
                               </button>
                               <button
                                 type="button"

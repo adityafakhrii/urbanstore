@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { PRODUCTS, Product } from '../data/products';
 import type { CartItem, OrderRecord } from '../components/CartAndCheckoutModal';
+import { compressImageToWebp } from '../utils/image';
 
 export type UserRole = 'customer' | 'admin';
 
@@ -492,24 +493,40 @@ export interface CreateProductInput {
   initialStock: number;
 }
 
-export async function uploadProductImageAdmin(
-  file: File
-): Promise<{ url?: string; error?: string }> {
+export async function uploadProductImageAdmin(rawFile: File): Promise<{
+  url?: string;
+  originalBytes?: number;
+  compressedBytes?: number;
+  error?: string;
+}> {
   if (!supabase) return { error: 'Supabase belum terkonfigurasi.' };
-  const ext = file.name.split('.').pop() || 'jpg';
-  const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  let compressed;
+  try {
+    compressed = await compressImageToWebp(rawFile);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Gagal memproses gambar.' };
+  }
+
+  const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
   const filePath = `products/${safeName}`;
 
-  const { error } = await supabase.storage
-    .from('product-images')
-    .upload(filePath, file, { upsert: false });
+  const { error } = await supabase.storage.from('product-images').upload(filePath, compressed.file, {
+    contentType: 'image/webp',
+    cacheControl: '3600',
+    upsert: false,
+  });
 
   if (error) {
     return { error: error.message };
   }
 
   const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
-  return { url: data.publicUrl };
+  return {
+    url: data.publicUrl,
+    originalBytes: compressed.originalBytes,
+    compressedBytes: compressed.compressedBytes,
+  };
 }
 
 export async function createProductAdmin(
@@ -567,6 +584,68 @@ export async function createProductAdmin(
   if (variantRows.length > 0) {
     const { error: varErr } = await supabase.from('product_variants').insert(variantRows);
     if (varErr) return { error: varErr.message };
+  }
+
+  return {};
+}
+
+export async function updateProductAdmin(
+  productId: string,
+  input: Omit<CreateProductInput, 'id'>
+): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase belum aktif.' };
+
+  const badges = input.badgeText?.trim()
+    ? [{ text: input.badgeText.trim().toUpperCase(), variant: 'primary' as const }]
+    : [];
+
+  const { error: prodErr } = await supabase
+    .from('products')
+    .update({
+      sku: input.sku,
+      name: input.name,
+      price: input.price,
+      subtitle: input.subtitle,
+      category: input.category,
+      subcategory: input.subcategory,
+      bestseller_tab: input.bestsellerTab || null,
+      image: input.image,
+      gallery: input.gallery.length > 0 ? input.gallery : [input.image],
+      alt: input.name,
+      badges,
+      fit_note: input.fitNote,
+      fabric_type: input.fabricType,
+      colors: input.colors,
+      sizes: input.sizes,
+      default_size: input.defaultSize,
+      in_stock: input.inStock,
+      stock_label: input.stockLabel,
+      description: input.description,
+      fabric_details: input.fabricDetails,
+      care_instructions: input.careInstructions,
+      model_info: input.modelInfo,
+      fit_scale: input.fitScale,
+    })
+    .eq('id', productId);
+
+  if (prodErr) return { error: prodErr.message };
+
+  // Add any newly introduced color/size combinations without overwriting existing stock
+  const variantRows = input.colors.flatMap((c) =>
+    input.sizes.map((sz) => ({
+      product_id: productId,
+      color_name: c.name,
+      color_hex: c.hex,
+      size: sz,
+      stock_qty: Math.max(0, input.initialStock),
+      is_available: input.initialStock > 0,
+    }))
+  );
+
+  if (variantRows.length > 0) {
+    await supabase
+      .from('product_variants')
+      .upsert(variantRows, { onConflict: 'product_id,color_name,size', ignoreDuplicates: true });
   }
 
   return {};
