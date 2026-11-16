@@ -518,7 +518,12 @@ export async function uploadProductImageAdmin(rawFile: File): Promise<{
   });
 
   if (error) {
-    return { error: error.message };
+    const isBucketMissing = error.message.toLowerCase().includes('bucket');
+    return {
+      error: isBucketMissing
+        ? "Bucket 'product-images' belum ada di Supabase Storage. Jalankan SQL 002_storage_product_images.sql di Supabase SQL Editor."
+        : error.message,
+    };
   }
 
   const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);

@@ -76,6 +76,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
   const [newName, setNewName] = useState('');
   const [newSku, setNewSku] = useState('');
@@ -290,11 +291,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       return;
     }
 
+    setUploadError(null);
     setUploadingImg(true);
     const res = await uploadProductImageAdmin(file);
     setUploadingImg(false);
 
     if (res.error || !res.url) {
+      setUploadError(res.error || 'Upload gambar gagal.');
       onShowToast(`Upload gambar gagal: ${res.error || 'Pastikan bucket product-images sudah dibuat.'}`);
       return;
     }
@@ -812,6 +815,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       </div>
                       {compressionInfo && (
                         <p className="text-[11px] text-status-stock mt-1 font-medium">{compressionInfo}</p>
+                      )}
+                      {uploadError && (
+                        <p className="text-[11px] text-error mt-1 font-medium">{uploadError}</p>
                       )}
                       {(newImage || newGalleryUrls.length > 0) && (
                         <div className="flex items-center gap-2 mt-2">
