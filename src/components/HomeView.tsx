@@ -25,69 +25,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenSizeGuide,
 }) => {
   const [bestsellerFilter, setBestsellerFilter] = useState<BestsellerTab>('Semua');
-  const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({
-    'minimalist-cashmere-sweater': 'S',
-    'pleated-silk-midi-skirt': 'M',
-    'signature-mini-shoulder-bag': 'One Size (24 × 16 cm)',
-    'chelsea-leather-ankle-boot': '42',
-  });
-
-  const getProduct = (id: string): Product =>
-    products.find((p) => p.id === id) || products[0];
+  const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
 
   const categoryPortals = CATEGORY_PORTAL_META.map((portal) => ({
     ...portal,
     count: `${products.filter((p) => p.category === portal.id).length} Kurasi`,
   }));
 
-  const columnDress = getProduct('column-dress-overshirt');
-  const leatherWatch = getProduct('handcrafted-leather-watch');
-  const pleatedTrouserMen = getProduct('tailored-pleated-trouser-men');
-  const structuredTote = getProduct('structured-leather-tote-bag');
-  const cashmereCoat = getProduct('cashmere-wrap-coat');
-
-  const featuredAllIds = [
-    'minimalist-cashmere-sweater',
-    'pleated-silk-midi-skirt',
-    'signature-mini-shoulder-bag',
-    'chelsea-leather-ankle-boot',
-  ];
+  const featuredProduct = products[0] ?? null;
+  const sideProducts = products.slice(1, 5);
 
   const visibleBestsellerProducts =
     bestsellerFilter === 'Semua'
-      ? featuredAllIds.map(getProduct)
+      ? products.slice(0, 4)
       : products.filter((p) => p.bestsellerTab === bestsellerFilter);
-
-  const weeklyEditSideCards = [
-    {
-      product: leatherWatch,
-      image: leatherWatch.image,
-      alt: leatherWatch.alt,
-      metaText: 'Stok Ready',
-      metaClass: 'text-status-stock',
-    },
-    {
-      product: pleatedTrouserMen,
-      image: pleatedTrouserMen.image,
-      alt: pleatedTrouserMen.alt,
-      metaText: 'Size 28-36',
-      metaClass: 'text-text-muted',
-    },
-    {
-      product: structuredTote,
-      image: structuredTote.image,
-      alt: structuredTote.alt,
-      metaText: 'Stok Menipis',
-      metaClass: 'text-secondary font-semibold',
-    },
-    {
-      product: cashmereCoat,
-      image: cashmereCoat.gallery[1] || cashmereCoat.image,
-      alt: cashmereCoat.alt,
-      metaText: 'Atelier Fit',
-      metaClass: 'text-text-muted',
-    },
-  ];
 
   const handlePortalClick = (id: string) => {
     if (id === 'men') onNavigate('men');
@@ -213,118 +164,134 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           {/* Asymmetrical Editorial Layout Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-            {/* Left Column: Featured Major Look (5 cols) */}
-            <div className="lg:col-span-5 bg-surface-card border border-border-ecru flex flex-col group overflow-hidden">
-              <div
-                onClick={() => onSelectProduct(columnDress)}
-                className="relative w-full aspect-[4/5] lg:aspect-[3/4] overflow-hidden bg-surface-container-low cursor-pointer"
-              >
-                {/* Label Badge */}
-                <div className="absolute top-4 left-4 z-10 bg-primary text-on-primary font-label-uppercase text-[10px] tracking-widest px-2.5 py-1">
-                  DROP EKSKLUSIF
-                </div>
-                <img
-                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-                  alt={columnDress.alt}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  onError={handleImageError}
-                  src={columnDress.gallery[1] || columnDress.image}
-                />
-                {/* Quick Add Overlay Trigger */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddToBag(columnDress, columnDress.defaultSize, columnDress.colors[0]?.name);
-                  }}
-                  title="Tambah ke Bag"
-                  aria-label={`Tambah ${columnDress.name} ke Bag`}
-                  className="absolute bottom-4 right-4 z-10 w-10 h-10 rounded-full bg-surface-card/90 backdrop-blur-sm border border-border-ecru flex items-center justify-center text-primary shadow-sm hover:bg-primary hover:text-on-primary transition-all duration-200 cursor-pointer"
+          {!featuredProduct ? (
+            <div className="bg-surface-card border border-border-ecru p-12 text-center">
+              <span className="material-symbols-outlined text-[36px] text-text-muted mb-3">inventory_2</span>
+              <h3 className="font-headline-sm text-headline-sm text-primary mb-2">
+                Katalog produk masih kosong
+              </h3>
+              <p className="font-body-md text-body-md text-text-muted max-w-md mx-auto">
+                Belum ada produk yang dirilis. Login sebagai Admin Atelier untuk menambahkan produk real ke etalase.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+              {/* Left Column: Featured Major Look (5 cols) */}
+              <div className="lg:col-span-5 bg-surface-card border border-border-ecru flex flex-col group overflow-hidden">
+                <div
+                  onClick={() => onSelectProduct(featuredProduct)}
+                  className="relative w-full aspect-[4/5] lg:aspect-[3/4] overflow-hidden bg-surface-container-low cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[20px]">add</span>
-                </button>
-              </div>
-              <div className="p-6 flex flex-col flex-1 justify-between bg-surface-card">
-                <div onClick={() => onSelectProduct(columnDress)} className="cursor-pointer">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-block px-2 py-0.5 text-[10px] font-label-uppercase uppercase tracking-wider bg-surface-sand text-secondary font-medium">
-                      {columnDress.fitScale}
-                    </span>
-                    <span className="text-body-sm text-[12px] text-text-muted">{columnDress.fabricType}</span>
+                  {/* Label Badge */}
+                  <div className="absolute top-4 left-4 z-10 bg-primary text-on-primary font-label-uppercase text-[10px] tracking-widest px-2.5 py-1">
+                    {featuredProduct.badges[0]?.text || 'DROP EKSKLUSIF'}
                   </div>
-                  <h3 className="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors">
-                    {columnDress.name}
-                  </h3>
-                  <p className="font-body-md text-body-md text-text-muted">{columnDress.subtitle}</p>
-                </div>
-                <div className="flex items-center justify-between pt-6 border-t border-border-ecru mt-4">
-                  <span className="font-price-lg text-price-lg text-primary">{columnDress.priceFormatted}</span>
+                  <img
+                    className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                    alt={featuredProduct.alt}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={handleImageError}
+                    src={featuredProduct.gallery[1] || featuredProduct.image}
+                  />
+                  {/* Quick Add Overlay Trigger */}
                   <button
                     type="button"
-                    onClick={() => onSelectProduct(columnDress)}
-                    className="font-label-uppercase text-label-uppercase uppercase text-primary underline underline-offset-4 hover:text-secondary transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddToBag(featuredProduct, featuredProduct.defaultSize, featuredProduct.colors[0]?.name);
+                    }}
+                    title="Tambah ke Bag"
+                    aria-label={`Tambah ${featuredProduct.name} ke Bag`}
+                    className="absolute bottom-4 right-4 z-10 w-10 h-10 rounded-full bg-surface-card/90 backdrop-blur-sm border border-border-ecru flex items-center justify-center text-primary shadow-sm hover:bg-primary hover:text-on-primary transition-all duration-200 cursor-pointer"
                   >
-                    Lihat Cepat
+                    <span className="material-symbols-outlined text-[20px]">add</span>
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* Right Column: 2x2 Modular Grid (7 cols) */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
-              {weeklyEditSideCards.map((card) => (
-                <div key={card.product.id} className="bg-surface-card border border-border-ecru flex flex-col group">
-                  <div
-                    onClick={() => onSelectProduct(card.product)}
-                    className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
-                  >
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt={card.alt}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      onError={handleImageError}
-                      src={card.image}
-                    />
+                <div className="p-6 flex flex-col flex-1 justify-between bg-surface-card">
+                  <div onClick={() => onSelectProduct(featuredProduct)} className="cursor-pointer">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-block px-2 py-0.5 text-[10px] font-label-uppercase uppercase tracking-wider bg-surface-sand text-secondary font-medium">
+                        {featuredProduct.fitScale}
+                      </span>
+                      <span className="text-body-sm text-[12px] text-text-muted">{featuredProduct.fabricType}</span>
+                    </div>
+                    <h3 className="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors">
+                      {featuredProduct.name}
+                    </h3>
+                    <p className="font-body-md text-body-md text-text-muted">{featuredProduct.subtitle}</p>
+                  </div>
+                  <div className="flex items-center justify-between pt-6 border-t border-border-ecru mt-4">
+                    <span className="font-price-lg text-price-lg text-primary">{featuredProduct.priceFormatted}</span>
                     <button
                       type="button"
-                      aria-label="Toggle wishlist"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleWishlist(card.product.id);
-                      }}
-                      className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
-                        wishlistIds.includes(card.product.id)
-                          ? 'text-error'
-                          : 'text-on-surface-variant hover:text-error'
-                      }`}
+                      onClick={() => onSelectProduct(featuredProduct)}
+                      className="font-label-uppercase text-label-uppercase uppercase text-primary underline underline-offset-4 hover:text-secondary transition-colors cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[20px]">favorite</span>
+                      Lihat Cepat
                     </button>
                   </div>
-                  <div
-                    onClick={() => onSelectProduct(card.product)}
-                    className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
-                  >
-                    <div>
-                      <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
-                        {card.product.name}
-                      </h4>
-                      <p className="font-body-sm text-body-sm text-text-muted">{card.product.subtitle}</p>
+                </div>
+              </div>
+
+              {/* Right Column: 2x2 Modular Grid (7 cols) */}
+              <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
+                {sideProducts.map((prod) => (
+                  <div key={prod.id} className="bg-surface-card border border-border-ecru flex flex-col group">
+                    <div
+                      onClick={() => onSelectProduct(prod)}
+                      className="relative w-full aspect-square overflow-hidden bg-surface-container-low cursor-pointer"
+                    >
+                      <img
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        alt={prod.alt}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={handleImageError}
+                        src={prod.image}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Toggle wishlist"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleWishlist(prod.id);
+                        }}
+                        className={`absolute top-3 right-3 transition-colors p-1 cursor-pointer ${
+                          wishlistIds.includes(prod.id)
+                            ? 'text-error'
+                            : 'text-on-surface-variant hover:text-error'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[20px]">favorite</span>
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
-                      <span className="font-price-md text-price-md text-primary">{card.product.priceFormatted}</span>
-                      <span className={`font-label-uppercase text-[10px] tracking-wider uppercase ${card.metaClass}`}>
-                        {card.metaText}
-                      </span>
+                    <div
+                      onClick={() => onSelectProduct(prod)}
+                      className="p-4 flex flex-col justify-between flex-1 cursor-pointer"
+                    >
+                      <div>
+                        <h4 className="font-body-md text-body-md font-medium text-primary group-hover:text-secondary transition-colors">
+                          {prod.name}
+                        </h4>
+                        <p className="font-body-sm text-body-sm text-text-muted">{prod.subtitle}</p>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-ecru">
+                        <span className="font-price-md text-price-md text-primary">{prod.priceFormatted}</span>
+                        <span
+                          className={`font-label-uppercase text-[10px] tracking-wider uppercase ${
+                            prod.inStock ? 'text-status-stock' : 'text-error'
+                          }`}
+                        >
+                          {prod.inStock ? 'Stok Ready' : 'Habis'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Editorial Landscape Capsule Sub-Banner */}
           <div className="mt-12 w-full relative border border-border-ecru bg-surface-sand overflow-hidden">
@@ -398,7 +365,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           {/* 4-Column Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {visibleBestsellerProducts.length === 0 ? (
+            <div className="bg-surface-card border border-border-ecru p-10 text-center text-sm text-text-muted">
+              Belum ada produk pada kategori ini.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {visibleBestsellerProducts.map((product) => {
               const firstAvailable =
                 product.sizes.find((sz) => !product.disabledSizes?.includes(sz)) || product.defaultSize;
@@ -525,7 +497,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           {/* Centered Catalog Link */}
           <div className="mt-12 text-center">

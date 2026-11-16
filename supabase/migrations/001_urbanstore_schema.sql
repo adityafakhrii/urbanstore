@@ -730,3 +730,31 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.promos, public.products, public.p
 GRANT SELECT ON public.newsletter_subscribers TO authenticated;
 GRANT EXECUTE ON FUNCTION public.validate_promo(text, integer) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.place_order(text, text, text, text, text, text, public.courier_type, text, text, jsonb) TO anon, authenticated;
+
+-- ============================================================================
+-- 9. SUPABASE STORAGE BUCKET FOR REAL PRODUCT IMAGES
+-- ============================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('product-images', 'product-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public can view product images" ON storage.objects;
+CREATE POLICY "Public can view product images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'product-images');
+
+DROP POLICY IF EXISTS "Admin can upload product images" ON storage.objects;
+CREATE POLICY "Admin can upload product images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'product-images' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admin can update product images" ON storage.objects;
+CREATE POLICY "Admin can update product images"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'product-images' AND public.is_admin())
+  WITH CHECK (bucket_id = 'product-images' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admin can delete product images" ON storage.objects;
+CREATE POLICY "Admin can delete product images"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'product-images' AND public.is_admin());

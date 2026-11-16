@@ -42,7 +42,7 @@ export default function App() {
   const [useSupabaseDb, setUseSupabaseDb] = useState<boolean>(false);
 
   const [activePage, setActivePage] = useState<ActivePage>('home');
-  const [selectedProduct, setSelectedProduct] = useState<Product>(PRODUCTS[0]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const [cartItems, setCartItems] = useState<CartItem[]>(() =>
@@ -68,7 +68,9 @@ export default function App() {
     const res = await fetchCatalogProducts();
     setProducts(res.products);
     setUseSupabaseDb(res.fromSupabase);
-    setSelectedProduct((prev) => res.products.find((p) => p.id === prev.id) || res.products[0]);
+    setSelectedProduct((prev) =>
+      prev ? res.products.find((p) => p.id === prev.id) || res.products[0] || null : res.products[0] || null
+    );
   }, []);
 
   useEffect(() => {
@@ -309,7 +311,7 @@ export default function App() {
           />
         )}
 
-        {activePage === 'pdp' && (
+        {activePage === 'pdp' && selectedProduct && (
           <ProductDetailView
             product={selectedProduct}
             products={products}

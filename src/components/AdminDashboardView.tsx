@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Product } from '../data/products';
+import {
+  Product,
+  PRODUCT_CATEGORIES,
+  PRODUCT_SUBCATEGORIES,
+  PRODUCT_FABRICS,
+  PRODUCT_FIT_SCALES,
+  PRODUCT_BESTSELLER_TABS,
+} from '../data/products';
 import { useAuth } from '../context/AuthContext';
 import {
   AdminOrderRow,
@@ -13,6 +20,10 @@ import {
   updateOrderAdmin,
   updateVariantStockAdmin,
   updateProductPriceStockAdmin,
+  createProductAdmin,
+  deleteProductAdmin,
+  uploadProductImageAdmin,
+  createPromoAdmin,
   togglePromoAdmin,
   formatRupiah,
 } from '../services/supabaseService';
@@ -57,6 +68,37 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [productPriceEdits, setProductPriceEdits] = useState<
     Record<string, { price: number; inStock: boolean }>
   >({});
+
+  // Add Product Form State
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newSku, setNewSku] = useState('');
+  const [newPrice, setNewPrice] = useState('450000');
+  const [newSubtitle, setNewSubtitle] = useState('');
+  const [newCategory, setNewCategory] = useState<Product['category']>('women');
+  const [newSubcategory, setNewSubcategory] = useState<Product['subcategory']>('Dress & Setelan');
+  const [newFabric, setNewFabric] = useState<Product['fabricType']>('Linen Organik');
+  const [newFitScale, setNewFitScale] = useState<Product['fitScale']>('Pas Banget');
+  const [newBestsellerTab, setNewBestsellerTab] = useState<string>('');
+  const [newImage, setNewImage] = useState('');
+  const [newBadge, setNewBadge] = useState('DROP BARU');
+  const [newColorName, setNewColorName] = useState('Natural Cream');
+  const [newColorHex, setNewColorHex] = useState('#F5F2EB');
+  const [newSizesText, setNewSizesText] = useState('S, M, L');
+  const [newInitialStock, setNewInitialStock] = useState('10');
+  const [newFitNote, setNewFitNote] = useState('True to size');
+  const [newModelInfo, setNewModelInfo] = useState('Model TB 170cm memakai Size S.');
+  const [newDescription, setNewDescription] = useState('');
+  const [newFabricDetailsText, setNewFabricDetailsText] = useState('');
+  const [newCareText, setNewCareText] = useState('');
+
+  // Add Promo Form State
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [promoDescInput, setPromoDescInput] = useState('');
+  const [promoDiscountInput, setPromoDiscountInput] = useState('50000');
+  const [promoMinInput, setPromoMinInput] = useState('0');
 
   const loadAdminData = useCallback(async () => {
     if (!isAdmin) return;
@@ -172,6 +214,128 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       return;
     }
     onShowToast(`Promo ${promo.code} ${!promo.is_active ? 'diaktifkan' : 'dinonaktifkan'}.`);
+    await loadAdminData();
+  };
+
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImg(true);
+    const res = await uploadProductImageAdmin(file);
+    setUploadingImg(false);
+    if (res.error || !res.url) {
+      onShowToast(`Upload gambar gagal: ${res.error || 'Pastikan bucket product-images sudah dibuat.'}`);
+      return;
+    }
+    setNewImage(res.url);
+    onShowToast('Foto produk berhasil di-upload ke Supabase Storage!');
+  };
+
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsedSizes = newSizesText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (parsedSizes.length === 0) {
+      onShowToast('Isi minimal 1 ukuran (contoh: S, M, L atau One Size).');
+      return;
+    }
+    if (!newImage.trim()) {
+      onShowToast('Masukkan URL foto produk atau upload gambar terlebih dahulu.');
+      return;
+    }
+
+    const slugBase = newName
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const productId = `${slugBase || 'produk'}-${Date.now().toString(36).slice(-4)}`;
+
+    setSavingProduct(true);
+    const res = await createProductAdmin({
+      id: productId,
+      sku: newSku.trim().toUpperCase(),
+      name: newName.trim(),
+      price: Math.max(0, Number(newPrice) || 0),
+      subtitle: newSubtitle.trim() || `${newFabric} · ${newColorName}`,
+      category: newCategory,
+      subcategory: newSubcategory,
+      bestsellerTab: newBestsellerTab ? (newBestsellerTab as Product['bestsellerTab']) : undefined,
+      image: newImage.trim(),
+      gallery: [newImage.trim()],
+      badgeText: newBadge.trim() || undefined,
+      fitNote: newFitNote.trim() || 'True to size',
+      fabricType: newFabric,
+      colors: [{ name: newColorName.trim() || 'Default', hex: newColorHex }],
+      sizes: parsedSizes,
+      defaultSize: parsedSizes[0],
+      inStock: (Number(newInitialStock) || 0) > 0,
+      stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
+      description: newDescription.trim(),
+      fabricDetails: newFabricDetailsText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean),
+      careInstructions: newCareText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean),
+      modelInfo: newModelInfo.trim() || 'Lihat panduan ukuran Anti-Zonk.',
+      fitScale: newFitScale,
+      initialStock: Math.max(0, Number(newInitialStock) || 0),
+    });
+    setSavingProduct(false);
+
+    if (res.error) {
+      onShowToast(`Gagal menambah produk: ${res.error}`);
+      return;
+    }
+
+    setNewName('');
+    setNewSku('');
+    setNewSubtitle('');
+    setNewImage('');
+    setNewDescription('');
+    setNewFabricDetailsText('');
+    setNewCareText('');
+    setShowAddForm(false);
+
+    await onRefreshCatalog();
+    await loadAdminData();
+    onShowToast('Produk real berhasil ditambahkan ke database Supabase!');
+  };
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (!window.confirm(`Hapus produk "${product.name}" (${product.sku}) dari database?`)) return;
+    const res = await deleteProductAdmin(product.id);
+    if (res.error) {
+      onShowToast(`Gagal menghapus produk: ${res.error}`);
+      return;
+    }
+    await onRefreshCatalog();
+    await loadAdminData();
+    onShowToast(`Produk "${product.name}" telah dihapus.`);
+  };
+
+  const handleCreatePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoCodeInput.trim()) return;
+    const res = await createPromoAdmin({
+      code: promoCodeInput,
+      description: promoDescInput || `Potongan ${formatRupiah(Number(promoDiscountInput) || 0)}`,
+      discount_amount: Math.max(1000, Number(promoDiscountInput) || 50000),
+      min_subtotal: Math.max(0, Number(promoMinInput) || 0),
+    });
+    if (res.error) {
+      onShowToast(`Gagal tambah promo: ${res.error}`);
+      return;
+    }
+    setPromoCodeInput('');
+    setPromoDescInput('');
+    onShowToast('Kode promo baru berhasil ditambahkan!');
     await loadAdminData();
   };
 
@@ -364,6 +528,301 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
           {activeTab === 'inventory' && (
             <div className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="font-headline-sm text-headline-sm text-primary">
+                  Daftar Produk Real ({products.length})
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm((prev) => !prev)}
+                  className="px-4 py-2 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:bg-neutral-800 cursor-pointer"
+                >
+                  {showAddForm ? 'Tutup Form' : '+ Tambah Produk Baru'}
+                </button>
+              </div>
+
+              {showAddForm && (
+                <form
+                  onSubmit={handleCreateProduct}
+                  className="p-6 bg-surface-sand border border-border-ecru space-y-4 text-xs"
+                >
+                  <h3 className="font-headline-sm text-headline-sm text-primary">Tambah Produk Real</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-text-muted mb-1">Nama Produk *</label>
+                      <input
+                        required
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="Contoh: Linen Relaxed Shirt"
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">SKU Unik *</label>
+                      <input
+                        required
+                        type="text"
+                        value={newSku}
+                        onChange={(e) => setNewSku(e.target.value)}
+                        placeholder="Contoh: US-W01"
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Harga (IDR) *</label>
+                      <input
+                        required
+                        type="number"
+                        min={0}
+                        value={newPrice}
+                        onChange={(e) => setNewPrice(e.target.value)}
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-text-muted mb-1">Subtitle (Material &amp; Warna)</label>
+                      <input
+                        type="text"
+                        value={newSubtitle}
+                        onChange={(e) => setNewSubtitle(e.target.value)}
+                        placeholder="100% Organic Linen · Natural Cream"
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Badge (opsional)</label>
+                      <input
+                        type="text"
+                        value={newBadge}
+                        onChange={(e) => setNewBadge(e.target.value)}
+                        placeholder="DROP BARU"
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div>
+                      <label className="block text-text-muted mb-1">Kategori</label>
+                      <select
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value as Product['category'])}
+                        className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                      >
+                        {PRODUCT_CATEGORIES.map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Subkategori</label>
+                      <select
+                        value={newSubcategory}
+                        onChange={(e) => setNewSubcategory(e.target.value as Product['subcategory'])}
+                        className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                      >
+                        {PRODUCT_SUBCATEGORIES.map((sc) => (
+                          <option key={sc} value={sc}>
+                            {sc}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Bahan Utama</label>
+                      <select
+                        value={newFabric}
+                        onChange={(e) => setNewFabric(e.target.value as Product['fabricType'])}
+                        className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                      >
+                        {PRODUCT_FABRICS.map((f) => (
+                          <option key={f} value={f}>
+                            {f}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Fit Scale</label>
+                      <select
+                        value={newFitScale}
+                        onChange={(e) => setNewFitScale(e.target.value as Product['fitScale'])}
+                        className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                      >
+                        {PRODUCT_FIT_SCALES.map((fs) => (
+                          <option key={fs} value={fs}>
+                            {fs}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Tab Best Seller</label>
+                      <select
+                        value={newBestsellerTab}
+                        onChange={(e) => setNewBestsellerTab(e.target.value)}
+                        className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                      >
+                        <option value="">Tidak ada</option>
+                        {PRODUCT_BESTSELLER_TABS.map((bt) => (
+                          <option key={bt} value={bt}>
+                            {bt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-text-muted mb-1">Foto Produk (URL atau Upload) *</label>
+                      <div className="flex gap-2">
+                        <input
+                          required
+                          type="url"
+                          value={newImage}
+                          onChange={(e) => setNewImage(e.target.value)}
+                          placeholder="https://..."
+                          className="flex-1 h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                        />
+                        <label className="h-10 px-3 border border-primary bg-surface-card text-primary flex items-center cursor-pointer hover:bg-primary hover:text-on-primary transition-colors">
+                          <span>{uploadingImg ? 'Uploading...' : 'Upload'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleUploadImage}
+                            className="hidden"
+                            disabled={uploadingImg}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Warna Utama &amp; Hex</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newColorName}
+                          onChange={(e) => setNewColorName(e.target.value)}
+                          placeholder="Natural Cream"
+                          className="flex-1 h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                        />
+                        <input
+                          type="color"
+                          value={newColorHex}
+                          onChange={(e) => setNewColorHex(e.target.value)}
+                          className="w-10 h-10 p-1 bg-surface-card border border-border-ecru cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-text-muted mb-1">Ukuran (koma)</label>
+                        <input
+                          required
+                          type="text"
+                          value={newSizesText}
+                          onChange={(e) => setNewSizesText(e.target.value)}
+                          placeholder="S, M, L"
+                          className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-text-muted mb-1">Stok Awal</label>
+                        <input
+                          required
+                          type="number"
+                          min={0}
+                          value={newInitialStock}
+                          onChange={(e) => setNewInitialStock(e.target.value)}
+                          className="w-full h-10 px-2 bg-surface-card border border-border-ecru text-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-text-muted mb-1">Fit Note Singkat</label>
+                      <input
+                        type="text"
+                        value={newFitNote}
+                        onChange={(e) => setNewFitNote(e.target.value)}
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Info Model</label>
+                      <input
+                        type="text"
+                        value={newModelInfo}
+                        onChange={(e) => setNewModelInfo(e.target.value)}
+                        className="w-full h-10 px-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-text-muted mb-1">Deskripsi Produk *</label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder="Jelaskan siluet, material, dan keunggulan produk..."
+                      className="w-full p-3 bg-surface-card border border-border-ecru text-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-text-muted mb-1">Detail Bahan (1 poin per baris)</label>
+                      <textarea
+                        rows={3}
+                        value={newFabricDetailsText}
+                        onChange={(e) => setNewFabricDetailsText(e.target.value)}
+                        placeholder={'100% Organic Linen\nJahitan French seam rapi'}
+                        className="w-full p-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-text-muted mb-1">Cara Rawat (1 poin per baris)</label>
+                      <textarea
+                        rows={3}
+                        value={newCareText}
+                        onChange={(e) => setNewCareText(e.target.value)}
+                        placeholder={'Cuci air dingin\nJemur di tempat teduh'}
+                        className="w-full p-3 bg-surface-card border border-border-ecru text-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddForm(false)}
+                      className="px-4 py-2 border border-border-ecru bg-surface-card text-primary cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingProduct}
+                      className="px-6 py-2 bg-primary text-on-primary font-label-uppercase uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                    >
+                      {savingProduct ? 'Menyimpan...' : 'Simpan Produk ke Database'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
               <div className="bg-surface-card border border-border-ecru overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
@@ -377,51 +836,66 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-ecru">
-                    {products.map((p) => {
-                      const edit = productPriceEdits[p.id] || { price: p.price, inStock: p.inStock };
-                      return (
-                        <tr key={p.id}>
-                          <td className="p-3 font-mono text-text-muted">{p.sku}</td>
-                          <td className="p-3 font-medium text-primary">{p.name}</td>
-                          <td className="p-3 uppercase text-text-muted">{p.category}</td>
-                          <td className="p-3">
-                            <input
-                              type="number"
-                              value={edit.price}
-                              onChange={(e) =>
-                                setProductPriceEdits((prev) => ({
-                                  ...prev,
-                                  [p.id]: { ...edit, price: Number(e.target.value) },
-                                }))
-                              }
-                              className="w-28 h-8 px-2 border border-border-ecru bg-surface-card tabular-nums"
-                            />
-                          </td>
-                          <td className="p-3">
-                            <input
-                              type="checkbox"
-                              checked={edit.inStock}
-                              onChange={(e) =>
-                                setProductPriceEdits((prev) => ({
-                                  ...prev,
-                                  [p.id]: { ...edit, inStock: e.target.checked },
-                                }))
-                              }
-                              className="w-4 h-4 accent-primary"
-                            />
-                          </td>
-                          <td className="p-3">
-                            <button
-                              type="button"
-                              onClick={() => void handleSaveProduct(p.id)}
-                              className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase cursor-pointer"
-                            >
-                              Update
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {products.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-text-muted">
+                          Belum ada produk di database. Klik <strong>+ Tambah Produk Baru</strong> di atas untuk menambahkan produk real.
+                        </td>
+                      </tr>
+                    ) : (
+                      products.map((p) => {
+                        const edit = productPriceEdits[p.id] || { price: p.price, inStock: p.inStock };
+                        return (
+                          <tr key={p.id}>
+                            <td className="p-3 font-mono text-text-muted">{p.sku}</td>
+                            <td className="p-3 font-medium text-primary">{p.name}</td>
+                            <td className="p-3 uppercase text-text-muted">{p.category}</td>
+                            <td className="p-3">
+                              <input
+                                type="number"
+                                value={edit.price}
+                                onChange={(e) =>
+                                  setProductPriceEdits((prev) => ({
+                                    ...prev,
+                                    [p.id]: { ...edit, price: Number(e.target.value) },
+                                  }))
+                                }
+                                className="w-28 h-8 px-2 border border-border-ecru bg-surface-card tabular-nums"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <input
+                                type="checkbox"
+                                checked={edit.inStock}
+                                onChange={(e) =>
+                                  setProductPriceEdits((prev) => ({
+                                    ...prev,
+                                    [p.id]: { ...edit, inStock: e.target.checked },
+                                  }))
+                                }
+                                className="w-4 h-4 accent-primary"
+                              />
+                            </td>
+                            <td className="p-3 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void handleSaveProduct(p.id)}
+                                className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase cursor-pointer"
+                              >
+                                Update
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteProduct(p)}
+                                className="px-3 py-1.5 border border-border-ecru text-error hover:border-error font-label-uppercase text-[10px] uppercase cursor-pointer"
+                              >
+                                Hapus
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -432,7 +906,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </h3>
                 {variants.length === 0 ? (
                   <div className="p-6 bg-surface-card border border-border-ecru text-xs text-text-muted">
-                    Belum ada data varian di Supabase. Jalankan <code>supabase/seed.sql</code> di SQL Editor.
+                    Belum ada varian stok. Varian akan otomatis dibuat saat Admin menambahkan produk baru.
                   </div>
                 ) : (
                   <div className="bg-surface-card border border-border-ecru overflow-x-auto">
@@ -486,7 +960,64 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           )}
 
           {activeTab === 'promos' && (
-            <div className="bg-surface-card border border-border-ecru overflow-x-auto">
+            <div className="space-y-6">
+              <form
+                onSubmit={handleCreatePromo}
+                className="p-4 bg-surface-sand border border-border-ecru grid grid-cols-1 sm:grid-cols-5 gap-3 items-end text-xs"
+              >
+                <div>
+                  <label className="block text-text-muted mb-1">Kode Promo *</label>
+                  <input
+                    required
+                    type="text"
+                    value={promoCodeInput}
+                    onChange={(e) => setPromoCodeInput(e.target.value)}
+                    placeholder="CONTOH50"
+                    className="w-full h-9 px-2 bg-surface-card border border-border-ecru uppercase"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-text-muted mb-1">Deskripsi</label>
+                  <input
+                    type="text"
+                    value={promoDescInput}
+                    onChange={(e) => setPromoDescInput(e.target.value)}
+                    placeholder="Diskon spesial..."
+                    className="w-full h-9 px-2 bg-surface-card border border-border-ecru"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-text-muted mb-1">Diskon</label>
+                    <input
+                      required
+                      type="number"
+                      min={1000}
+                      value={promoDiscountInput}
+                      onChange={(e) => setPromoDiscountInput(e.target.value)}
+                      className="w-full h-9 px-2 bg-surface-card border border-border-ecru"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-text-muted mb-1">Min. Belanja</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={promoMinInput}
+                      onChange={(e) => setPromoMinInput(e.target.value)}
+                      className="w-full h-9 px-2 bg-surface-card border border-border-ecru"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer"
+                >
+                  + Tambah Promo
+                </button>
+              </form>
+
+              <div className="bg-surface-card border border-border-ecru overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-border-ecru bg-surface-sand font-label-uppercase text-[10px] uppercase text-text-muted">
@@ -527,6 +1058,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   ))}
                 </tbody>
               </table>
+            </div>
             </div>
           )}
 

@@ -135,7 +135,7 @@ function mapDbProductToProduct(row: DbProductRow): Product {
 }
 
 export async function fetchCatalogProducts(): Promise<{ products: Product[]; fromSupabase: boolean }> {
-  if (!supabase) return { products: PRODUCTS, fromSupabase: false };
+  if (!supabase) return { products: [], fromSupabase: false };
 
   const { data, error } = await supabase
     .from('products')
@@ -143,7 +143,7 @@ export async function fetchCatalogProducts(): Promise<{ products: Product[]; fro
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return { products: PRODUCTS, fromSupabase: false };
   }
 
@@ -465,6 +465,119 @@ export async function updateVariantStockAdmin(
   return error ? { error: error.message } : {};
 }
 
+export interface CreateProductInput {
+  id: string;
+  sku: string;
+  name: string;
+  price: number;
+  subtitle: string;
+  category: Product['category'];
+  subcategory: Product['subcategory'];
+  bestsellerTab?: Product['bestsellerTab'];
+  image: string;
+  gallery: string[];
+  badgeText?: string;
+  fitNote: string;
+  fabricType: Product['fabricType'];
+  colors: Product['colors'];
+  sizes: string[];
+  defaultSize: string;
+  inStock: boolean;
+  stockLabel: string;
+  description: string;
+  fabricDetails: string[];
+  careInstructions: string[];
+  modelInfo: string;
+  fitScale: Product['fitScale'];
+  initialStock: number;
+}
+
+export async function uploadProductImageAdmin(
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  if (!supabase) return { error: 'Supabase belum terkonfigurasi.' };
+  const ext = file.name.split('.').pop() || 'jpg';
+  const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const filePath = `products/${safeName}`;
+
+  const { error } = await supabase.storage
+    .from('product-images')
+    .upload(filePath, file, { upsert: false });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
+  return { url: data.publicUrl };
+}
+
+export async function createProductAdmin(
+  input: CreateProductInput
+): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase belum aktif.' };
+
+  const badges = input.badgeText?.trim()
+    ? [{ text: input.badgeText.trim().toUpperCase(), variant: 'primary' as const }]
+    : [];
+
+  const { error: prodErr } = await supabase.from('products').insert({
+    id: input.id,
+    sku: input.sku,
+    name: input.name,
+    price: input.price,
+    subtitle: input.subtitle,
+    category: input.category,
+    subcategory: input.subcategory,
+    bestseller_tab: input.bestsellerTab || null,
+    image: input.image,
+    gallery: input.gallery.length > 0 ? input.gallery : [input.image],
+    alt: input.name,
+    badges,
+    fit_note: input.fitNote,
+    fabric_type: input.fabricType,
+    colors: input.colors,
+    sizes: input.sizes,
+    default_size: input.defaultSize,
+    disabled_sizes: [],
+    in_stock: input.inStock,
+    stock_label: input.stockLabel,
+    description: input.description,
+    fabric_details: input.fabricDetails,
+    care_instructions: input.careInstructions,
+    model_info: input.modelInfo,
+    fit_scale: input.fitScale,
+    is_active: true,
+    sort_order: 0,
+  });
+
+  if (prodErr) return { error: prodErr.message };
+
+  const variantRows = input.colors.flatMap((c) =>
+    input.sizes.map((sz) => ({
+      product_id: input.id,
+      color_name: c.name,
+      color_hex: c.hex,
+      size: sz,
+      stock_qty: Math.max(0, input.initialStock),
+      is_available: input.initialStock > 0,
+    }))
+  );
+
+  if (variantRows.length > 0) {
+    const { error: varErr } = await supabase.from('product_variants').insert(variantRows);
+    if (varErr) return { error: varErr.message };
+  }
+
+  return {};
+}
+
+export async function deleteProductAdmin(productId: string): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase belum aktif.' };
+  const { error } = await supabase.from('products').delete().eq('id', productId);
+  return error ? { error: error.message } : {};
+}
+
 export async function updateProductPriceStockAdmin(
   productId: string,
   updates: { price: number; in_stock: boolean }
@@ -479,6 +592,23 @@ export async function fetchPromosAdmin(): Promise<PromoRow[]> {
   const { data, error } = await supabase.from('promos').select('*').order('code', { ascending: true });
   if (error || !data) return [];
   return data as PromoRow[];
+}
+
+export async function createPromoAdmin(promo: {
+  code: string;
+  description: string;
+  discount_amount: number;
+  min_subtotal: number;
+}): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase belum aktif.' };
+  const { error } = await supabase.from('promos').insert({
+    code: promo.code.trim().toUpperCase(),
+    description: promo.description.trim(),
+    discount_amount: promo.discount_amount,
+    min_subtotal: promo.min_subtotal,
+    is_active: true,
+  });
+  return error ? { error: error.message } : {};
 }
 
 export async function togglePromoAdmin(code: string, isActive: boolean): Promise<{ error?: string }> {
