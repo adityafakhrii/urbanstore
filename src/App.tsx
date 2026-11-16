@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PRODUCTS, Product } from './data/products';
 import { Header, ActivePage } from './components/Header';
 import { Footer } from './components/Footer';
@@ -36,14 +37,40 @@ import {
   clearUserCartInDb,
 } from './services/supabaseService';
 
+const PAGE_TO_PATH: Record<ActivePage, string> = {
+  home: '/',
+  women: '/women',
+  men: '/men',
+  bags: '/bags',
+  shoes: '/shoes',
+  'curated-drops': '/curated-drops',
+  pdp: '/curated-drops',
+  checkout: '/curated-drops',
+  admin: '/admin',
+};
+
+function getActivePageFromPath(pathname: string): ActivePage {
+  if (pathname.startsWith('/women')) return 'women';
+  if (pathname.startsWith('/men')) return 'men';
+  if (pathname.startsWith('/bags')) return 'bags';
+  if (pathname.startsWith('/shoes')) return 'shoes';
+  if (pathname.startsWith('/curated-drops')) return 'curated-drops';
+  if (pathname.startsWith('/product/')) return 'pdp';
+  if (pathname.startsWith('/admin')) return 'admin';
+  return 'home';
+}
+
 export default function App() {
   const { user, isAdmin } = useAuth();
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [useSupabaseDb, setUseSupabaseDb] = useState<boolean>(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [activePage, setActivePage] = useState<ActivePage>('home');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [catalogLoaded, setCatalogLoaded] = useState<boolean>(false);
+  const [useSupabaseDb, setUseSupabaseDb] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const activePage = getActivePageFromPath(location.pathname);
 
   const [cartItems, setCartItems] = useState<CartItem[]>(() =>
     loadFromStorage<CartItem[]>(STORAGE_KEYS.cart, [])
@@ -68,26 +95,26 @@ export default function App() {
     const res = await fetchCatalogProducts();
     setProducts(res.products);
     setUseSupabaseDb(res.fromSupabase);
-    setSelectedProduct((prev) =>
-      prev ? res.products.find((p) => p.id === prev.id) || res.products[0] || null : res.products[0] || null
-    );
+    setCatalogLoaded(true);
   }, []);
 
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
 
-  // Handle logout transition cleanly (restore guest storage & leave admin view)
+  // Handle logout transition cleanly (restore guest storage & leave admin route)
   useEffect(() => {
     const currentId = user?.id ?? null;
     if (prevUserIdRef.current && !currentId) {
       setCartItems(loadFromStorage<CartItem[]>(STORAGE_KEYS.cart, []));
       setWishlistIds(loadFromStorage<string[]>(STORAGE_KEYS.wishlist, []));
       setOrders(loadFromStorage<OrderRecord[]>(STORAGE_KEYS.orders, []));
-      setActivePage((prev) => (prev === 'admin' ? 'home' : prev));
+      if (location.pathname.startsWith('/admin')) {
+        navigate('/');
+      }
     }
     prevUserIdRef.current = currentId;
-  }, [user]);
+  }, [user, location.pathname, navigate]);
 
   // Sync user cart, wishlist, and order history with Supabase when logged in
   useEffect(() => {
@@ -153,13 +180,12 @@ export default function App() {
       showToast('Halaman Admin khusus untuk role admin.');
       return;
     }
-    setActivePage(page);
+    navigate(PAGE_TO_PATH[page] || '/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setActivePage('pdp');
+    navigate(`/product/${product.id}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -283,68 +309,79 @@ export default function App() {
       />
 
       <main className="w-full pt-28 bg-surface flex-1">
-        {activePage === 'home' && (
-          <HomeView
-            products={products}
-            onNavigate={handleNavigate}
-            onSelectProduct={handleSelectProduct}
-            onAddToBag={handleAddToBag}
-            onToggleWishlist={handleToggleWishlist}
-            wishlistIds={wishlistIds}
-            onOpenSizeGuide={() => setSizeGuideOpen(true)}
-          />
-        )}
-
-        {(activePage === 'women' ||
-          activePage === 'men' ||
-          activePage === 'bags' ||
-          activePage === 'shoes' ||
-          activePage === 'curated-drops') && (
-          <CatalogView
-            products={products}
-            activePage={activePage}
-            onNavigate={handleNavigate}
-            onSelectProduct={handleSelectProduct}
-            onAddToBag={handleAddToBag}
-            onToggleWishlist={handleToggleWishlist}
-            wishlistIds={wishlistIds}
-            onOpenSizeGuide={() => setSizeGuideOpen(true)}
-            searchQuery={searchQuery}
-            onClearSearch={() => setSearchQuery('')}
-            onShowToast={showToast}
-          />
-        )}
-
-        {activePage === 'pdp' && selectedProduct && (
-          <ProductDetailView
-            product={selectedProduct}
-            products={products}
-            onNavigate={handleNavigate}
-            onSelectProduct={handleSelectProduct}
-            onAddToBag={handleAddToBag}
-            onBuyNow={handleBuyNow}
-            onToggleWishlist={handleToggleWishlist}
-            wishlistIds={wishlistIds}
-            onOpenSizeGuide={() => setSizeGuideOpen(true)}
-          />
-        )}
-
-        {activePage === 'admin' && (
-          <Suspense
-            fallback={
-              <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-16 text-center text-sm text-text-muted">
-                Memuat Admin Atelier Dashboard...
-              </div>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <HomeView
+                products={products}
+                onNavigate={handleNavigate}
+                onSelectProduct={handleSelectProduct}
+                onAddToBag={handleAddToBag}
+                onToggleWishlist={handleToggleWishlist}
+                wishlistIds={wishlistIds}
+                onOpenSizeGuide={() => setSizeGuideOpen(true)}
+              />
             }
-          >
-            <AdminDashboardView
-              products={products}
-              onRefreshCatalog={loadCatalog}
-              onBackToStore={() => handleNavigate('home')}
-              onShowToast={showToast}
+          />
+          {(['women', 'men', 'bags', 'shoes', 'curated-drops'] as const).map((cat) => (
+            <Route
+              key={cat}
+              path={`/${cat}`}
+              element={
+                <CatalogView
+                  products={products}
+                  activePage={cat}
+                  onNavigate={handleNavigate}
+                  onSelectProduct={handleSelectProduct}
+                  onAddToBag={handleAddToBag}
+                  onToggleWishlist={handleToggleWishlist}
+                  wishlistIds={wishlistIds}
+                  onOpenSizeGuide={() => setSizeGuideOpen(true)}
+                  searchQuery={searchQuery}
+                  onClearSearch={() => setSearchQuery('')}
+                  onShowToast={showToast}
+                />
+              }
             />
-          </Suspense>
-        )}
+          ))}
+          <Route
+            path="/product/:productId"
+            element={
+              <ProductRoutePage
+                products={products}
+                catalogLoaded={catalogLoaded}
+                onNavigate={handleNavigate}
+                onSelectProduct={handleSelectProduct}
+                onAddToBag={handleAddToBag}
+                onBuyNow={handleBuyNow}
+                onToggleWishlist={handleToggleWishlist}
+                wishlistIds={wishlistIds}
+                onOpenSizeGuide={() => setSizeGuideOpen(true)}
+              />
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <Suspense
+                fallback={
+                  <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-16 text-center text-sm text-text-muted">
+                    Memuat Admin Atelier Dashboard...
+                  </div>
+                }
+              >
+                <AdminDashboardView
+                  products={products}
+                  onRefreshCatalog={loadCatalog}
+                  onBackToStore={() => handleNavigate('home')}
+                  onShowToast={showToast}
+                />
+              </Suspense>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       <Footer
@@ -415,3 +452,72 @@ export default function App() {
     </div>
   );
 }
+
+interface ProductRoutePageProps {
+  products: Product[];
+  catalogLoaded: boolean;
+  onNavigate: (page: ActivePage) => void;
+  onSelectProduct: (product: Product) => void;
+  onAddToBag: (product: Product, size: string, colorName?: string) => void;
+  onBuyNow: (product: Product, size: string, colorName?: string) => void;
+  onToggleWishlist: (productId: string) => void;
+  wishlistIds: string[];
+  onOpenSizeGuide: () => void;
+}
+
+const ProductRoutePage: React.FC<ProductRoutePageProps> = ({
+  products,
+  catalogLoaded,
+  onNavigate,
+  onSelectProduct,
+  onAddToBag,
+  onBuyNow,
+  onToggleWishlist,
+  wishlistIds,
+  onOpenSizeGuide,
+}) => {
+  const { productId } = useParams<{ productId: string }>();
+  const product = products.find((p) => p.id === productId);
+
+  if (!catalogLoaded) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-20 text-center text-sm text-text-muted">
+        Memuat detail produk...
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-20 text-center">
+        <div className="max-w-md mx-auto bg-surface-card border border-border-ecru p-8">
+          <h2 className="font-headline-sm text-headline-sm text-primary mb-2">Produk Tidak Ditemukan</h2>
+          <p className="font-body-sm text-text-muted mb-6">
+            Outfit yang kamu cari mungkin sudah dihapus atau link berubah.
+          </p>
+          <button
+            type="button"
+            onClick={() => onNavigate('curated-drops')}
+            className="px-6 py-3 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-wider cursor-pointer"
+          >
+            Lihat Semua Koleksi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ProductDetailView
+      product={product}
+      products={products}
+      onNavigate={onNavigate}
+      onSelectProduct={onSelectProduct}
+      onAddToBag={onAddToBag}
+      onBuyNow={onBuyNow}
+      onToggleWishlist={onToggleWishlist}
+      wishlistIds={wishlistIds}
+      onOpenSizeGuide={onOpenSizeGuide}
+    />
+  );
+};
