@@ -1,7 +1,51 @@
 import { supabase } from '../lib/supabase';
 import { PRODUCTS, Product } from '../data/products';
-import type { CartItem, OrderRecord } from '../components/CartAndCheckoutModal';
 import { compressImageToWebp } from '../utils/image';
+
+export interface CartItem {
+  product: Product;
+  size: string;
+  color: string;
+  quantity: number;
+}
+
+export interface OrderItemSummary {
+  productName: string;
+  productSku: string;
+  size: string;
+  color: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface OrderRecord {
+  id: string;
+  dbId?: string;
+  createdAt: string;
+  fullName: string;
+  email?: string;
+  whatsapp: string;
+  province?: string;
+  city: string;
+  district?: string;
+  address: string;
+  postalCode?: string;
+  deliveryNotes?: string;
+  courier: 'reguler' | 'sameday' | 'instant';
+  paymentMethod: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
+  subtotal?: number;
+  discount?: number;
+  shippingCost?: number;
+  total: number;
+  itemsCount: number;
+  status?: OrderStatusType;
+  trackingNumber?: string;
+  paymentProofUrl?: string;
+  paymentExpiresAt?: string;
+  paidAt?: string;
+  items?: OrderItemSummary[];
+}
 
 export type UserRole = 'customer' | 'admin';
 
@@ -457,70 +501,84 @@ export async function submitPaymentProofInDb(
   };
 }
 
+function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
+  const rawItems =
+    (row.order_items as {
+      product_name: string;
+      product_sku: string;
+      size: string;
+      color: string;
+      unit_price: number;
+      quantity: number;
+      line_total: number;
+    }[]) || [];
+  const itemsCount = rawItems.reduce((sum, i) => sum + i.quantity, 0);
+  return {
+    id: row.order_number as string,
+    dbId: row.id as string,
+    createdAt: new Date(row.created_at as string).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }),
+    fullName: row.full_name as string,
+    email: row.email as string,
+    whatsapp: row.whatsapp as string,
+    province: (row.province as string) || '',
+    city: row.city as string,
+    district: (row.district as string) || '',
+    address: row.address as string,
+    postalCode: (row.postal_code as string) || '',
+    deliveryNotes: (row.delivery_notes as string) || '',
+    courier: row.courier as OrderRecord['courier'],
+    paymentMethod: row.payment_method as OrderRecord['paymentMethod'],
+    subtotal: row.subtotal as number,
+    discount: row.discount as number,
+    shippingCost: row.shipping_cost as number,
+    total: row.total as number,
+    itemsCount,
+    status: row.status as OrderRecord['status'],
+    trackingNumber: (row.tracking_number as string | null) ?? undefined,
+    paymentProofUrl: (row.payment_proof_url as string | null) ?? undefined,
+    paymentExpiresAt: (row.payment_expires_at as string | null) ?? undefined,
+    paidAt: (row.paid_at as string | null) ?? undefined,
+    items: rawItems.map((i) => ({
+      productName: i.product_name,
+      productSku: i.product_sku,
+      size: i.size,
+      color: i.color,
+      unitPrice: i.unit_price,
+      quantity: i.quantity,
+      lineTotal: i.line_total,
+    })),
+  };
+}
+
+const ORDER_SELECT_COLUMNS =
+  'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
+
 export async function fetchCustomerOrders(userId: string): Promise<OrderRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('orders')
-    .select(
-      'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)'
-    )
+    .select(ORDER_SELECT_COLUMNS)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error || !data) return [];
+  return data.map((row) => mapDbOrderToOrderRecord(row as Record<string, unknown>));
+}
 
-  return data.map((row) => {
-    const rawItems =
-      (row.order_items as {
-        product_name: string;
-        product_sku: string;
-        size: string;
-        color: string;
-        unit_price: number;
-        quantity: number;
-        line_total: number;
-      }[]) || [];
-    const itemsCount = rawItems.reduce((sum, i) => sum + i.quantity, 0);
-    return {
-      id: row.order_number as string,
-      dbId: row.id as string,
-      createdAt: new Date(row.created_at as string).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }),
-      fullName: row.full_name as string,
-      email: row.email as string,
-      whatsapp: row.whatsapp as string,
-      province: (row.province as string) || '',
-      city: row.city as string,
-      district: (row.district as string) || '',
-      address: row.address as string,
-      postalCode: (row.postal_code as string) || '',
-      deliveryNotes: (row.delivery_notes as string) || '',
-      courier: row.courier as OrderRecord['courier'],
-      paymentMethod: row.payment_method as OrderRecord['paymentMethod'],
-      subtotal: row.subtotal as number,
-      discount: row.discount as number,
-      shippingCost: row.shipping_cost as number,
-      total: row.total as number,
-      itemsCount,
-      status: row.status as OrderRecord['status'],
-      trackingNumber: (row.tracking_number as string | null) ?? undefined,
-      paymentProofUrl: (row.payment_proof_url as string | null) ?? undefined,
-      paymentExpiresAt: (row.payment_expires_at as string | null) ?? undefined,
-      paidAt: (row.paid_at as string | null) ?? undefined,
-      items: rawItems.map((i) => ({
-        productName: i.product_name,
-        productSku: i.product_sku,
-        size: i.size,
-        color: i.color,
-        unitPrice: i.unit_price,
-        quantity: i.quantity,
-        lineTotal: i.line_total,
-      })),
-    };
-  });
+export async function fetchOrderByNumberFromDb(orderNumber: string): Promise<OrderRecord | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT_COLUMNS)
+    .eq('order_number', orderNumber)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDbOrderToOrderRecord(data as Record<string, unknown>);
 }
 
 export async function subscribeNewsletterInDb(email: string): Promise<{ ok: boolean; error?: string }> {

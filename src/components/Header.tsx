@@ -1,41 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { BRAND_ASSETS } from '../data/products';
 import { handleImageError } from '../utils/storage';
 import { useAuth } from '../context/AuthContext';
+import { useStore } from '../context/StoreContext';
 
 export type ActivePage = 'home' | 'women' | 'men' | 'bags' | 'shoes' | 'curated-drops' | 'pdp' | 'checkout' | 'admin';
 
-interface HeaderProps {
-  activePage: ActivePage;
-  onNavigate: (page: ActivePage) => void;
-  cartCount: number;
-  wishlistCount: number;
-  onOpenCart: () => void;
-  onOpenOrders: () => void;
-  onOpenAuth: () => void;
-  onOpenWishlist: () => void;
-  onOpenSizeGuide: () => void;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-}
+const NAV_ITEMS = [
+  { path: '/', label: 'Home' },
+  { path: '/men', label: 'Pria' },
+  { path: '/women', label: 'Wanita' },
+  { path: '/bags', label: 'Tas' },
+  { path: '/shoes', label: 'Sepatu' },
+  { path: '/curated-drops', label: 'Curated Drops' },
+];
 
-export const Header: React.FC<HeaderProps> = ({
-  activePage,
-  onNavigate,
-  cartCount,
-  wishlistCount,
-  onOpenCart,
-  onOpenOrders,
-  onOpenAuth,
-  onOpenWishlist,
-  onOpenSizeGuide,
-  searchQuery,
-  onSearchChange,
-}) => {
+const CATALOG_PATHS = ['/women', '/men', '/bags', '/shoes', '/curated-drops'];
+
+export const Header: React.FC = () => {
   const { user, profile, isAdmin } = useAuth();
+  const { totalCartCount, wishlistIds, setBagDrawerOpen, setSizeGuideOpen } = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currencyNotice, setCurrencyNotice] = useState(false);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '');
   const currencyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSearchInput(searchParams.get('q') || '');
+  }, [searchParams]);
 
   useEffect(() => {
     if (!currencyNotice) return;
@@ -55,24 +52,24 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [currencyNotice]);
 
-  const navItems: { id: ActivePage; label: string }[] = [
-    { id: 'home', label: 'Home' },
-    { id: 'men', label: 'Pria' },
-    { id: 'women', label: 'Wanita' },
-    { id: 'bags', label: 'Tas' },
-    { id: 'shoes', label: 'Sepatu' },
-    { id: 'curated-drops', label: 'Curated Drops' },
-  ];
+  const applySearch = (rawQuery: string) => {
+    setSearchInput(rawQuery);
+    const trimmed = rawQuery.trim();
+    const targetBase = CATALOG_PATHS.includes(location.pathname) ? location.pathname : '/curated-drops';
+    if (trimmed) {
+      navigate(`${targetBase}?q=${encodeURIComponent(trimmed)}`);
+    } else if (CATALOG_PATHS.includes(location.pathname)) {
+      navigate(location.pathname);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (activePage === 'home' || activePage === 'pdp' || activePage === 'checkout') {
-      onNavigate('curated-drops');
-    }
+    applySearch(searchInput);
     setMobileMenuOpen(false);
   };
 
-  const formattedCartCount = cartCount < 10 ? `0${cartCount}` : `${cartCount}`;
+  const formattedCartCount = totalCartCount < 10 ? `0${totalCartCount}` : `${totalCartCount}`;
 
   return (
     <header className="fixed top-0 w-full z-50">
@@ -82,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden md:block w-28"></div>
           <button
             type="button"
-            onClick={onOpenSizeGuide}
+            onClick={() => setSizeGuideOpen(true)}
             className="flex-1 text-center font-label-uppercase text-[11px] tracking-widest text-on-surface cursor-pointer hover:text-secondary transition-colors"
           >
             GRATIS ONGKIR MIN. 500RB — SALAH SIZE? TUKER AJA DALEM 30 HARI
@@ -99,10 +96,10 @@ export const Header: React.FC<HeaderProps> = ({
             {currencyNotice && (
               <div className="absolute right-0 mt-2 w-56 bg-surface-card border border-border-ecru p-3 shadow-md z-50 text-left">
                 <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-secondary block mb-1">
-                  LOKASI & MATA UANG
+                  LOKASI &amp; MATA UANG
                 </span>
                 <p className="font-body-sm text-[12px] text-text-muted">
-                  Harga sudah termasuk pajak dalam Rupiah (IDR). Pengiriman instan tersedia untuk area Jabodetabek & seluruh Indonesia.
+                  Harga sudah termasuk pajak dalam Rupiah (IDR). Pengiriman instan tersedia untuk area Jabodetabek &amp; seluruh Indonesia.
                 </p>
               </div>
             )}
@@ -127,46 +124,40 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <nav className="hidden xl:flex items-center space-x-6 shrink-0">
-              {navItems.map((item) => {
-                const isActive = activePage === item.id;
+              {NAV_ITEMS.map((item) => {
+                const isActive = location.pathname === item.path;
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onNavigate(item.id)}
-                    className={`font-label-uppercase text-label-uppercase uppercase transition-all pb-1 whitespace-nowrap shrink-0 cursor-pointer ${
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`font-label-uppercase text-label-uppercase uppercase transition-all pb-1 whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'text-primary font-semibold border-b border-primary'
                         : 'text-on-surface-variant hover:text-primary'
                     }`}
                   >
                     {item.label}
-                  </button>
+                  </Link>
                 );
               })}
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('admin')}
-                  className={`font-label-uppercase text-label-uppercase uppercase transition-all pb-1 whitespace-nowrap shrink-0 cursor-pointer ${
-                    activePage === 'admin'
+                <Link
+                  to="/admin/orders"
+                  className={`font-label-uppercase text-label-uppercase uppercase transition-all pb-1 whitespace-nowrap shrink-0 ${
+                    location.pathname.startsWith('/admin')
                       ? 'text-secondary font-semibold border-b border-secondary'
                       : 'text-secondary hover:text-primary'
                   }`}
                 >
                   Admin
-                </button>
+                </Link>
               )}
             </nav>
           </div>
 
           {/* Center Brand Logo */}
           <div className="flex items-center justify-center shrink-0">
-            <button
-              type="button"
-              onClick={() => onNavigate('home')}
-              className="flex items-center gap-space-sm cursor-pointer"
-            >
+            <Link to="/" className="flex items-center gap-space-sm">
               <img
                 alt="UrbanStore Editorial Logo"
                 className="h-8 w-auto object-contain"
@@ -177,10 +168,10 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-headline-sm text-headline-sm tracking-tight text-primary hidden sm:inline-block whitespace-nowrap">
                 UrbanStore
               </span>
-            </button>
+            </Link>
           </div>
 
-          {/* Right Controls: Search, Wishlist, Cart, Profile */}
+          {/* Right Controls: Search, Wishlist, Cart, Orders, Account */}
           <div className="flex items-center justify-end gap-space-md shrink-0">
             <form
               onSubmit={handleSearchSubmit}
@@ -188,22 +179,17 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <span className="material-symbols-outlined text-[18px] text-text-muted mr-2">search</span>
               <input
-                value={searchQuery}
-                onChange={(e) => {
-                  onSearchChange(e.target.value);
-                  if (activePage === 'home' && e.target.value.trim().length > 0) {
-                    onNavigate('curated-drops');
-                  }
-                }}
+                value={searchInput}
+                onChange={(e) => applySearch(e.target.value)}
                 className="bg-transparent w-full text-body-sm font-body-sm text-on-surface placeholder:text-text-muted focus:outline-none"
                 placeholder="Cari racun outfit..."
                 type="text"
               />
-              {searchQuery && (
+              {searchInput && (
                 <button
                   type="button"
-                  onClick={() => onSearchChange('')}
-                  className="text-text-muted hover:text-primary ml-1"
+                  onClick={() => applySearch('')}
+                  className="text-text-muted hover:text-primary ml-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[14px]">close</span>
                 </button>
@@ -211,24 +197,23 @@ export const Header: React.FC<HeaderProps> = ({
             </form>
 
             <div className="flex items-center gap-space-sm">
-              <button
-                type="button"
-                onClick={onOpenWishlist}
+              <Link
+                to="/wishlist"
                 aria-label="Wishlist"
-                className="p-1.5 text-on-surface hover:text-secondary transition-colors relative cursor-pointer"
+                className="p-1.5 text-on-surface hover:text-secondary transition-colors relative"
               >
                 <span className="material-symbols-outlined text-[22px]">favorite</span>
-                {wishlistCount > 0 && (
+                {wishlistIds.length > 0 && (
                   <span className="absolute top-0.5 right-0 bg-secondary text-on-secondary font-label-uppercase text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                    {wishlistCount}
+                    {wishlistIds.length}
                   </span>
                 )}
-              </button>
+              </Link>
 
               <button
                 type="button"
-                onClick={onOpenCart}
-                aria-label="Cart"
+                onClick={() => setBagDrawerOpen(true)}
+                aria-label="Shopping Bag"
                 className="p-1.5 text-on-surface hover:text-secondary transition-colors relative cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
@@ -237,22 +222,20 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </button>
 
-              <button
-                type="button"
-                onClick={onOpenOrders}
+              <Link
+                to="/account/orders"
                 title="Riwayat Pesanan Kamu"
                 aria-label="Riwayat Pesanan"
-                className="p-1.5 text-on-surface hover:text-secondary transition-colors cursor-pointer"
+                className="p-1.5 text-on-surface hover:text-secondary transition-colors"
               >
                 <span className="material-symbols-outlined text-[22px]">receipt_long</span>
-              </button>
+              </Link>
 
-              <button
-                type="button"
-                onClick={onOpenAuth}
+              <Link
+                to={user ? '/account' : '/login'}
                 title={user ? `${profile?.full_name || user.email} (${isAdmin ? 'Admin' : 'Customer'})` : 'Masuk / Daftar'}
                 aria-label="Akun Saya"
-                className="flex items-center gap-1.5 pl-1 cursor-pointer"
+                className="flex items-center gap-1.5 pl-1"
               >
                 <img
                   alt="Profile"
@@ -264,7 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden sm:inline-block font-label-uppercase text-[10px] uppercase tracking-wider px-2 py-0.5 border border-border-ecru bg-surface-card text-primary">
                   {user ? (isAdmin ? 'ADMIN' : 'MEMBER') : 'MASUK'}
                 </span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -278,63 +261,49 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <span className="material-symbols-outlined text-[18px] text-text-muted mr-2">search</span>
               <input
-                value={searchQuery}
-                onChange={(e) => {
-                  onSearchChange(e.target.value);
-                  if (activePage === 'home' && e.target.value.trim().length > 0) {
-                    onNavigate('curated-drops');
-                  }
-                }}
+                value={searchInput}
+                onChange={(e) => applySearch(e.target.value)}
                 className="bg-transparent w-full text-body-sm font-body-sm text-on-surface placeholder:text-text-muted focus:outline-none"
                 placeholder="Cari racun outfit..."
                 type="text"
               />
             </form>
             <div className="flex flex-col space-y-3">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    onNavigate(item.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`text-left font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 ${
-                    activePage === item.id ? 'text-primary font-semibold' : 'text-on-surface-variant'
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 ${
+                    location.pathname === item.path ? 'text-primary font-semibold' : 'text-on-surface-variant'
                   }`}
                 >
                   {item.label}
-                </button>
+                </Link>
               ))}
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigate('admin');
-                    setMobileMenuOpen(false);
-                  }}
-                  className="text-left font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-secondary font-semibold"
+                <Link
+                  to="/admin/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-secondary font-semibold"
                 >
                   Admin Atelier Dashboard →
-                </button>
+                </Link>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenAuth();
-                  setMobileMenuOpen(false);
-                }}
-                className="text-left font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-primary"
+              <Link
+                to={user ? '/account' : '/login'}
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-primary"
               >
-                {user ? `Akun: ${profile?.full_name || user.email} (${isAdmin ? 'Admin' : 'Customer'})` : 'Masuk / Daftar Akun →'}
-              </button>
+                {user ? `Akun: ${profile?.full_name || user.email}` : 'Masuk / Daftar Akun →'}
+              </Link>
               <button
                 type="button"
                 onClick={() => {
-                  onOpenSizeGuide();
+                  setSizeGuideOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="text-left font-label-uppercase text-label-uppercase uppercase py-1.5 text-secondary"
+                className="text-left font-label-uppercase text-label-uppercase uppercase py-1.5 text-secondary cursor-pointer"
               >
                 Panduan Size Anti-Zonk →
               </button>

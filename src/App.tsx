@@ -1,523 +1,120 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import React, { Suspense, lazy } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { StoreProvider } from './context/StoreContext';
+import { StorefrontLayout } from './layouts/StorefrontLayout';
+import { AuthLayout } from './layouts/AuthLayout';
+import { AdminLayout } from './layouts/AdminLayout';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { AdminRoute } from './routes/AdminRoute';
+import { GuestRoute } from './routes/GuestRoute';
 
-import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { PRODUCTS, Product } from './data/products';
-import { Header, ActivePage } from './components/Header';
-import { Footer } from './components/Footer';
-import { HomeView } from './components/HomeView';
-import { CatalogView } from './components/CatalogView';
-import { ProductDetailView } from './components/ProductDetailView';
-import { SizeGuideModal } from './components/SizeGuideModal';
-import type { CartItem, OrderRecord } from './components/CartAndCheckoutModal';
-import { WishlistDrawer } from './components/WishlistDrawer';
-import { STORAGE_KEYS, loadFromStorage, saveToStorage } from './utils/storage';
+import { HomePage } from './pages/public/HomePage';
+import { CatalogPage } from './pages/public/CatalogPage';
+import { ProductDetailPage } from './pages/public/ProductDetailPage';
+import { WishlistPage } from './pages/public/WishlistPage';
+import { AboutPage } from './pages/public/AboutPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
 
-const CartAndCheckoutModal = lazy(() =>
-  import('./components/CartAndCheckoutModal').then((m) => ({ default: m.CartAndCheckoutModal }))
+const CheckoutPage = lazy(() =>
+  import('./pages/checkout/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))
 );
-const AuthModal = lazy(() =>
-  import('./components/AuthModal').then((m) => ({ default: m.AuthModal }))
+const OrderPaymentPage = lazy(() =>
+  import('./pages/checkout/OrderPaymentPage').then((m) => ({ default: m.OrderPaymentPage }))
 );
-const AdminDashboardView = lazy(() =>
-  import('./components/AdminDashboardView').then((m) => ({ default: m.AdminDashboardView }))
+const OrderInvoicePage = lazy(() =>
+  import('./pages/checkout/OrderInvoicePage').then((m) => ({ default: m.OrderInvoicePage }))
 );
-import { useAuth } from './context/AuthContext';
-import {
-  fetchCatalogProducts,
-  syncGuestWishlistToDb,
-  syncGuestCartToDb,
-  fetchCustomerOrders,
-  setWishlistItemInDb,
-  upsertCartItemInDb,
-  deleteCartItemInDb,
-  clearUserCartInDb,
-} from './services/supabaseService';
+const ProfilePage = lazy(() =>
+  import('./pages/account/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
+const OrderHistoryPage = lazy(() =>
+  import('./pages/account/OrderHistoryPage').then((m) => ({ default: m.OrderHistoryPage }))
+);
 
-const PAGE_TO_PATH: Record<ActivePage, string> = {
-  home: '/',
-  women: '/women',
-  men: '/men',
-  bags: '/bags',
-  shoes: '/shoes',
-  'curated-drops': '/curated-drops',
-  pdp: '/curated-drops',
-  checkout: '/curated-drops',
-  admin: '/admin',
-};
+const AdminOrdersPage = lazy(() =>
+  import('./pages/admin/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage }))
+);
+const AdminProductsPage = lazy(() =>
+  import('./pages/admin/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage }))
+);
+const AdminProductFormPage = lazy(() =>
+  import('./pages/admin/AdminProductFormPage').then((m) => ({ default: m.AdminProductFormPage }))
+);
+const AdminPromosPage = lazy(() =>
+  import('./pages/admin/AdminPromosPage').then((m) => ({ default: m.AdminPromosPage }))
+);
+const AdminSubscribersPage = lazy(() =>
+  import('./pages/admin/AdminSubscribersPage').then((m) => ({ default: m.AdminSubscribersPage }))
+);
 
-function getActivePageFromPath(pathname: string): ActivePage {
-  if (pathname.startsWith('/women')) return 'women';
-  if (pathname.startsWith('/men')) return 'men';
-  if (pathname.startsWith('/bags')) return 'bags';
-  if (pathname.startsWith('/shoes')) return 'shoes';
-  if (pathname.startsWith('/curated-drops')) return 'curated-drops';
-  if (pathname.startsWith('/product/')) return 'pdp';
-  if (pathname.startsWith('/admin')) return 'admin';
-  return 'home';
-}
+const PageLoader: React.FC = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="text-center space-y-2">
+      <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+      <p className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary">
+        Memuat halaman...
+      </p>
+    </div>
+  </div>
+);
 
-export default function App() {
-  const { user, isAdmin } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [catalogLoaded, setCatalogLoaded] = useState<boolean>(false);
-  const [useSupabaseDb, setUseSupabaseDb] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
-  const activePage = getActivePageFromPath(location.pathname);
-
-  const [cartItems, setCartItems] = useState<CartItem[]>(() =>
-    loadFromStorage<CartItem[]>(STORAGE_KEYS.cart, [])
-  );
-  const [wishlistIds, setWishlistIds] = useState<string[]>(() =>
-    loadFromStorage<string[]>(STORAGE_KEYS.wishlist, [])
-  );
-  const [orders, setOrders] = useState<OrderRecord[]>(() =>
-    loadFromStorage<OrderRecord[]>(STORAGE_KEYS.orders, [])
-  );
-
-  const [sizeGuideOpen, setSizeGuideOpen] = useState<boolean>(false);
-  const [cartModalOpen, setCartModalOpen] = useState<boolean>(false);
-  const [cartInitialMode, setCartInitialMode] = useState<'bag' | 'checkout' | 'orders'>('bag');
-  const [wishlistOpen, setWishlistOpen] = useState<boolean>(false);
-  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimerRef = useRef<number | null>(null);
-  const prevUserIdRef = useRef<string | null>(null);
-
-  const loadCatalog = useCallback(async () => {
-    const res = await fetchCatalogProducts();
-    setProducts(res.products);
-    setUseSupabaseDb(res.fromSupabase);
-    setCatalogLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    void loadCatalog();
-  }, [loadCatalog]);
-
-  // Handle logout transition cleanly (restore guest storage & leave admin route)
-  useEffect(() => {
-    const currentId = user?.id ?? null;
-    if (prevUserIdRef.current && !currentId) {
-      setCartItems(loadFromStorage<CartItem[]>(STORAGE_KEYS.cart, []));
-      setWishlistIds(loadFromStorage<string[]>(STORAGE_KEYS.wishlist, []));
-      setOrders(loadFromStorage<OrderRecord[]>(STORAGE_KEYS.orders, []));
-      if (location.pathname.startsWith('/admin')) {
-        navigate('/');
-      }
-    }
-    prevUserIdRef.current = currentId;
-  }, [user, location.pathname, navigate]);
-
-  // Sync user cart, wishlist, and order history with Supabase when logged in
-  useEffect(() => {
-    if (!user || !useSupabaseDb) return;
-
-    let active = true;
-    const syncUserData = async () => {
-      const guestCart = loadFromStorage<CartItem[]>(STORAGE_KEYS.cart, []);
-      const guestWishlist = loadFromStorage<string[]>(STORAGE_KEYS.wishlist, []);
-
-      const [syncedCart, syncedWishlist, dbOrders] = await Promise.all([
-        syncGuestCartToDb(user.id, guestCart, products),
-        syncGuestWishlistToDb(user.id, guestWishlist),
-        fetchCustomerOrders(user.id),
-      ]);
-
-      if (!active) return;
-      setCartItems(syncedCart);
-      setWishlistIds(syncedWishlist);
-      setOrders(dbOrders);
-      saveToStorage(STORAGE_KEYS.cart, []);
-      saveToStorage(STORAGE_KEYS.wishlist, []);
-    };
-
-    void syncUserData();
-    return () => {
-      active = false;
-    };
-  }, [user, useSupabaseDb, products]);
-
-  // Persist guest cart/wishlist/orders locally when not authenticated (or DB fallback)
-  useEffect(() => {
-    if (!user || !useSupabaseDb) {
-      saveToStorage(STORAGE_KEYS.cart, cartItems);
-    }
-  }, [cartItems, user, useSupabaseDb]);
-
-  useEffect(() => {
-    if (!user || !useSupabaseDb) {
-      saveToStorage(STORAGE_KEYS.wishlist, wishlistIds);
-    }
-  }, [wishlistIds, user, useSupabaseDb]);
-
-  useEffect(() => {
-    if (!user || !useSupabaseDb) {
-      saveToStorage(STORAGE_KEYS.orders, orders);
-    }
-  }, [orders, user, useSupabaseDb]);
-
-  const showToast = (msg: string) => {
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-    setToastMessage(msg);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 3200);
-  };
-
-  const handleNavigate = (page: ActivePage) => {
-    if (page === 'admin' && !isAdmin) {
-      showToast('Halaman Admin khusus untuk role admin.');
-      return;
-    }
-    navigate(PAGE_TO_PATH[page] || '/');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSelectProduct = (product: Product) => {
-    navigate(`/product/${product.id}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleAddToBag = (product: Product, size: string, colorName?: string) => {
-    const color = colorName || product.colors[0]?.name || 'Default';
-    let nextQuantity = 1;
-    setCartItems((prev) => {
-      const existingIndex = prev.findIndex(
-        (item) => item.product.id === product.id && item.size === size && item.color === color
-      );
-      if (existingIndex > -1) {
-        nextQuantity = prev[existingIndex].quantity + 1;
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: nextQuantity,
-        };
-        return updated;
-      }
-      return [...prev, { product, size, color, quantity: 1 }];
-    });
-    if (user && useSupabaseDb) {
-      void upsertCartItemInDb(user.id, product.id, size, color, nextQuantity);
-    }
-    showToast(`✓ ${product.name} (${color}, Size ${size}) masuk ke Bag!`);
-  };
-
-  const handleBuyNow = (product: Product, size: string, colorName?: string) => {
-    handleAddToBag(product, size, colorName);
-    setCartInitialMode('checkout');
-    setCartModalOpen(true);
-  };
-
-  const handleUpdateQuantity = (productId: string, size: string, color: string, delta: number) => {
-    let nextQuantityForDb: number | null = null;
-    setCartItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.product.id === productId && item.size === size && item.color === color) {
-            const nextQty = item.quantity + delta;
-            nextQuantityForDb = nextQty;
-            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
-          }
-          return item;
-        })
-        .filter((item): item is CartItem => item !== null)
-    );
-    if (user && useSupabaseDb && nextQuantityForDb !== null) {
-      void upsertCartItemInDb(user.id, productId, size, color, nextQuantityForDb);
-    }
-  };
-
-  const handleRemoveCartItem = (productId: string, size: string, color: string) => {
-    setCartItems((prev) =>
-      prev.filter((item) => !(item.product.id === productId && item.size === size && item.color === color))
-    );
-    if (user && useSupabaseDb) {
-      void deleteCartItemInDb(user.id, productId, size, color);
-    }
-  };
-
-  const handleClearCart = () => {
-    setCartItems([]);
-    if (user && useSupabaseDb) {
-      void clearUserCartInDb(user.id);
-    }
-  };
-
-  const handleOrderComplete = (order: OrderRecord) => {
-    setOrders((prev) => [order, ...prev]);
-    if (user && useSupabaseDb) {
-      void fetchCustomerOrders(user.id).then((fresh) => {
-        if (fresh.length > 0) setOrders(fresh);
-      });
-    }
-  };
-
-  const handleOrderUpdated = (updated: OrderRecord) => {
-    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-  };
-
-  const handleToggleWishlist = (productId: string) => {
-    const prod = products.find((p) => p.id === productId);
-    const exists = wishlistIds.includes(productId);
-    setWishlistIds((prev) => {
-      if (exists) {
-        if (prod) showToast(`${prod.name} dihapus dari Wishlist.`);
-        return prev.filter((id) => id !== productId);
-      } else {
-        if (prod) showToast(`♥ ${prod.name} disimpan ke Wishlist!`);
-        return [...prev, productId];
-      }
-    });
-    if (user && useSupabaseDb) {
-      void setWishlistItemInDb(user.id, productId, !exists);
-    }
-  };
-
-  const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
+export function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-surface font-body-md text-on-surface antialiased">
-      <Header
-        activePage={activePage}
-        onNavigate={handleNavigate}
-        cartCount={totalCartCount}
-        wishlistCount={wishlistIds.length}
-        onOpenCart={() => {
-          setCartInitialMode('bag');
-          setCartModalOpen(true);
-        }}
-        onOpenOrders={() => {
-          setCartInitialMode('orders');
-          setCartModalOpen(true);
-        }}
-        onOpenAuth={() => setAuthModalOpen(true)}
-        onOpenWishlist={() => setWishlistOpen(true)}
-        onOpenSizeGuide={() => setSizeGuideOpen(true)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-
-      <main className="w-full pt-28 bg-surface flex-1">
+    <StoreProvider>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <HomeView
-                products={products}
-                onNavigate={handleNavigate}
-                onSelectProduct={handleSelectProduct}
-                onAddToBag={handleAddToBag}
-                onToggleWishlist={handleToggleWishlist}
-                wishlistIds={wishlistIds}
-                onOpenSizeGuide={() => setSizeGuideOpen(true)}
-              />
-            }
-          />
-          {(['women', 'men', 'bags', 'shoes', 'curated-drops'] as const).map((cat) => (
-            <Route
-              key={cat}
-              path={`/${cat}`}
-              element={
-                <CatalogView
-                  products={products}
-                  activePage={cat}
-                  onNavigate={handleNavigate}
-                  onSelectProduct={handleSelectProduct}
-                  onAddToBag={handleAddToBag}
-                  onToggleWishlist={handleToggleWishlist}
-                  wishlistIds={wishlistIds}
-                  onOpenSizeGuide={() => setSizeGuideOpen(true)}
-                  searchQuery={searchQuery}
-                  onClearSearch={() => setSearchQuery('')}
-                  onShowToast={showToast}
-                />
-              }
-            />
-          ))}
-          <Route
-            path="/product/:productId"
-            element={
-              <ProductRoutePage
-                products={products}
-                catalogLoaded={catalogLoaded}
-                onNavigate={handleNavigate}
-                onSelectProduct={handleSelectProduct}
-                onAddToBag={handleAddToBag}
-                onBuyNow={handleBuyNow}
-                onToggleWishlist={handleToggleWishlist}
-                wishlistIds={wishlistIds}
-                onOpenSizeGuide={() => setSizeGuideOpen(true)}
-              />
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <Suspense
-                fallback={
-                  <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-16 text-center text-sm text-text-muted">
-                    Memuat Admin Atelier Dashboard...
-                  </div>
-                }
-              >
-                <AdminDashboardView
-                  products={products}
-                  onRefreshCatalog={loadCatalog}
-                  onBackToStore={() => handleNavigate('home')}
-                  onShowToast={showToast}
-                />
-              </Suspense>
-            }
-          />
+          {/* Public Storefront & Customer Flows */}
+          <Route element={<StorefrontLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="women" element={<CatalogPage categoryPage="women" />} />
+            <Route path="men" element={<CatalogPage categoryPage="men" />} />
+            <Route path="bags" element={<CatalogPage categoryPage="bags" />} />
+            <Route path="shoes" element={<CatalogPage categoryPage="shoes" />} />
+            <Route path="curated-drops" element={<CatalogPage categoryPage="curated-drops" />} />
+            <Route path="product/:productId" element={<ProductDetailPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="about" element={<AboutPage />} />
+
+            {/* Checkout, Payment & Invoice Routes */}
+            <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="orders/:orderNumber/payment" element={<OrderPaymentPage />} />
+            <Route path="orders/:orderNumber/invoice" element={<OrderInvoicePage />} />
+
+            {/* Customer Account Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="account" element={<ProfilePage />} />
+            </Route>
+            <Route path="account/orders" element={<OrderHistoryPage />} />
+          </Route>
+
+          {/* Guest Auth Routes */}
+          <Route element={<GuestRoute />}>
+            <Route element={<AuthLayout />}>
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+            </Route>
+          </Route>
+
+          {/* Isolated Admin Console Routes */}
+          <Route element={<AdminRoute />}>
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/orders" replace />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="products" element={<AdminProductsPage />} />
+              <Route path="products/new" element={<AdminProductFormPage />} />
+              <Route path="products/:productId/edit" element={<AdminProductFormPage />} />
+              <Route path="promos" element={<AdminPromosPage />} />
+              <Route path="subscribers" element={<AdminSubscribersPage />} />
+            </Route>
+          </Route>
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </main>
-
-      <Footer
-        onNavigate={handleNavigate}
-        onOpenSizeGuide={() => setSizeGuideOpen(true)}
-        onShowToast={showToast}
-      />
-
-      {/* Drawers & Modals */}
-      <SizeGuideModal
-        isOpen={sizeGuideOpen}
-        onClose={() => setSizeGuideOpen(false)}
-      />
-
-      <Suspense fallback={null}>
-        <CartAndCheckoutModal
-          isOpen={cartModalOpen}
-          initialMode={cartInitialMode}
-          useSupabaseDb={useSupabaseDb}
-          onClose={() => setCartModalOpen(false)}
-          cartItems={cartItems}
-          orders={orders}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={handleRemoveCartItem}
-          onClearCart={handleClearCart}
-          onOrderComplete={handleOrderComplete}
-          onOrderUpdated={handleOrderUpdated}
-          onExploreCatalog={() => handleNavigate('curated-drops')}
-        />
       </Suspense>
-
-      <WishlistDrawer
-        isOpen={wishlistOpen}
-        onClose={() => setWishlistOpen(false)}
-        products={products}
-        wishlistIds={wishlistIds}
-        onToggleWishlist={handleToggleWishlist}
-        onSelectProduct={handleSelectProduct}
-        onAddToBag={handleAddToBag}
-      />
-
-      <Suspense fallback={null}>
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-          onOpenOrders={() => {
-            setCartInitialMode('orders');
-            setCartModalOpen(true);
-          }}
-          onOpenAdmin={() => handleNavigate('admin')}
-          onShowToast={showToast}
-        />
-      </Suspense>
-
-      {/* Editorial Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-primary text-on-primary px-5 py-3.5 rounded-DEFAULT shadow-lg border border-border-ecru/20 flex items-center gap-3 max-w-sm animate-fade-in">
-          <span className="font-body-sm text-xs tracking-wide">{toastMessage}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            className="text-on-primary/70 hover:text-on-primary cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[16px]">close</span>
-          </button>
-        </div>
-      )}
-    </div>
+    </StoreProvider>
   );
 }
 
-interface ProductRoutePageProps {
-  products: Product[];
-  catalogLoaded: boolean;
-  onNavigate: (page: ActivePage) => void;
-  onSelectProduct: (product: Product) => void;
-  onAddToBag: (product: Product, size: string, colorName?: string) => void;
-  onBuyNow: (product: Product, size: string, colorName?: string) => void;
-  onToggleWishlist: (productId: string) => void;
-  wishlistIds: string[];
-  onOpenSizeGuide: () => void;
-}
-
-const ProductRoutePage: React.FC<ProductRoutePageProps> = ({
-  products,
-  catalogLoaded,
-  onNavigate,
-  onSelectProduct,
-  onAddToBag,
-  onBuyNow,
-  onToggleWishlist,
-  wishlistIds,
-  onOpenSizeGuide,
-}) => {
-  const { productId } = useParams<{ productId: string }>();
-  const product = products.find((p) => p.id === productId);
-
-  if (!catalogLoaded) {
-    return (
-      <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-20 text-center text-sm text-text-muted">
-        Memuat detail produk...
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-20 text-center">
-        <div className="max-w-md mx-auto bg-surface-card border border-border-ecru p-8">
-          <h2 className="font-headline-sm text-headline-sm text-primary mb-2">Produk Tidak Ditemukan</h2>
-          <p className="font-body-sm text-text-muted mb-6">
-            Outfit yang kamu cari mungkin sudah dihapus atau link berubah.
-          </p>
-          <button
-            type="button"
-            onClick={() => onNavigate('curated-drops')}
-            className="px-6 py-3 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-wider cursor-pointer"
-          >
-            Lihat Semua Koleksi
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ProductDetailView
-      product={product}
-      products={products}
-      onNavigate={onNavigate}
-      onSelectProduct={onSelectProduct}
-      onAddToBag={onAddToBag}
-      onBuyNow={onBuyNow}
-      onToggleWishlist={onToggleWishlist}
-      wishlistIds={wishlistIds}
-      onOpenSizeGuide={onOpenSizeGuide}
-    />
-  );
-};
+export default App;
