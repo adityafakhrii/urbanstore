@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '../data/products';
 import { ActivePage } from './Header';
 import { handleImageError } from '../utils/storage';
+import { fetchProductVariants, ProductVariantRow } from '../services/supabaseService';
 
 const CATEGORY_ROUTE_MAP: Record<Product['category'], { page: ActivePage; label: string }> = {
   women: { page: 'women', label: 'Wanita' },
@@ -39,6 +40,17 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const [selectedSize, setSelectedSize] = useState<string>(product.defaultSize || '');
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [openAccordion, setOpenAccordion] = useState<'fabric' | 'care' | 'shipping' | null>('fabric');
+  const [variants, setVariants] = useState<ProductVariantRow[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void fetchProductVariants(product.id).then((rows) => {
+      if (active) setVariants(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [product.id]);
 
   useEffect(() => {
     const firstAvailableSize =
@@ -54,12 +66,30 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [product]);
 
+  const getVariantFor = (colorName: string, size: string): ProductVariantRow | undefined =>
+    variants.find((v) => v.color_name === colorName && v.size === size);
+
+  const isSizeUnavailable = (size: string): boolean => {
+    if (product.disabledSizes?.includes(size)) return true;
+    const v = getVariantFor(selectedColor, size);
+    if (v) return !v.is_available || v.stock_qty <= 0;
+    return false;
+  };
+
+  const activeVariant = selectedSize ? getVariantFor(selectedColor, selectedSize) : undefined;
+  const activeStockQty = activeVariant ? activeVariant.stock_qty : null;
+  const isOutOfStock = !product.inStock || (selectedSize ? isSizeUnavailable(selectedSize) : false);
+
   const isWishlisted = wishlistIds.includes(product.id);
   const categoryMeta = CATEGORY_ROUTE_MAP[product.category];
 
   const handleAddClick = () => {
     if (!selectedSize) {
       setSizeError('Pilih ukuran dulu ya, biar pas di badan!');
+      return;
+    }
+    if (isSizeUnavailable(selectedSize)) {
+      setSizeError('Yah keduluan, size ini baru aja ludes. Cek varian lain yuk!');
       return;
     }
     setSizeError(null);
@@ -69,6 +99,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const handleBuyNowClick = () => {
     if (!selectedSize) {
       setSizeError('Pilih ukuran dulu ya, biar pas di badan!');
+      return;
+    }
+    if (isSizeUnavailable(selectedSize)) {
+      setSizeError('Yah keduluan, size ini baru aja ludes. Cek varian lain yuk!');
       return;
     }
     setSizeError(null);
@@ -185,9 +219,17 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               <span className="font-price-lg text-[24px] leading-[30px] font-medium text-primary">
                 {product.priceFormatted}
               </span>
-              <div className="flex items-center gap-1.5 text-status-stock font-body-sm text-xs font-medium">
-                <span className="w-2 h-2 rounded-full bg-status-stock"></span>
-                <span>{product.stockLabel || 'Ready stock — langsung bungkus & kirim dlm 1-2 hari'}</span>
+              <div className="flex items-center gap-1.5 font-body-sm text-xs font-medium">
+                <span
+                  className={`w-2 h-2 rounded-full ${isOutOfStock ? 'bg-error' : 'bg-status-stock'}`}
+                ></span>
+                <span className={isOutOfStock ? 'text-error' : 'text-status-stock'}>
+                  {isOutOfStock
+                    ? 'Keduluan yang lain / Habis nih'
+                    : activeStockQty !== null
+                    ? `Stok tersedia (${activeStockQty} pcs) — kirim 1-2 hari`
+                    : product.stockLabel || 'Ready stock — langsung bungkus & kirim dlm 1-2 hari'}
+                </span>
               </div>
             </div>
 
@@ -241,7 +283,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((sz) => {
-                  const isDisabled = product.disabledSizes?.includes(sz);
+                  const isDisabled = isSizeUnavailable(sz);
                   const isSelected = selectedSize === sz;
                   return (
                     <button
@@ -299,17 +341,19 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             <div className="space-y-3 mb-8">
               <button
                 type="button"
+                disabled={isOutOfStock}
                 onClick={handleAddClick}
-                className="w-full h-12 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-12 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-[18px]">shopping_bag</span>
-                <span>Masukin Bag ({product.priceFormatted})</span>
+                <span>{isOutOfStock ? 'Stok Varian Habis' : `Masukin Bag (${product.priceFormatted})`}</span>
               </button>
 
               <button
                 type="button"
+                disabled={isOutOfStock}
                 onClick={handleBuyNowClick}
-                className="w-full h-12 bg-surface-card border border-primary text-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-surface-sand transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-12 bg-surface-card border border-primary text-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] rounded-DEFAULT hover:bg-surface-sand transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>Gas Checkout Sekarang</span>
                 <span className="material-symbols-outlined text-[16px]">bolt</span>

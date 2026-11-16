@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useModalEffects } from '../utils/storage';
+import { fetchSizeGuides, SizeGuideRow } from '../services/supabaseService';
 
 interface SizeGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const DEFAULT_TOPS: SizeGuideRow[] = [
+  { id: 1, garment_type: 'tops', size_label: 'XS', chest_cm: 92, waist_cm: 74, length_cm: 68, foot_cm: null, min_weight_kg: 40, max_weight_kg: 48, sort_order: 1 },
+  { id: 2, garment_type: 'tops', size_label: 'S', chest_cm: 96, waist_cm: 78, length_cm: 70, foot_cm: null, min_weight_kg: 49, max_weight_kg: 57, sort_order: 2 },
+  { id: 3, garment_type: 'tops', size_label: 'M (Core)', chest_cm: 100, waist_cm: 82, length_cm: 72, foot_cm: null, min_weight_kg: 58, max_weight_kg: 67, sort_order: 3 },
+  { id: 4, garment_type: 'tops', size_label: 'L', chest_cm: 106, waist_cm: 88, length_cm: 74, foot_cm: null, min_weight_kg: 68, max_weight_kg: 77, sort_order: 4 },
+  { id: 5, garment_type: 'tops', size_label: 'XL', chest_cm: 112, waist_cm: 94, length_cm: 76, foot_cm: null, min_weight_kg: 78, max_weight_kg: 95, sort_order: 5 },
+];
+
 export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose }) => {
   const [fitPreference, setFitPreference] = useState<'slim' | 'core' | 'relaxed'>('core');
   const [heightCm, setHeightCm] = useState<string>('170');
   const [weightKg, setWeightKg] = useState<string>('58');
+  const [garmentTab, setGarmentTab] = useState<'tops' | 'bottoms' | 'shoes'>('tops');
+  const [dbRows, setDbRows] = useState<SizeGuideRow[]>([]);
 
   useModalEffects(isOpen, onClose);
+
+  useEffect(() => {
+    if (!isOpen || dbRows.length > 0) return;
+    void fetchSizeGuides().then((rows) => {
+      if (rows.length > 0) setDbRows(rows);
+    });
+  }, [isOpen, dbRows.length]);
 
   if (!isOpen) return null;
 
@@ -136,42 +154,88 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
               </div>
             </div>
 
+            {/* Garment Type Tabs */}
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              {[
+                { id: 'tops' as const, label: 'Atasan / Dress' },
+                { id: 'bottoms' as const, label: 'Celana' },
+                { id: 'shoes' as const, label: 'Sepatu' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setGarmentTab(t.id)}
+                  className={`py-1.5 font-label-uppercase text-[10px] uppercase tracking-wider border cursor-pointer ${
+                    garmentTab === t.id
+                      ? 'bg-primary text-on-primary border-primary'
+                      : 'bg-surface-card text-text-muted border-border-ecru hover:border-primary'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left font-body-sm text-[13px]">
-                <thead>
-                  <tr className="border-b border-border-ecru font-label-uppercase text-[10px] tracking-wider uppercase text-text-muted">
-                    <th className="py-2.5">Size</th>
-                    <th className="py-2.5">Dada (cm)</th>
-                    <th className="py-2.5">Pinggang (cm)</th>
-                    <th className="py-2.5">Panjang (cm)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-ecru tabular-nums">
-                  {[
-                    { size: 'XS', chest: '92', waist: '74', length: '68' },
-                    { size: 'S', chest: '96', waist: '78', length: '70' },
-                    { size: 'M (Core)', chest: '100', waist: '82', length: '72' },
-                    { size: 'L', chest: '106', waist: '88', length: '74' },
-                    { size: 'XL', chest: '112', waist: '94', length: '76' },
-                  ].map((row) => {
-                    const isRecommended = recommended === row.size;
-                    return (
-                      <tr
-                        key={row.size}
-                        className={isRecommended ? 'bg-surface-sand font-semibold text-primary' : ''}
-                      >
-                        <td className={`py-2.5 font-semibold ${isRecommended ? 'text-secondary' : ''}`}>
-                          {row.size}
-                        </td>
-                        <td className="py-2.5 text-text-muted">{row.chest}</td>
-                        <td className="py-2.5 text-text-muted">{row.waist}</td>
-                        <td className="py-2.5 text-text-muted">{row.length}</td>
+              {(() => {
+                const activeRows = dbRows.filter((r) => r.garment_type === garmentTab);
+                const rows =
+                  activeRows.length > 0
+                    ? activeRows
+                    : garmentTab === 'tops'
+                    ? DEFAULT_TOPS
+                    : [];
+
+                if (rows.length === 0) {
+                  return (
+                    <div className="p-4 text-xs text-text-muted border border-border-ecru bg-surface-sand">
+                      Data tabel ukuran untuk kategori ini belum tersedia di database.
+                    </div>
+                  );
+                }
+
+                return (
+                  <table className="w-full text-left font-body-sm text-[13px]">
+                    <thead>
+                      <tr className="border-b border-border-ecru font-label-uppercase text-[10px] tracking-wider uppercase text-text-muted">
+                        <th className="py-2.5">Size</th>
+                        {garmentTab === 'tops' && <th className="py-2.5">Dada (cm)</th>}
+                        {garmentTab !== 'shoes' && <th className="py-2.5">Pinggang (cm)</th>}
+                        {garmentTab !== 'shoes' && <th className="py-2.5">Panjang (cm)</th>}
+                        {garmentTab === 'shoes' && <th className="py-2.5">Panjang Kaki (cm)</th>}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-border-ecru tabular-nums">
+                      {rows.map((row) => {
+                        const isRecommended = garmentTab === 'tops' && recommended === row.size_label;
+                        return (
+                          <tr
+                            key={row.size_label}
+                            className={isRecommended ? 'bg-surface-sand font-semibold text-primary' : ''}
+                          >
+                            <td className={`py-2.5 font-semibold ${isRecommended ? 'text-secondary' : ''}`}>
+                              {row.size_label}
+                            </td>
+                            {garmentTab === 'tops' && (
+                              <td className="py-2.5 text-text-muted">{row.chest_cm ?? '–'}</td>
+                            )}
+                            {garmentTab !== 'shoes' && (
+                              <td className="py-2.5 text-text-muted">{row.waist_cm ?? '–'}</td>
+                            )}
+                            {garmentTab !== 'shoes' && (
+                              <td className="py-2.5 text-text-muted">{row.length_cm ?? '–'}</td>
+                            )}
+                            {garmentTab === 'shoes' && (
+                              <td className="py-2.5 text-text-muted">{row.foot_cm ?? '–'}</td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
 
             <p className="font-body-sm text-[12px] text-text-muted mt-4 italic">

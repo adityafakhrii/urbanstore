@@ -70,9 +70,23 @@ export interface AdminOrderRow {
     product_sku: string;
     size: string;
     color: string;
+    unit_price: number;
     quantity: number;
     line_total: number;
   }[];
+}
+
+export interface SizeGuideRow {
+  id: number;
+  garment_type: 'tops' | 'bottoms' | 'shoes';
+  size_label: string;
+  chest_cm: number | null;
+  waist_cm: number | null;
+  length_cm: number | null;
+  foot_cm: number | null;
+  min_weight_kg: number | null;
+  max_weight_kg: number | null;
+  sort_order: number;
 }
 
 export interface PromoRow {
@@ -521,11 +535,31 @@ export async function subscribeNewsletterInDb(email: string): Promise<{ ok: bool
 // ============================================================================
 // ADMIN QUERIES & MUTATIONS (Protected by Supabase RLS is_admin())
 // ============================================================================
+export async function fetchProductVariants(productId: string): Promise<ProductVariantRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('product_variants')
+    .select('*')
+    .eq('product_id', productId);
+  if (error || !data) return [];
+  return data as ProductVariantRow[];
+}
+
+export async function fetchSizeGuides(): Promise<SizeGuideRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('size_guides')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+  return data as SizeGuideRow[];
+}
+
 export async function fetchAllOrdersAdmin(): Promise<AdminOrderRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('orders')
-    .select('*, order_items(id, product_name, product_sku, size, color, quantity, line_total)')
+    .select('*, order_items(id, product_name, product_sku, size, color, unit_price, quantity, line_total)')
     .order('created_at', { ascending: false });
 
   if (error || !data) return [];
@@ -534,7 +568,7 @@ export async function fetchAllOrdersAdmin(): Promise<AdminOrderRow[]> {
 
 export async function updateOrderAdmin(
   orderId: string,
-  updates: { status: AdminOrderRow['status']; tracking_number?: string | null }
+  updates: { status: AdminOrderRow['status']; tracking_number?: string | null; paid_at?: string | null }
 ): Promise<{ error?: string }> {
   if (!supabase) return { error: 'Supabase belum aktif.' };
   const { error } = await supabase.from('orders').update(updates).eq('id', orderId);

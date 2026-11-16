@@ -29,6 +29,8 @@ import {
   formatRupiah,
 } from '../services/supabaseService';
 import { MAX_IMAGE_SIZE_BYTES, formatBytes } from '../utils/image';
+import type { OrderRecord } from './CartAndCheckoutModal';
+import { InvoiceModal } from './InvoiceModal';
 
 interface AdminDashboardViewProps {
   products: Product[];
@@ -72,6 +74,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [productPriceEdits, setProductPriceEdits] = useState<
     Record<string, { price: number; inStock: boolean }>
   >({});
+  const [zoomedProofUrl, setZoomedProofUrl] = useState<string | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<OrderRecord | null>(null);
 
   // Create / Edit Product Form State
   const [showProductForm, setShowProductForm] = useState(false);
@@ -170,16 +174,78 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   }
 
   const totalRevenue = orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => o.status !== 'cancelled' && o.status !== 'expired')
     .reduce((sum, o) => sum + o.total, 0);
-  const pendingOrdersCount = orders.filter((o) => o.status === 'pending' || o.status === 'paid').length;
+  const pendingOrdersCount = orders.filter(
+    (o) => o.status === 'pending' || o.status === 'waiting_verification'
+  ).length;
+
+  const mapAdminOrderToInvoice = (ord: AdminOrderRow): OrderRecord => ({
+    id: ord.order_number,
+    dbId: ord.id,
+    createdAt: new Date(ord.created_at).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }),
+    fullName: ord.full_name,
+    email: ord.email,
+    whatsapp: ord.whatsapp,
+    province: ord.province,
+    city: ord.city,
+    district: ord.district,
+    address: ord.address,
+    postalCode: ord.postal_code,
+    deliveryNotes: ord.delivery_notes,
+    courier: ord.courier,
+    paymentMethod: ord.payment_method,
+    subtotal: ord.subtotal,
+    discount: ord.discount,
+    shippingCost: ord.shipping_cost,
+    total: ord.total,
+    itemsCount: ord.order_items?.reduce((s, i) => s + i.quantity, 0) || 0,
+    status: ord.status,
+    trackingNumber: ord.tracking_number ?? undefined,
+    paymentProofUrl: ord.payment_proof_url ?? undefined,
+    paymentExpiresAt: ord.payment_expires_at,
+    paidAt: ord.paid_at ?? undefined,
+    items: ord.order_items?.map((i) => ({
+      productName: i.product_name,
+      productSku: i.product_sku,
+      size: i.size,
+      color: i.color,
+      unitPrice: i.unit_price,
+      quantity: i.quantity,
+      lineTotal: i.line_total,
+    })),
+  });
+
+  const handleConfirmPayment = async (ord: AdminOrderRow) => {
+    const edit = orderEdits[ord.id];
+    const res = await updateOrderAdmin(ord.id, {
+      status: 'paid',
+      paid_at: ord.paid_at || new Date().toISOString(),
+      tracking_number: edit?.tracking.trim() || ord.tracking_number || null,
+    });
+    if (res.error) {
+      onShowToast(`Gagal konfirmasi pembayaran: ${res.error}`);
+      return;
+    }
+    onShowToast(`Pembayaran #${ord.order_number} dikonfirmasi LUNAS!`);
+    await loadAdminData();
+  };
 
   const handleSaveOrder = async (orderId: string) => {
     const edit = orderEdits[orderId];
     if (!edit) return;
+    const existing = orders.find((o) => o.id === orderId);
+    const shouldSetPaidAt =
+      (edit.status === 'paid' || edit.status === 'packed' || edit.status === 'shipped' || edit.status === 'delivered') &&
+      !existing?.paid_at;
     const res = await updateOrderAdmin(orderId, {
       status: edit.status,
       tracking_number: edit.tracking.trim() || null,
+      ...(shouldSetPaidAt ? { paid_at: new Date().toISOString() } : {}),
     });
     if (res.error) {
       onShowToast(`Gagal update order: ${res.error}`);
@@ -551,15 +617,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                         <div className="space-y-1">
                           <div className="font-semibold text-primary">
                             {ord.full_name} ({ord.whatsapp})
                           </div>
                           <div className="text-text-muted">{ord.email}</div>
                           <div className="text-text-muted">
-                            {ord.address}, {ord.city} {ord.postal_code} · Kurir: {ord.courier.toUpperCase()}
+                            {ord.address}
+                            {ord.district ? `, Kec. ${ord.district}` : ''}, {ord.city}
+                            {ord.province ? `, ${ord.province}` : ''} {ord.postal_code}
                           </div>
+                          <div className="text-text-muted">Kurir: {ord.courier.toUpperCase()}</div>
+                          {ord.delivery_notes && (
+                            <div className="text-secondary italic">Catatan: {ord.delivery_notes}</div>
+                          )}
                         </div>
                         <div className="space-y-1">
                           <div className="font-semibold text-primary">Item Pesanan:</div>
@@ -569,6 +641,51 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                               {formatRupiah(item.line_total)}
                             </div>
                           ))}
+                        </div>
+                        <div className="space-y-2">
+                          <div className="font-semibold text-primary">Bukti Transfer &amp; Invoice:</div>
+                          {ord.payment_proof_url ? (
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setZoomedProofUrl(ord.payment_proof_url)}
+                                className="border border-border-ecru hover:border-primary overflow-hidden cursor-pointer shrink-0"
+                                title="Klik untuk perbesar bukti transfer"
+                              >
+                                <img
+                                  src={ord.payment_proof_url}
+                                  alt={`Bukti bayar ${ord.order_number}`}
+                                  className="w-14 h-16 object-cover"
+                                />
+                              </button>
+                              <div className="space-y-1">
+                                <span className="inline-block px-2 py-0.5 bg-surface-sand text-secondary text-[10px] font-label-uppercase uppercase">
+                                  {ord.status === 'waiting_verification' ? 'Perlu Verifikasi' : ord.status}
+                                </span>
+                                <div className="text-[11px] text-text-muted">Klik gambar untuk zoom</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-text-muted italic">Belum ada bukti transfer</div>
+                          )}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {(ord.status === 'pending' || ord.status === 'waiting_verification') && (
+                              <button
+                                type="button"
+                                onClick={() => void handleConfirmPayment(ord)}
+                                className="px-3 py-1.5 bg-status-stock text-white font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:opacity-90"
+                              >
+                                ✓ Konfirmasi Lunas
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setInvoiceOrder(mapAdminOrderToInvoice(ord))}
+                              className="px-3 py-1.5 border border-primary text-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:bg-surface-sand"
+                            >
+                              Invoice PDF
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -1255,6 +1372,40 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           )}
         </>
       )}
+
+      {zoomedProofUrl && (
+        <div
+          aria-modal="true"
+          role="dialog"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        >
+          <div
+            className="fixed inset-0 bg-[#1A1A1A]/60 backdrop-blur-[2px]"
+            onClick={() => setZoomedProofUrl(null)}
+          />
+          <div className="relative bg-surface-card border border-border-ecru p-4 max-w-lg w-full z-10 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-ecru">
+              <span className="font-label-uppercase text-xs uppercase text-primary font-semibold">
+                Preview Bukti Transfer
+              </span>
+              <button
+                type="button"
+                onClick={() => setZoomedProofUrl(null)}
+                className="text-text-muted hover:text-primary cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <img
+              src={zoomedProofUrl}
+              alt="Bukti Transfer Full"
+              className="w-full max-h-[70vh] object-contain bg-surface-container-low"
+            />
+          </div>
+        </div>
+      )}
+
+      <InvoiceModal order={invoiceOrder} onClose={() => setInvoiceOrder(null)} />
     </div>
   );
 };

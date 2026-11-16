@@ -215,10 +215,10 @@ Gaya bahasa mengombinasikan visual *Quiet Luxury* dengan gaya tutur santai, perc
 - [x] Desain visual konsisten dengan referensi Warm Neutral & Editorial Serif.
 - [x] Autentikasi email & password dengan role `customer` dan `admin` terintegrasi Supabase RLS.
 - [x] Admin dapat melakukan CRUD produk real dengan kompresi & konversi gambar ke WebP (maks. 5 MB).
-- [ ] Customer dapat melihat stok riil per varian (`warna + size`) sebelum memasukkan ke keranjang.
-- [ ] Form checkout mencakup Provinsi, Kota, Kecamatan, Alamat Lengkap, dan Catatan Pengiriman.
-- [ ] Halaman pasca-checkout & riwayat order memiliki timer hitung mundur 1 jam, info rekening transfer, upload bukti transfer terkompresi WebP, serta Invoice + Download PDF berstatus `BELUM LUNAS` / `LUNAS`.
-- [ ] Admin dapat melihat bukti transfer dan mengonfirmasi pembayaran (`Lunas`) serta mengupdate status pesanan.
+- [x] Customer dapat melihat stok riil per varian (`warna + size`) sebelum memasukkan ke keranjang.
+- [x] Form checkout mencakup Provinsi, Kota, Kecamatan, Alamat Lengkap, dan Catatan Pengiriman.
+- [x] Halaman pasca-checkout & riwayat order memiliki timer hitung mundur 1 jam, info rekening transfer, upload bukti transfer terkompresi WebP, serta Invoice + Download PDF berstatus `BELUM LUNAS` / `LUNAS`.
+- [x] Admin dapat melihat bukti transfer dan mengonfirmasi pembayaran (`Lunas`) serta mengupdate status pesanan.
 
 ---
 

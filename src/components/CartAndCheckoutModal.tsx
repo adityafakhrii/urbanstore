@@ -11,6 +11,7 @@ import {
   OrderStatusType,
 } from '../services/supabaseService';
 import { MAX_IMAGE_SIZE_BYTES, formatBytes } from '../utils/image';
+import { InvoiceModal } from './InvoiceModal';
 
 export interface CartItem {
   product: Product;
@@ -199,6 +200,7 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
   const [uploadingProof, setUploadingProof] = useState<boolean>(false);
   const [proofError, setProofError] = useState<string | null>(null);
   const [proofCompressionInfo, setProofCompressionInfo] = useState<string | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<OrderRecord | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -1061,6 +1063,16 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                     {proofError && <p className="text-error text-[11px] font-medium">{proofError}</p>}
                   </div>
 
+                  {/* View Invoice & Download PDF Button */}
+                  <button
+                    type="button"
+                    onClick={() => setInvoiceOrder(confirmedOrder)}
+                    className="w-full h-11 border border-primary bg-surface-card text-primary font-label-uppercase text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-surface-sand transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">description</span>
+                    <span>Lihat Invoice &amp; Download PDF ({badge.label})</span>
+                  </button>
+
                   {/* Shipping Summary */}
                   <div className="p-4 bg-surface-card border border-border-ecru space-y-2 text-xs">
                     <div className="flex justify-between py-1 border-b border-border-ecru">
@@ -1159,20 +1171,29 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
                               <span className="font-mono font-semibold text-primary">{ord.trackingNumber}</span>
                             </div>
                           )}
-                          <div className="flex items-center justify-between pt-2 border-t border-border-ecru">
+                          <div className="flex items-center justify-between pt-2 border-t border-border-ecru gap-2">
                             <span className="font-price-md text-primary tabular-nums">{formatRupiah(ord.total)}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setConfirmedOrder(ord);
-                                setProofError(null);
-                                setProofCompressionInfo(null);
-                                setMode('confirmation');
-                              }}
-                              className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:bg-neutral-800"
-                            >
-                              {ord.status === 'pending' && !isExp ? 'Bayar / Upload Bukti →' : 'Detail Pembayaran →'}
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setInvoiceOrder(ord)}
+                                className="px-2.5 py-1.5 border border-primary text-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:bg-surface-card"
+                              >
+                                Invoice PDF
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setConfirmedOrder(ord);
+                                  setProofError(null);
+                                  setProofCompressionInfo(null);
+                                  setMode('confirmation');
+                                }}
+                                className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:bg-neutral-800"
+                              >
+                                {ord.status === 'pending' && !isExp ? 'Bayar / Upload Bukti →' : 'Detail →'}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1230,6 +1251,8 @@ export const CartAndCheckoutModal: React.FC<CartAndCheckoutModalProps> = ({
           </div>
         </div>
       </div>
+
+      <InvoiceModal order={invoiceOrder} onClose={() => setInvoiceOrder(null)} />
     </div>
   );
 };
