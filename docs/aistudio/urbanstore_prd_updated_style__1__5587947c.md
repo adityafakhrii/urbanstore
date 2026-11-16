@@ -6,8 +6,8 @@
 | ----- | ----- | 
 | Produk | UrbanStore Web App | 
 | Dokumen | Product Requirements Document | 
-| Versi | 1.2 (Gen Z Slang / Casual Indonesian Copywriting Update) | 
-| Status | Draft untuk validasi dan development | 
+| Versi | 1.3 (Full E-Commerce Flow: Manual Transfer, Bukti Bayar WebP, Invoice PDF, Timer 1 Jam & Admin RBAC) |
+| Status | Aktif — Acuan Implementasi Production | 
 | Target platform | Responsive web app (mobile-first) | 
 | Target pengguna | Gen Z & Young Millennials, usia 18–30 tahun | 
 | Bahasa utama | Bahasa Indonesia santai / gaul Gen Z (Conversational & Punchy) | 
@@ -76,28 +76,39 @@ Gen Z dan Gen-Zillenial (18–30 tahun) yang melek fashion, suka look minimalis/
 
 ---
 
-## 6. Scope Produk (MVP)
+## 6. Scope Produk (End-to-End)
 
 1. **Top Announcement Bar**: Pengumuman gratis ongkir & garansi retur.
-2. **Minimal Header**: Navigasi kategori, search bar kapsul, bag counter.
+2. **Minimal Header**: Navigasi kategori (`Home`, `Pria`, `Wanita`, `Tas`, `Sepatu`, `Curated Drops`), search bar kapsul, wishlist, bag counter, riwayat pesanan, dan akses akun (`Masuk / Daftar` dengan role `customer` & `admin`).
 3. **Editorial Homepage**:
    - Hero banner tipografi serif mewah dengan hook copy Gen Z.
-   - Quick category bubbles (Men, Women, Bags, Shoes, Accs).
-   - Lookbook grid ("Curated Drops / Edit Minggu Ini").
-   - Best seller fits.
-4. **Katalog & Filter**: Filter instan Pria/Wanita dan sorting harga.
+   - Quick category bubbles (Pria, Wanita, Tas, Sepatu, Aksesori) dengan jumlah kurasi riil dari database.
+   - Lookbook grid ("Racun Minggu Ini") yang dinamis dari produk aktif.
+   - Best seller fits dengan filter tab kategori.
+4. **Katalog & Filter Multi-Aspek**: Filter kategori, subkategori, ukuran, warna, bahan, rentang harga, ready stock, dan sorting harga/terbaru.
 5. **Product Detail Page (PDP)**:
    - Galeri foto multi-angle.
-   - Varian warna & size picker.
-   - Drawer Visual Size Guide.
+   - Varian warna & size picker dengan ketersediaan stok riil per kombinasi `warna + ukuran`.
+   - Drawer Visual Size Guide (*Anti-Zonk*).
    - Accordion: *Detail Bahan & Fitting*, *Cara Rawat*, *Pengiriman & Garansi*.
 6. **Shopping Bag**:
-   - List belanjaan dengan counter quantity (`- 1 +`).
+   - List belanjaan per kombinasi produk, ukuran, dan warna dengan counter quantity (`- 1 +`) & hapus item.
+   - Perhitungan subtotal, progress gratis ongkir (min. Rp 500.000), dan input kode voucher tervalidasi server.
    - Order summary box warm sand.
-   - Voucher code input.
-7. **Structured 4-Step Checkout**:
-   - (1) Kontak, (2) Alamat, (3) Pengiriman, (4) Pembayaran.
-8. **Order Confirmation**: Bukti order dan instruksi pembayaran yang jelas.
+7. **Structured Checkout Lengkap**:
+   - **(1) Kontak Penerima**: Nama lengkap, email, nomor WhatsApp aktif.
+   - **(2) Alamat Pengiriman Berjenjang**: **Provinsi**, **Kota/Kabupaten**, **Kecamatan**, **Kode Pos**, **Alamat Lengkap**, dan **Catatan Pengiriman**.
+   - **(3) Opsi Kurir**: Reguler, Sameday, Instant.
+   - **(4) Metode Pembayaran**: QRIS, BCA Virtual Account / Transfer Bank, Mandiri, Visa / Mastercard.
+8. **Halaman Pesanan Berhasil, Timer 1 Jam, Bukti Transfer & Invoice PDF**:
+   - Menampilkan **No. Order unik** (`US-YYMMDD-XXXXXX`) dan status pembayaran (**`BELUM LUNAS`** / **`MENUNGGU VERIFIKASI`** / **`LUNAS`** / **`KEDALUWARSA`**).
+   - **Countdown Timer 1 Jam** berjalan real-time (`payment_expires_at = created_at + 1 jam`) baik di halaman konfirmasi maupun di halaman Riwayat/Detail Pesanan customer.
+   - **Info Rekening & Instruksi Transfer** sesuai metode bayar yang dipilih.
+   - **Form Upload Bukti Transfer**: Menerima semua format gambar (maks. 5 MB), otomatis dikompres & dikonversi ke **WebP** sebelum disimpan ke Supabase Storage.
+   - **Lihat Invoice & Download PDF**: Halaman/modal invoice resmi dengan tanda **`BELUM LUNAS`** (berubah menjadi **`LUNAS`** setelah dikonfirmasi Admin) yang dapat dicetak/diunduh sebagai **PDF**.
+9. **Autentikasi RBAC & Admin Atelier Dashboard**:
+   - Login & Register menggunakan Email + Password (role `customer` dan `admin`).
+   - **Admin Dashboard**: CRUD produk real (upload gambar terkompresi ke WebP maks. 5 MB), manajemen stok per varian, **verifikasi bukti transfer & konfirmasi pembayaran Lunas**, update status pesanan (`pending`, `waiting_verification`, `paid`, `packed`, `shipped`, `delivered`, `cancelled`, `expired`) + nomor resi, manajemen promo, dan daftar VIP subscriber.
 
 ---
 
@@ -170,32 +181,45 @@ Gaya bahasa mengombinasikan visual *Quiet Luxury* dengan gaya tutur santai, perc
 ## 9. Functional Requirements
 
 ### 9.1 Catalog & Product Listing
-- Kartu produk bersih dengan thumbnail foto model/still-life.
+- Kartu produk bersih dengan thumbnail foto model/still-life (WebP terkompresi).
 - Label produk: Nama barang, varian warna/bahan, harga Rupiah rapi (cth: `Rp 420.000`).
-- Chip filter: "Semua", "Pria", "Wanita", "Aksesoris".
+- Navigasi & filter: `Home`, `Pria`, `Wanita`, `Tas`, `Sepatu`, `Curated Drops`, ditambah filter subkategori, ukuran, warna, bahan, dan rentang harga.
 
 ### 9.2 Product Detail & Visual Size Guide
+- Pemilihan varian **warna** & **ukuran** dengan sinkronisasi stok riil per varian dari database (`product_variants`).
 - Accordion minimalis:
   - **Fabric & Fit:** Komposisi bahan (cth: *100% Linen organic, cutting relaxed fit, model pake size M*).
   - **Care Instructions:** Cara cuci biar awet (cth: *Cuci santai air dingin, jangan disikat barbar*).
   - **Shipping & Returns:** Info pengiriman & garansi tukar size.
-- Drawer panduan ukuran dengan ilustrasi pengukuran badan nyata (lebar dada, panjang baju) dan tips: *"Ukur kaos ternyamanmu, cocokkan sama tabel ini."*
+- Drawer panduan ukuran terhubung ke tabel `size_guides` dengan kalkulator *Anti-Zonk* dan tips: *"Ukur kaos ternyamanmu, cocokkan sama tabel ini."*
 
-### 9.3 Shopping Bag & Checkout
-- Ringkasan pesanan di panel kartu *Warm Sand* (`#F5F2EB`).
-- Input formulir satu kolom yang nyaman diketik di HP.
-- Opsi kurir instan, reguler, dan bebas drama biaya siluman.
+### 9.3 Shopping Bag, Checkout, Pembayaran 1 Jam & Invoice PDF
+- Ringkasan pesanan di panel kartu *Warm Sand* (`#F5F2EB`) dengan tambah/kurang/hapus item & hitung subtotal otomatis.
+- Form checkout berjenjang: Kontak (Nama, Email, WhatsApp), Alamat (**Provinsi, Kota/Kabupaten, Kecamatan, Kode Pos, Alamat Lengkap, Catatan Pengiriman**), Kurir, dan Metode Pembayaran.
+- Setelah checkout berhasil:
+  - Tampil halaman/panel **Pesanan Berhasil Dibuat** dengan nomor order unik dan **timer hitung mundur 1 jam**.
+  - Info nomor rekening / QRIS tujuan transfer yang jelas dan mudah disalin.
+  - Form upload **bukti transfer** (semua format gambar maks. 5 MB → kompresi otomatis ke **WebP**).
+  - Tombol **Lihat Invoice & Download PDF** dengan watermark/badge status **`BELUM LUNAS`** sebelum pembayaran dikonfirmasi Admin, dan **`LUNAS`** setelah dikonfirmasi.
+
+### 9.4 Admin Atelier Operations
+- Verifikasi gambar bukti transfer yang diunggah customer dan tombol konfirmasi pembayaran (**Tandai Lunas**).
+- Pembaruan status pesanan (`pending` → `waiting_verification` → `paid` → `packed` → `shipped` → `delivered` / `cancelled` / `expired`) beserta input nomor resi.
+- Manajemen katalog produk real (CRUD + upload WebP) dan manajemen stok per varian.
 
 ---
 
-## 10. Acceptance Criteria MVP Checklist
+## 10. Acceptance Criteria Checklist
 
-- [ ] Seluruh copywriting utama sudah mengadopsi gaya bahasa santai ala Gen Z tanpa merusak estetika mewah.
-- [ ] Microcopy form dan error message tetap jelas, solutif, dan tidak membingungkan pengguna.
-- [ ] Desain visual konsisten dengan referensi Warm Neutral & Editorial Serif.
-- [ ] Drawer Size Guide menggunakan copy yang menenangkan dan instruktif (*Anti-Zonk*).
-- [ ] Alur 4-section checkout dapat diselesaikan dengan cepat di layar HP.
+- [x] Seluruh copywriting utama mengadopsi gaya bahasa santai ala Gen Z tanpa merusak estetika mewah.
+- [x] Desain visual konsisten dengan referensi Warm Neutral & Editorial Serif.
+- [x] Autentikasi email & password dengan role `customer` dan `admin` terintegrasi Supabase RLS.
+- [x] Admin dapat melakukan CRUD produk real dengan kompresi & konversi gambar ke WebP (maks. 5 MB).
+- [ ] Customer dapat melihat stok riil per varian (`warna + size`) sebelum memasukkan ke keranjang.
+- [ ] Form checkout mencakup Provinsi, Kota, Kecamatan, Alamat Lengkap, dan Catatan Pengiriman.
+- [ ] Halaman pasca-checkout & riwayat order memiliki timer hitung mundur 1 jam, info rekening transfer, upload bukti transfer terkompresi WebP, serta Invoice + Download PDF berstatus `BELUM LUNAS` / `LUNAS`.
+- [ ] Admin dapat melihat bukti transfer dan mengonfirmasi pembayaran (`Lunas`) serta mengupdate status pesanan.
 
 ---
 
-**End of Document — UrbanStore PRD v1.2 (Gen Z Slang Edition)**
+**End of Document — UrbanStore PRD v1.3 (Full End-to-End Flow Edition)**
