@@ -21,6 +21,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -211,14 +212,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div>
                   <label className="block font-body-sm text-xs text-text-muted mb-1">Password</label>
-                  <input
-                    required
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimal 6 karakter"
-                    className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                  />
+                  <div className="relative">
+                    <input
+                      required
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      className="w-full h-11 bg-surface-card border border-border-ecru pl-3 pr-10 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-text-muted hover:text-primary cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
                 <button
                   type="submit"
@@ -268,14 +281,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div>
                   <label className="block font-body-sm text-xs text-text-muted mb-1">Password</label>
-                  <input
-                    required
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimal 6 karakter"
-                    className="w-full h-11 bg-surface-card border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                  />
+                  <div className="relative">
+                    <input
+                      required
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      className="w-full h-11 bg-surface-card border border-border-ecru pl-3 pr-10 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-text-muted hover:text-primary cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
                 <button
                   type="submit"
