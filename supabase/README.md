@@ -17,8 +17,9 @@ Schema berada di [001_urbanstore_schema.sql](file:///d:/Projects/Vibe%20Coding%2
 1. Buka **Supabase Dashboard → SQL Editor**.
 2. Jalankan isi file `supabase/migrations/001_urbanstore_schema.sql`.
 3. Jalankan isi file `supabase/migrations/002_storage_product_images.sql` (untuk membuat bucket Storage `product-images`).
-4. Jalankan isi file `supabase/seed.sql`.
-5. Pastikan **Authentication → Providers → Email** aktif.
+4. Jalankan isi file `supabase/migrations/003_checkout_payment_invoice.sql` (untuk checkout provinsi/kecamatan/catatan, timer 1 jam, & bucket `payment-proofs`).
+5. Jalankan isi file `supabase/seed.sql`.
+6. Pastikan **Authentication → Providers → Email** aktif.
    *(Opsional untuk testing lokal tanpa verifikasi email: matikan **Confirm email** di Authentication → Providers → Email).*
 
 ## 3. Membuat Akun `customer` dan `admin`

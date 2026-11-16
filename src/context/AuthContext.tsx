@@ -40,7 +40,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, whatsapp, role, default_address, default_city, default_postal_code')
+      .select(
+        'id, email, full_name, whatsapp, role, default_province, default_city, default_district, default_address, default_postal_code'
+      )
       .eq('id', authUser.id)
       .maybeSingle();
 
@@ -51,8 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         full_name: (authUser.user_metadata?.full_name as string) || '',
         whatsapp: (authUser.user_metadata?.whatsapp as string) || '',
         role: 'customer',
-        default_address: '',
+        default_province: '',
         default_city: '',
+        default_district: '',
+        default_address: '',
         default_postal_code: '',
       });
       return;

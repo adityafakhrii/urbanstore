@@ -237,6 +237,10 @@ export default function App() {
     }
   };
 
+  const handleOrderUpdated = (updated: OrderRecord) => {
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+  };
+
   const handleToggleWishlist = (productId: string) => {
     const prod = products.find((p) => p.id === productId);
     const exists = wishlistIds.includes(productId);
@@ -367,6 +371,7 @@ export default function App() {
           onRemoveItem={handleRemoveCartItem}
           onClearCart={handleClearCart}
           onOrderComplete={handleOrderComplete}
+          onOrderUpdated={handleOrderUpdated}
           onExploreCatalog={() => handleNavigate('curated-drops')}
         />
       </Suspense>

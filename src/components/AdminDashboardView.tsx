@@ -41,11 +41,13 @@ type AdminTab = 'orders' | 'inventory' | 'promos' | 'subscribers';
 
 const ORDER_STATUS_OPTIONS: AdminOrderRow['status'][] = [
   'pending',
+  'waiting_verification',
   'paid',
   'packed',
   'shipped',
   'delivered',
   'cancelled',
+  'expired',
 ];
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({

@@ -11,8 +11,10 @@ export interface UserProfile {
   full_name: string;
   whatsapp: string;
   role: UserRole;
-  default_address: string;
+  default_province: string;
   default_city: string;
+  default_district: string;
+  default_address: string;
   default_postal_code: string;
 }
 
@@ -26,6 +28,16 @@ export interface ProductVariantRow {
   is_available: boolean;
 }
 
+export type OrderStatusType =
+  | 'pending'
+  | 'waiting_verification'
+  | 'paid'
+  | 'packed'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'expired';
+
 export interface AdminOrderRow {
   id: string;
   order_number: string;
@@ -33,9 +45,12 @@ export interface AdminOrderRow {
   full_name: string;
   email: string;
   whatsapp: string;
-  address: string;
+  province: string;
   city: string;
+  district: string;
+  address: string;
   postal_code: string;
+  delivery_notes: string;
   courier: 'reguler' | 'sameday' | 'instant';
   payment_method: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
   promo_code: string | null;
@@ -43,8 +58,11 @@ export interface AdminOrderRow {
   discount: number;
   shipping_cost: number;
   total: number;
-  status: 'pending' | 'paid' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
+  status: OrderStatusType;
   tracking_number: string | null;
+  payment_proof_url: string | null;
+  payment_expires_at: string;
+  paid_at: string | null;
   created_at: string;
   order_items?: {
     id: string;
@@ -321,9 +339,12 @@ export async function placeOrderInDb(payload: {
   fullName: string;
   email: string;
   whatsapp: string;
-  address: string;
+  province: string;
   city: string;
+  district: string;
+  address: string;
   postalCode: string;
+  deliveryNotes: string;
   courier: 'reguler' | 'sameday' | 'instant';
   paymentMethod: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
   promoCode: string | null;
@@ -344,9 +365,12 @@ export async function placeOrderInDb(payload: {
     p_full_name: payload.fullName,
     p_email: payload.email,
     p_whatsapp: payload.whatsapp,
-    p_address: payload.address,
+    p_province: payload.province,
     p_city: payload.city,
+    p_district: payload.district,
+    p_address: payload.address,
     p_postal_code: payload.postalCode,
+    p_delivery_notes: payload.deliveryNotes,
     p_courier: payload.courier,
     p_payment_method: payload.paymentMethod,
     p_promo_code: payload.promoCode,
@@ -360,21 +384,62 @@ export async function placeOrderInDb(payload: {
   return {
     order: {
       id: data.order_number as string,
+      dbId: data.id as string,
       createdAt: new Date(data.created_at as string).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       }),
       fullName: payload.fullName,
+      email: payload.email,
       whatsapp: payload.whatsapp,
-      address: payload.address,
+      province: payload.province,
       city: payload.city,
+      district: payload.district,
+      address: payload.address,
+      postalCode: payload.postalCode,
+      deliveryNotes: payload.deliveryNotes,
       courier: payload.courier,
       paymentMethod: payload.paymentMethod,
+      subtotal: data.subtotal as number,
+      discount: data.discount as number,
+      shippingCost: data.shipping_cost as number,
       total: data.total as number,
       itemsCount: data.items_count as number,
       status: (data.status as OrderRecord['status']) || 'pending',
+      paymentExpiresAt: data.payment_expires_at as string,
+      items: payload.items.map((item) => ({
+        productName: item.product.name,
+        productSku: item.product.sku,
+        size: item.size,
+        color: item.color,
+        unitPrice: item.product.price,
+        quantity: item.quantity,
+        lineTotal: item.product.price * item.quantity,
+      })),
     },
+  };
+}
+
+export async function submitPaymentProofInDb(
+  orderDbId: string,
+  proofUrl: string
+): Promise<{ status?: OrderStatusType; paymentProofUrl?: string; error?: string }> {
+  if (!supabase) {
+    return { error: 'Supabase belum terkonfigurasi.' };
+  }
+  const { data, error } = await supabase.rpc('submit_payment_proof', {
+    p_order_id: orderDbId,
+    p_proof_url: proofUrl,
+  });
+
+  if (error || !data) {
+    return { error: error?.message || 'Gagal mengirim bukti pembayaran.' };
+  }
+
+  return {
+    status: data.status as OrderStatusType,
+    paymentProofUrl: data.payment_proof_url as string,
   };
 }
 
@@ -382,32 +447,64 @@ export async function fetchCustomerOrders(userId: string): Promise<OrderRecord[]
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('orders')
-    .select('id, order_number, created_at, full_name, whatsapp, address, city, courier, payment_method, total, status, tracking_number, order_items(quantity)')
+    .select(
+      'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)'
+    )
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error || !data) return [];
 
   return data.map((row) => {
-    const items = (row.order_items as { quantity: number }[]) || [];
-    const itemsCount = items.reduce((sum, i) => sum + i.quantity, 0);
+    const rawItems =
+      (row.order_items as {
+        product_name: string;
+        product_sku: string;
+        size: string;
+        color: string;
+        unit_price: number;
+        quantity: number;
+        line_total: number;
+      }[]) || [];
+    const itemsCount = rawItems.reduce((sum, i) => sum + i.quantity, 0);
     return {
       id: row.order_number as string,
+      dbId: row.id as string,
       createdAt: new Date(row.created_at as string).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       }),
       fullName: row.full_name as string,
+      email: row.email as string,
       whatsapp: row.whatsapp as string,
-      address: row.address as string,
+      province: (row.province as string) || '',
       city: row.city as string,
+      district: (row.district as string) || '',
+      address: row.address as string,
+      postalCode: (row.postal_code as string) || '',
+      deliveryNotes: (row.delivery_notes as string) || '',
       courier: row.courier as OrderRecord['courier'],
       paymentMethod: row.payment_method as OrderRecord['paymentMethod'],
+      subtotal: row.subtotal as number,
+      discount: row.discount as number,
+      shippingCost: row.shipping_cost as number,
       total: row.total as number,
       itemsCount,
       status: row.status as OrderRecord['status'],
       trackingNumber: (row.tracking_number as string | null) ?? undefined,
+      paymentProofUrl: (row.payment_proof_url as string | null) ?? undefined,
+      paymentExpiresAt: (row.payment_expires_at as string | null) ?? undefined,
+      paidAt: (row.paid_at as string | null) ?? undefined,
+      items: rawItems.map((i) => ({
+        productName: i.product_name,
+        productSku: i.product_sku,
+        size: i.size,
+        color: i.color,
+        unitPrice: i.unit_price,
+        quantity: i.quantity,
+        lineTotal: i.line_total,
+      })),
     };
   });
 }
@@ -493,7 +590,12 @@ export interface CreateProductInput {
   initialStock: number;
 }
 
-export async function uploadProductImageAdmin(rawFile: File): Promise<{
+async function uploadCompressedWebpToBucket(
+  bucket: string,
+  folder: string,
+  rawFile: File,
+  migrationHint: string
+): Promise<{
   url?: string;
   originalBytes?: number;
   compressedBytes?: number;
@@ -509,9 +611,9 @@ export async function uploadProductImageAdmin(rawFile: File): Promise<{
   }
 
   const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
-  const filePath = `products/${safeName}`;
+  const filePath = `${folder}/${safeName}`;
 
-  const { error } = await supabase.storage.from('product-images').upload(filePath, compressed.file, {
+  const { error } = await supabase.storage.from(bucket).upload(filePath, compressed.file, {
     contentType: 'image/webp',
     cacheControl: '3600',
     upsert: false,
@@ -521,17 +623,35 @@ export async function uploadProductImageAdmin(rawFile: File): Promise<{
     const isBucketMissing = error.message.toLowerCase().includes('bucket');
     return {
       error: isBucketMissing
-        ? "Bucket 'product-images' belum ada di Supabase Storage. Jalankan SQL 002_storage_product_images.sql di Supabase SQL Editor."
+        ? `Bucket '${bucket}' belum ada di Supabase Storage. Jalankan SQL ${migrationHint} di Supabase SQL Editor.`
         : error.message,
     };
   }
 
-  const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
+  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
   return {
     url: data.publicUrl,
     originalBytes: compressed.originalBytes,
     compressedBytes: compressed.compressedBytes,
   };
+}
+
+export async function uploadProductImageAdmin(rawFile: File) {
+  return uploadCompressedWebpToBucket(
+    'product-images',
+    'products',
+    rawFile,
+    '002_storage_product_images.sql'
+  );
+}
+
+export async function uploadPaymentProofImage(rawFile: File) {
+  return uploadCompressedWebpToBucket(
+    'payment-proofs',
+    'proofs',
+    rawFile,
+    '003_checkout_payment_invoice.sql'
+  );
 }
 
 export async function createProductAdmin(
