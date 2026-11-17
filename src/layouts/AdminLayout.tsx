@@ -5,6 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { ToastBanner } from '../components/ToastBanner';
 
 const ADMIN_NAV_ITEMS = [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/admin/orders', label: 'Orders', icon: 'receipt_long' },
   { to: '/admin/products', label: 'Products & Inventory', icon: 'inventory_2' },
   { to: '/admin/promos', label: 'Promos', icon: 'local_offer' },
@@ -29,7 +30,7 @@ export const AdminLayout: React.FC = () => {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-border-ecru bg-surface-card sticky top-0 h-screen">
         <div className="px-6 h-16 flex items-center justify-between border-b border-border-ecru">
           <div>
-            <Link to="/admin/orders" className="font-headline-sm text-base tracking-[0.2em] text-primary block">
+            <Link to="/admin/dashboard" className="font-headline-sm text-base tracking-[0.2em] text-primary block">
               URBANSTORE
             </Link>
             <span className="font-label-uppercase text-[9px] uppercase tracking-widest text-secondary">

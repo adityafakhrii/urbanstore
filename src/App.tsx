@@ -32,6 +32,9 @@ const OrderHistoryPage = lazy(() =>
   import('./pages/account/OrderHistoryPage').then((m) => ({ default: m.OrderHistoryPage }))
 );
 
+const AdminDashboardPage = lazy(() =>
+  import('./pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage }))
+);
 const AdminOrdersPage = lazy(() =>
   import('./pages/admin/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage }))
 );
@@ -99,7 +102,8 @@ export function App() {
           {/* Isolated Admin Console Routes */}
           <Route element={<AdminRoute />}>
             <Route path="admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/orders" replace />} />
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="products" element={<AdminProductsPage />} />
               <Route path="products/new" element={<AdminProductFormPage />} />

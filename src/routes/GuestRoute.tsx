@@ -19,7 +19,7 @@ export const GuestRoute: React.FC = () => {
     if (redirect && redirect.startsWith('/')) {
       return <Navigate to={redirect} replace />;
     }
-    return <Navigate to={isAdmin ? '/admin/orders' : '/'} replace />;
+    return <Navigate to={isAdmin ? '/admin/dashboard' : '/'} replace />;
   }
 
   return <Outlet />;

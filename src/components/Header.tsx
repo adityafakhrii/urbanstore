@@ -142,7 +142,7 @@ export const Header: React.FC = () => {
               })}
               {isAdmin && (
                 <Link
-                  to="/admin/orders"
+                  to="/admin/dashboard"
                   className={`font-label-uppercase text-label-uppercase uppercase transition-all pb-1 whitespace-nowrap shrink-0 ${
                     location.pathname.startsWith('/admin')
                       ? 'text-secondary font-semibold border-b border-secondary'
@@ -283,7 +283,7 @@ export const Header: React.FC = () => {
               ))}
               {isAdmin && (
                 <Link
-                  to="/admin/orders"
+                  to="/admin/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
                   className="font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-secondary font-semibold"
                 >

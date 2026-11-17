@@ -77,7 +77,7 @@ export const ProfilePage: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           {isAdmin && (
             <Link
-              to="/admin/orders"
+              to="/admin/dashboard"
               className="px-4 py-2 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider"
             >
               Buka Admin Console →
