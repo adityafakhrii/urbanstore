@@ -7,6 +7,7 @@ import {
   formatRupiah,
   togglePromoAdmin,
 } from '../../services/supabaseService';
+import { Button, InputField, StatusBadge } from '../../components/ui';
 
 export const AdminPromosPage: React.FC = () => {
   const { showToast } = useStore();
@@ -58,124 +59,111 @@ export const AdminPromosPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-border-ecru pb-5">
+    <div className="space-y-8">
+      <div className="border-b border-border-ecru pb-6">
         <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
           VOUCHERS &amp; CAMPAIGNS
         </span>
-        <h1 className="font-headline-sm text-2xl text-primary">Kelola Kode Promo</h1>
+        <h1 className="font-headline-sm text-2xl sm:text-3xl text-primary">Kelola Kode Promo</h1>
       </div>
 
       <form
         onSubmit={handleCreatePromo}
-        className="bg-surface-card border border-border-ecru p-5 grid grid-cols-1 sm:grid-cols-5 gap-3 items-end text-xs"
+        className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end"
       >
-        <div>
-          <label className="block text-text-muted mb-1">Kode Promo *</label>
-          <input
-            required
-            type="text"
-            value={promoCodeInput}
-            onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
-            placeholder="URBAN25"
-            className="w-full h-10 bg-surface border border-border-ecru px-3 uppercase font-mono text-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-text-muted mb-1">Potongan (IDR)</label>
-          <input
-            type="number"
-            min={1000}
-            value={promoDiscountInput}
-            onChange={(e) => setPromoDiscountInput(e.target.value)}
-            className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-text-muted mb-1">Min. Subtotal</label>
-          <input
-            type="number"
-            min={0}
-            value={promoMinInput}
-            onChange={(e) => setPromoMinInput(e.target.value)}
-            className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-text-muted mb-1">Keterangan</label>
-          <input
-            type="text"
-            value={promoDescInput}
-            onChange={(e) => setPromoDescInput(e.target.value)}
-            placeholder="Promo Payday"
-            className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-          />
-        </div>
-        <button
-          type="submit"
-          className="h-10 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider cursor-pointer hover:bg-neutral-800"
-        >
+        <InputField
+          label="Kode Promo"
+          required
+          type="text"
+          value={promoCodeInput}
+          onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+          placeholder="URBAN25"
+          className="uppercase font-mono"
+        />
+        <InputField
+          label="Potongan (IDR)"
+          type="number"
+          min={1000}
+          value={promoDiscountInput}
+          onChange={(e) => setPromoDiscountInput(e.target.value)}
+        />
+        <InputField
+          label="Min. Subtotal"
+          type="number"
+          min={0}
+          value={promoMinInput}
+          onChange={(e) => setPromoMinInput(e.target.value)}
+        />
+        <InputField
+          label="Keterangan"
+          type="text"
+          value={promoDescInput}
+          onChange={(e) => setPromoDescInput(e.target.value)}
+          placeholder="Promo Payday"
+        />
+        <Button type="submit" variant="primary" size="md" fullWidth>
           + Tambah Promo
-        </button>
+        </Button>
       </form>
 
-      <div className="bg-surface-card border border-border-ecru overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-border-ecru bg-surface-sand font-label-uppercase text-[10px] uppercase text-text-muted">
-              <th className="p-3">Kode</th>
-              <th className="p-3">Keterangan</th>
-              <th className="p-3">Potongan</th>
-              <th className="p-3">Min. Belanja</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-ecru">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="p-6 text-center text-text-muted">
-                  Memuat daftar promo...
-                </td>
+      <div className="bg-surface-card border border-border-ecru rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-border-ecru bg-surface-sand font-label-uppercase text-[10px] uppercase text-text-muted">
+                <th className="p-4">Kode</th>
+                <th className="p-4">Keterangan</th>
+                <th className="p-4">Potongan</th>
+                <th className="p-4">Min. Belanja</th>
+                <th className="p-4">Status</th>
+                <th className="p-4">Aksi</th>
               </tr>
-            ) : promos.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="p-6 text-center text-text-muted">
-                  Belum ada kode promo terdaftar.
-                </td>
-              </tr>
-            ) : (
-              promos.map((pr) => (
-                <tr key={pr.code}>
-                  <td className="p-3 font-mono font-bold text-primary">{pr.code}</td>
-                  <td className="p-3 text-primary">{pr.description || '-'}</td>
-                  <td className="p-3 text-primary">{formatRupiah(pr.discount_amount)}</td>
-                  <td className="p-3 text-text-muted">{formatRupiah(pr.min_subtotal)}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 text-[10px] font-label-uppercase uppercase ${
-                        pr.is_active
-                          ? 'bg-status-stock text-white'
-                          : 'bg-surface-container-highest text-text-muted'
-                      }`}
-                    >
-                      {pr.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleTogglePromo(pr)}
-                      className="px-3 py-1 border border-border-ecru text-primary text-[10px] font-label-uppercase uppercase hover:bg-surface-muted cursor-pointer"
-                    >
-                      {pr.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-border-ecru">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-text-muted">
+                    Memuat daftar promo...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : promos.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-text-muted">
+                    Belum ada kode promo terdaftar.
+                  </td>
+                </tr>
+              ) : (
+                promos.map((pr) => (
+                  <tr key={pr.code}>
+                    <td className="p-4 font-mono font-bold text-primary">{pr.code}</td>
+                    <td className="p-4 text-primary">{pr.description || '-'}</td>
+                    <td className="p-4 text-primary">{formatRupiah(pr.discount_amount)}</td>
+                    <td className="p-4 text-text-muted">{formatRupiah(pr.min_subtotal)}</td>
+                    <td className="p-4">
+                      <StatusBadge
+                        label={pr.is_active ? 'Aktif' : 'Nonaktif'}
+                        className={
+                          pr.is_active
+                            ? 'bg-status-stock text-white'
+                            : 'bg-surface-container-highest text-text-muted'
+                        }
+                      />
+                    </td>
+                    <td className="p-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleTogglePromo(pr)}
+                      >
+                        {pr.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

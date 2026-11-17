@@ -21,6 +21,30 @@ export const INDO_PROVINCES = [
   'Sulawesi Utara',
 ];
 
+export const EXPEDITION_OPTIONS = [
+  'JNE',
+  'J&T Express',
+  'SiCepat',
+  'AnterAja',
+  'Paxel',
+  'GoSend',
+  'GrabExpress',
+  'Lion Parcel',
+  'Pos Indonesia',
+  'Lainnya',
+];
+
+export const ORDER_STATUS_OPTIONS_ID: { value: OrderStatusType; label: string }[] = [
+  { value: 'pending', label: 'Menunggu Pembayaran' },
+  { value: 'waiting_verification', label: 'Menunggu Verifikasi' },
+  { value: 'paid', label: 'Lunas' },
+  { value: 'packed', label: 'Sedang Dikemas' },
+  { value: 'shipped', label: 'Dikirim' },
+  { value: 'delivered', label: 'Pesanan Selesai' },
+  { value: 'cancelled', label: 'Dibatalkan' },
+  { value: 'expired', label: 'Kedaluwarsa' },
+];
+
 export const PAYMENT_ACCOUNTS: Record<
   OrderRecord['paymentMethod'],
   { bank: string; accountNumber: string; accountHolder: string; note: string }
@@ -69,27 +93,36 @@ export function isOrderPaymentExpired(order: Pick<OrderRecord, 'status' | 'payme
   return new Date(order.paymentExpiresAt).getTime() <= Date.now();
 }
 
+export function getOrderStatusLabel(status?: OrderStatusType, isExpired?: boolean): string {
+  if (isExpired && status === 'pending') return 'Kedaluwarsa';
+  const found = ORDER_STATUS_OPTIONS_ID.find((item) => item.value === status);
+  return found ? found.label : 'Menunggu Pembayaran';
+}
+
 export function getOrderStatusBadge(
   status?: OrderStatusType,
   isExpired?: boolean
 ): { label: string; cls: string } {
   if (isExpired && status === 'pending') {
-    return { label: 'KEDALUWARSA', cls: 'bg-error-container text-error' };
+    return { label: 'Kedaluwarsa', cls: 'bg-error-container text-error' };
   }
   switch (status) {
     case 'paid':
+      return { label: 'Lunas', cls: 'bg-status-stock text-white' };
     case 'packed':
+      return { label: 'Sedang Dikemas', cls: 'bg-[#EDE6D8] text-[#5C4326]' };
     case 'shipped':
+      return { label: 'Dikirim', cls: 'bg-[#E3ECF7] text-[#1D4ED8]' };
     case 'delivered':
-      return { label: 'LUNAS', cls: 'bg-status-stock text-white' };
+      return { label: 'Pesanan Selesai', cls: 'bg-status-stock text-white' };
     case 'waiting_verification':
-      return { label: 'MENUNGGU VERIFIKASI ADMIN', cls: 'bg-secondary text-on-secondary' };
+      return { label: 'Menunggu Verifikasi', cls: 'bg-secondary text-on-secondary' };
     case 'expired':
-      return { label: 'KEDALUWARSA', cls: 'bg-error-container text-error' };
+      return { label: 'Kedaluwarsa', cls: 'bg-error-container text-error' };
     case 'cancelled':
-      return { label: 'DIBATALKAN', cls: 'bg-error-container text-error' };
+      return { label: 'Dibatalkan', cls: 'bg-error-container text-error' };
     default:
-      return { label: 'BELUM LUNAS', cls: 'bg-surface-container-highest text-primary' };
+      return { label: 'Menunggu Pembayaran', cls: 'bg-surface-container-highest text-primary' };
   }
 }
 
@@ -122,7 +155,17 @@ export function getInvoiceStamp(order: OrderRecord): {
     };
   }
   if (status === 'cancelled') {
-    return { label: 'DIBATALKAN', isPaid: false, colorHex: '#BA1A1A', bgHex: '#FFDAD6' };
+    return {
+      label: 'DIBATALKAN',
+      isPaid: false,
+      colorHex: '#BA1A1A',
+      bgHex: '#FFDAD6',
+    };
   }
-  return { label: 'BELUM LUNAS', isPaid: false, colorHex: '#BA1A1A', bgHex: '#FFDAD6' };
+  return {
+    label: 'BELUM LUNAS',
+    isPaid: false,
+    colorHex: '#BA1A1A',
+    bgHex: '#FFDAD6',
+  };
 }

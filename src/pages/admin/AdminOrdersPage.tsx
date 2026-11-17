@@ -7,17 +7,19 @@ import {
   formatRupiah,
   updateOrderAdmin,
 } from '../../services/supabaseService';
-
-const ORDER_STATUS_OPTIONS: AdminOrderRow['status'][] = [
-  'pending',
-  'waiting_verification',
-  'paid',
-  'packed',
-  'shipped',
-  'delivered',
-  'cancelled',
-  'expired',
-];
+import {
+  EXPEDITION_OPTIONS,
+  ORDER_STATUS_OPTIONS_ID,
+  getOrderStatusBadge,
+} from '../../utils/payment';
+import {
+  AlertBanner,
+  Button,
+  CustomSelect,
+  InputField,
+  StatusBadge,
+  getButtonClassName,
+} from '../../components/ui';
 
 type OrderFilterKey =
   | 'all'
@@ -29,12 +31,31 @@ type OrderFilterKey =
 
 const ORDER_FILTER_TABS: { key: OrderFilterKey; label: string }[] = [
   { key: 'all', label: 'Semua' },
-  { key: 'waiting_verification', label: 'Perlu Verifikasi' },
+  { key: 'waiting_verification', label: 'Menunggu Verifikasi' },
   { key: 'needs_shipping', label: 'Belum Ada Resi' },
-  { key: 'pending', label: 'Menunggu Bayar' },
+  { key: 'pending', label: 'Menunggu Pembayaran' },
   { key: 'completed', label: 'Lunas & Selesai' },
-  { key: 'closed', label: 'Batal / Expired' },
+  { key: 'closed', label: 'Dibatalkan / Kedaluwarsa' },
 ];
+
+interface OrderEditState {
+  status: AdminOrderRow['status'];
+  expeditionSelect: string;
+  customExpedition: string;
+  tracking: string;
+}
+
+function parseExpeditionState(raw?: string | null): {
+  expeditionSelect: string;
+  customExpedition: string;
+} {
+  const cleaned = (raw || '').trim();
+  if (!cleaned) return { expeditionSelect: '', customExpedition: '' };
+  if (EXPEDITION_OPTIONS.includes(cleaned)) {
+    return { expeditionSelect: cleaned, customExpedition: '' };
+  }
+  return { expeditionSelect: 'Lainnya', customExpedition: cleaned };
+}
 
 export const AdminOrdersPage: React.FC = () => {
   const { showToast } = useStore();
@@ -46,9 +67,8 @@ export const AdminOrdersPage: React.FC = () => {
 
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [orderEdits, setOrderEdits] = useState<
-    Record<string, { status: AdminOrderRow['status']; tracking: string }>
-  >({});
+  const [orderEdits, setOrderEdits] = useState<Record<string, OrderEditState>>({});
+  const [orderErrors, setOrderErrors] = useState<Record<string, string>>({});
   const [zoomedProofUrl, setZoomedProofUrl] = useState<string | null>(null);
 
   const loadOrders = useCallback(async () => {
@@ -56,11 +76,18 @@ export const AdminOrdersPage: React.FC = () => {
     const ordData = await fetchAllOrdersAdmin();
     setOrders(ordData);
 
-    const edits: Record<string, { status: AdminOrderRow['status']; tracking: string }> = {};
+    const edits: Record<string, OrderEditState> = {};
     ordData.forEach((o) => {
-      edits[o.id] = { status: o.status, tracking: o.tracking_number || '' };
+      const exp = parseExpeditionState(o.shipping_expedition);
+      edits[o.id] = {
+        status: o.status,
+        expeditionSelect: exp.expeditionSelect,
+        customExpedition: exp.customExpedition,
+        tracking: o.tracking_number || '',
+      };
     });
     setOrderEdits(edits);
+    setOrderErrors({});
     setLoading(false);
   }, []);
 
@@ -124,11 +151,20 @@ export const AdminOrdersPage: React.FC = () => {
     }
   };
 
+  const resolveExpeditionName = (edit: OrderEditState): string => {
+    if (edit.expeditionSelect === 'Lainnya') {
+      return edit.customExpedition.trim();
+    }
+    return edit.expeditionSelect.trim();
+  };
+
   const handleConfirmPayment = async (ord: AdminOrderRow) => {
     const edit = orderEdits[ord.id];
+    const expeditionName = edit ? resolveExpeditionName(edit) : ord.shipping_expedition || '';
     const res = await updateOrderAdmin(ord.id, {
       status: 'paid',
       paid_at: ord.paid_at || new Date().toISOString(),
+      shipping_expedition: expeditionName || null,
       tracking_number: edit?.tracking.trim() || ord.tracking_number || null,
     });
     if (res.error) {
@@ -142,61 +178,90 @@ export const AdminOrdersPage: React.FC = () => {
   const handleSaveOrder = async (orderId: string) => {
     const edit = orderEdits[orderId];
     if (!edit) return;
+
+    const expeditionName = resolveExpeditionName(edit);
+    const trackingNumber = edit.tracking.trim();
+
+    if (edit.status === 'shipped' && (!expeditionName || !trackingNumber)) {
+      const msg =
+        'Untuk mengubah status menjadi Dikirim, wajib mengisi Nama Ekspedisi dan Nomor Resi.';
+      setOrderErrors((prev) => ({ ...prev, [orderId]: msg }));
+      showToast(msg);
+      return;
+    }
+
+    setOrderErrors((prev) => {
+      const next = { ...prev };
+      delete next[orderId];
+      return next;
+    });
+
     const existing = orders.find((o) => o.id === orderId);
     const shouldSetPaidAt =
       ['paid', 'packed', 'shipped', 'delivered'].includes(edit.status) && !existing?.paid_at;
+
     const res = await updateOrderAdmin(orderId, {
       status: edit.status,
-      tracking_number: edit.tracking.trim() || null,
+      shipping_expedition: expeditionName || null,
+      tracking_number: trackingNumber || null,
       ...(shouldSetPaidAt ? { paid_at: new Date().toISOString() } : {}),
     });
+
     if (res.error) {
-      showToast(`Gagal update order: ${res.error}`);
+      setOrderErrors((prev) => ({ ...prev, [orderId]: res.error! }));
+      showToast(`Gagal memperbarui pesanan: ${res.error}`);
       return;
     }
-    showToast('Status pesanan & resi berhasil diperbarui!');
+
+    showToast('Status pesanan & info pengiriman berhasil diperbarui!');
     await loadOrders();
   };
 
+  const statusSelectOptions = ORDER_STATUS_OPTIONS_ID.map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
+
+  const expeditionSelectOptions = EXPEDITION_OPTIONS.map((name) => ({
+    value: name,
+    label: name,
+  }));
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-ecru pb-5">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-ecru pb-6">
         <div>
           <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
-            ADMIN ORDERS &amp; PAYMENT VERIFICATION
+            VERIFIKASI PEMBAYARAN &amp; PENGIRIMAN
           </span>
-          <h1 className="font-headline-sm text-2xl text-primary">Manajemen Pesanan</h1>
+          <h1 className="font-headline-sm text-2xl sm:text-3xl text-primary">Manajemen Pesanan</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadOrders()}
-          className="px-4 py-2 border border-border-ecru bg-surface-card text-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:border-primary cursor-pointer"
-        >
+        <Button variant="outline" size="sm" onClick={() => void loadOrders()}>
           Refresh Orders
-        </button>
+        </Button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-surface-card border border-border-ecru">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="p-5 bg-surface-card border border-border-ecru rounded-2xl">
           <span className="font-label-uppercase text-[10px] uppercase text-text-muted block mb-1">
             Total Pesanan
           </span>
           <span className="font-headline-sm text-2xl text-primary tabular-nums">{orders.length}</span>
         </div>
-        <div className="p-4 bg-surface-card border border-border-ecru">
+        <div className="p-5 bg-surface-card border border-border-ecru rounded-2xl">
           <span className="font-label-uppercase text-[10px] uppercase text-text-muted block mb-1">
             Perlu Verifikasi
           </span>
           <span className="font-headline-sm text-2xl text-secondary tabular-nums">{pendingCount}</span>
         </div>
-        <div className="p-4 bg-surface-card border border-border-ecru">
+        <div className="p-5 bg-surface-card border border-border-ecru rounded-2xl">
           <span className="font-label-uppercase text-[10px] uppercase text-text-muted block mb-1">
             Sudah Lunas
           </span>
           <span className="font-headline-sm text-2xl text-status-stock tabular-nums">{paidCount}</span>
         </div>
-        <div className="p-4 bg-surface-card border border-border-ecru">
+        <div className="p-5 bg-surface-card border border-border-ecru rounded-2xl">
           <span className="font-label-uppercase text-[10px] uppercase text-text-muted block mb-1">
             Omzet Tercatat
           </span>
@@ -216,7 +281,7 @@ export const AdminOrdersPage: React.FC = () => {
               key={tab.key}
               type="button"
               onClick={() => handleSelectFilter(tab.key)}
-              className={`px-3.5 py-1.5 text-[11px] font-label-uppercase uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-label-uppercase uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 ${
                 isSelected
                   ? 'bg-primary text-on-primary border-primary'
                   : 'bg-surface-card text-secondary border-border-ecru hover:border-primary hover:text-primary'
@@ -236,11 +301,11 @@ export const AdminOrdersPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="p-12 text-center bg-surface-card border border-border-ecru text-xs text-text-muted">
+        <div className="p-12 text-center bg-surface-card border border-border-ecru rounded-2xl text-xs text-text-muted">
           Memuat daftar pesanan dari Supabase...
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="p-12 text-center bg-surface-card border border-border-ecru text-xs text-text-muted space-y-2">
+        <div className="p-12 text-center bg-surface-card border border-border-ecru rounded-2xl text-xs text-text-muted space-y-2">
           <p>
             {orders.length === 0
               ? 'Belum ada pesanan masuk.'
@@ -257,29 +322,32 @@ export const AdminOrdersPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {filteredOrders.map((ord) => {
-            const edit = orderEdits[ord.id] || {
+            const edit: OrderEditState = orderEdits[ord.id] || {
               status: ord.status,
+              expeditionSelect: parseExpeditionState(ord.shipping_expedition).expeditionSelect,
+              customExpedition: parseExpeditionState(ord.shipping_expedition).customExpedition,
               tracking: ord.tracking_number || '',
             };
             const canConfirmPaid =
               ord.status === 'pending' || ord.status === 'waiting_verification';
+            const badge = getOrderStatusBadge(ord.status);
+            const isShippedSelected = edit.status === 'shipped';
+            const cardError = orderErrors[ord.id];
 
             return (
               <article
                 key={ord.id}
-                className="bg-surface-card border border-border-ecru p-5 space-y-4"
+                className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4"
               >
-                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border-ecru/70 pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border-ecru/70 pb-3.5">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <span className="font-mono text-sm font-bold text-primary">
                         #{ord.order_number}
                       </span>
-                      <span className="px-2 py-0.5 bg-surface-sand text-[10px] font-label-uppercase uppercase text-secondary">
-                        {ord.status}
-                      </span>
+                      <StatusBadge label={badge.label} className={badge.cls} />
                       <span className="text-[11px] text-text-muted">
                         {new Date(ord.created_at).toLocaleString('id-ID')}
                       </span>
@@ -297,13 +365,15 @@ export const AdminOrdersPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs">
+                {cardError && <AlertBanner variant="error">{cardError}</AlertBanner>}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
                   {/* Shipping & Items */}
-                  <div className="lg:col-span-5 space-y-2">
+                  <div className="lg:col-span-4 space-y-2">
                     <p className="font-label-uppercase text-[10px] uppercase tracking-wider text-text-muted">
                       Alamat Pengiriman
                     </p>
-                    <p className="text-primary">
+                    <p className="text-primary leading-relaxed">
                       {[
                         ord.address,
                         ord.district ? `Kec. ${ord.district}` : '',
@@ -319,7 +389,7 @@ export const AdminOrdersPage: React.FC = () => {
                     )}
 
                     {ord.order_items && ord.order_items.length > 0 && (
-                      <div className="pt-2 space-y-1">
+                      <div className="pt-2 space-y-1 border-t border-border-ecru/50">
                         {ord.order_items.map((item, idx) => (
                           <p key={idx} className="text-text-muted">
                             {item.quantity}x <strong>{item.product_name}</strong> ({item.color},{' '}
@@ -339,12 +409,12 @@ export const AdminOrdersPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setZoomedProofUrl(ord.payment_proof_url!)}
-                        className="block border border-border-ecru p-1 hover:border-primary transition-colors cursor-pointer"
+                        className="block rounded-xl border border-border-ecru p-1.5 hover:border-primary transition-colors cursor-pointer bg-surface"
                       >
                         <img
                           src={ord.payment_proof_url}
                           alt={`Bukti ${ord.order_number}`}
-                          className="w-28 h-20 object-cover"
+                          className="w-32 h-24 object-cover rounded-lg"
                         />
                         <span className="text-[10px] text-secondary block mt-1">Klik perbesar</span>
                       </button>
@@ -354,71 +424,104 @@ export const AdminOrdersPage: React.FC = () => {
                   </div>
 
                   {/* Controls */}
-                  <div className="lg:col-span-4 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] uppercase text-text-muted mb-1">
-                          Status Order
-                        </label>
-                        <select
-                          value={edit.status}
-                          onChange={(e) =>
-                            setOrderEdits((prev) => ({
-                              ...prev,
-                              [ord.id]: {
-                                ...edit,
-                                status: e.target.value as AdminOrderRow['status'],
-                              },
-                            }))
-                          }
-                          className="w-full h-9 bg-surface border border-border-ecru px-2 text-xs text-primary"
-                        >
-                          {ORDER_STATUS_OPTIONS.map((st) => (
-                            <option key={st} value={st}>
-                              {st}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] uppercase text-text-muted mb-1">
-                          No. Resi
-                        </label>
-                        <input
-                          type="text"
-                          value={edit.tracking}
-                          onChange={(e) =>
-                            setOrderEdits((prev) => ({
-                              ...prev,
-                              [ord.id]: { ...edit, tracking: e.target.value },
-                            }))
-                          }
-                          placeholder="JNE / SiCepat..."
-                          className="w-full h-9 bg-surface border border-border-ecru px-2 text-xs text-primary"
-                        />
-                      </div>
+                  <div className="lg:col-span-5 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <CustomSelect
+                        label="Status Pesanan"
+                        size="sm"
+                        value={edit.status}
+                        onChange={(val) => {
+                          setOrderErrors((prev) => {
+                            const next = { ...prev };
+                            delete next[ord.id];
+                            return next;
+                          });
+                          setOrderEdits((prev) => ({
+                            ...prev,
+                            [ord.id]: {
+                              ...edit,
+                              status: val as AdminOrderRow['status'],
+                            },
+                          }));
+                        }}
+                        options={statusSelectOptions}
+                      />
+
+                      <CustomSelect
+                        label="Nama Ekspedisi"
+                        required={isShippedSelected}
+                        size="sm"
+                        value={edit.expeditionSelect}
+                        onChange={(val) =>
+                          setOrderEdits((prev) => ({
+                            ...prev,
+                            [ord.id]: { ...edit, expeditionSelect: val },
+                          }))
+                        }
+                        options={expeditionSelectOptions}
+                        placeholder="Pilih Ekspedisi..."
+                      />
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    {edit.expeditionSelect === 'Lainnya' && (
+                      <InputField
+                        label="Nama Ekspedisi Lainnya"
+                        required={isShippedSelected}
+                        type="text"
+                        value={edit.customExpedition}
+                        onChange={(e) =>
+                          setOrderEdits((prev) => ({
+                            ...prev,
+                            [ord.id]: { ...edit, customExpedition: e.target.value },
+                          }))
+                        }
+                        placeholder="Contoh: Wahana / TIKI / Lalamove"
+                      />
+                    )}
+
+                    <InputField
+                      label="No. Resi Pengiriman"
+                      required={isShippedSelected}
+                      type="text"
+                      value={edit.tracking}
+                      onChange={(e) =>
+                        setOrderEdits((prev) => ({
+                          ...prev,
+                          [ord.id]: { ...edit, tracking: e.target.value },
+                        }))
+                      }
+                      placeholder={
+                        isShippedSelected
+                          ? 'Wajib isi nomor resi pengiriman...'
+                          : 'Isi saat pesanan dikirim'
+                      }
+                      hint={
+                        isShippedSelected
+                          ? 'Status Dikirim mewajibkan Nama Ekspedisi & No. Resi terisi.'
+                          : undefined
+                      }
+                    />
+
+                    <div className="flex flex-wrap gap-2 pt-1">
                       {canConfirmPaid && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="success"
+                          size="sm"
                           onClick={() => void handleConfirmPayment(ord)}
-                          className="px-3 py-1.5 bg-status-stock text-white font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:opacity-90"
                         >
                           ✓ Konfirmasi Lunas
-                        </button>
+                        </Button>
                       )}
-                      <button
-                        type="button"
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={() => void handleSaveOrder(ord.id)}
-                        className="px-3 py-1.5 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer hover:bg-neutral-800"
                       >
                         Simpan Status
-                      </button>
+                      </Button>
                       <Link
                         to={`/orders/${encodeURIComponent(ord.order_number)}/invoice`}
-                        className="px-3 py-1.5 border border-border-ecru text-primary font-label-uppercase text-[10px] uppercase tracking-wider hover:bg-surface-muted"
+                        className={getButtonClassName({ variant: 'outline', size: 'sm' })}
                       >
                         Invoice
                       </Link>
@@ -437,11 +540,11 @@ export const AdminOrdersPage: React.FC = () => {
           role="dialog"
           aria-modal="true"
           onClick={() => setZoomedProofUrl(null)}
-          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[2px] flex items-center justify-center p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface-card border border-border-ecru max-w-2xl w-full p-4 space-y-3"
+            className="bg-surface-card border border-border-ecru rounded-2xl max-w-2xl w-full p-5 space-y-3 shadow-xl"
           >
             <div className="flex items-center justify-between">
               <span className="font-label-uppercase text-xs uppercase tracking-wider text-primary">
@@ -450,7 +553,7 @@ export const AdminOrdersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setZoomedProofUrl(null)}
-                className="text-primary hover:opacity-70 cursor-pointer"
+                className="p-1 rounded-full text-primary hover:bg-surface-sand cursor-pointer"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -458,7 +561,7 @@ export const AdminOrdersPage: React.FC = () => {
             <img
               src={zoomedProofUrl}
               alt="Zoomed Bukti Transfer"
-              className="w-full max-h-[75vh] object-contain bg-surface"
+              className="w-full max-h-[75vh] object-contain rounded-xl bg-surface"
             />
           </div>
         </div>

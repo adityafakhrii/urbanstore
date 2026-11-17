@@ -15,6 +15,15 @@ import {
   uploadProductImageAdmin,
 } from '../../services/supabaseService';
 import { MAX_IMAGE_SIZE_BYTES, formatBytes } from '../../utils/image';
+import {
+  AlertBanner,
+  Button,
+  ColorPickerField,
+  CustomSelect,
+  InputField,
+  TextareaField,
+  getButtonClassName,
+} from '../../components/ui';
 
 export const AdminProductFormPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -49,6 +58,7 @@ export const AdminProductFormPage: React.FC = () => {
   const [uploadingImg, setUploadingImg] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -85,11 +95,11 @@ export const AdminProductFormPage: React.FC = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      showToast('Format file harus berupa gambar.');
+      setUploadError('Format file harus berupa gambar.');
       return;
     }
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      showToast('Ukuran gambar maksimal 5 MB.');
+      setUploadError('Ukuran gambar maksimal 5 MB.');
       return;
     }
 
@@ -120,17 +130,19 @@ export const AdminProductFormPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
     const parsedSizes = sizesText
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
 
     if (parsedSizes.length === 0) {
-      showToast('Isi minimal 1 ukuran (contoh: S, M, L).');
+      setFormError('Isi minimal 1 ukuran (contoh: S, M, L).');
       return;
     }
     if (!image.trim()) {
-      showToast('Upload atau masukkan URL foto utama produk.');
+      setFormError('Upload atau masukkan URL foto utama produk.');
       return;
     }
 
@@ -182,6 +194,7 @@ export const AdminProductFormPage: React.FC = () => {
     setSaving(false);
 
     if (res.error) {
+      setFormError(`Gagal menyimpan produk: ${res.error}`);
       showToast(`Gagal menyimpan produk: ${res.error}`);
       return;
     }
@@ -193,10 +206,13 @@ export const AdminProductFormPage: React.FC = () => {
 
   if (isEdit && !existingProduct && products.length > 0) {
     return (
-      <div className="bg-surface-card border border-border-ecru p-8 text-center space-y-3">
+      <div className="bg-surface-card border border-border-ecru rounded-2xl p-8 text-center space-y-4">
         <p className="text-sm text-primary">Produk dengan ID "{productId}" tidak ditemukan.</p>
-        <Link to="/admin/products" className="text-xs underline text-secondary">
-          Kembali ke daftar produk
+        <Link
+          to="/admin/products"
+          className={getButtonClassName({ variant: 'outline', size: 'sm' })}
+        >
+          Kembali ke Daftar Produk
         </Link>
       </div>
     );
@@ -204,154 +220,119 @@ export const AdminProductFormPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="flex items-center justify-between border-b border-border-ecru pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-ecru pb-5">
         <div>
           <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
             {isEdit ? `EDIT PRODUCT · ${existingProduct?.sku || productId}` : 'CREATE NEW PRODUCT'}
           </span>
-          <h1 className="font-headline-sm text-2xl text-primary">
+          <h1 className="font-headline-sm text-2xl sm:text-3xl text-primary">
             {isEdit ? 'Edit Produk Atelier' : 'Tambah Produk Baru'}
           </h1>
         </div>
         <Link
           to="/admin/products"
-          className="px-4 py-2 border border-border-ecru text-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:bg-surface-muted"
+          className={getButtonClassName({ variant: 'outline', size: 'sm' })}
         >
           ← Kembali
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-surface-card border border-border-ecru p-6 space-y-5 text-xs">
+      {formError && <AlertBanner variant="error">{formError}</AlertBanner>}
+
+      <form
+        onSubmit={handleSubmit}
+        className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-8 space-y-6"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="sm:col-span-2">
-            <label className="block text-text-muted mb-1">Nama Produk *</label>
-            <input
-              required
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Kemeja Linen Atelier"
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">SKU *</label>
-            <input
-              required
-              type="text"
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-              placeholder="US-WN-010"
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary uppercase font-mono"
-            />
-          </div>
+          <InputField
+            containerClassName="sm:col-span-2"
+            label="Nama Produk"
+            required
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Contoh: Kemeja Linen Atelier"
+          />
+          <InputField
+            label="SKU"
+            required
+            type="text"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            placeholder="US-WN-010"
+            className="uppercase font-mono"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-text-muted mb-1">Harga (IDR) *</label>
-            <input
-              required
-              type="number"
-              min={0}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Kategori *</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as Product['category'])}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            >
-              {PRODUCT_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Subkategori *</label>
-            <select
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value as Product['subcategory'])}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            >
-              {PRODUCT_SUBCATEGORIES.map((sc) => (
-                <option key={sc} value={sc}>
-                  {sc}
-                </option>
-              ))}
-            </select>
-          </div>
+          <InputField
+            label="Harga (IDR)"
+            required
+            type="number"
+            min={0}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+          <CustomSelect
+            label="Kategori"
+            required
+            value={category}
+            onChange={(val) => setCategory(val as Product['category'])}
+            options={PRODUCT_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+          />
+          <CustomSelect
+            label="Subkategori"
+            required
+            value={subcategory}
+            onChange={(val) => setSubcategory(val as Product['subcategory'])}
+            options={PRODUCT_SUBCATEGORIES.map((sc) => ({ value: sc, label: sc }))}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-text-muted mb-1">Bahan (Fabric)</label>
-            <select
-              value={fabric}
-              onChange={(e) => setFabric(e.target.value as Product['fabricType'])}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            >
-              {PRODUCT_FABRICS.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Skala Fit</label>
-            <select
-              value={fitScale}
-              onChange={(e) => setFitScale(e.target.value as Product['fitScale'])}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            >
-              {PRODUCT_FIT_SCALES.map((fs) => (
-                <option key={fs} value={fs}>
-                  {fs}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Bestseller Tab (Opsional)</label>
-            <select
-              value={bestsellerTab}
-              onChange={(e) => setBestsellerTab(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            >
-              <option value="">Tidak Ditampilkan</option>
-              {PRODUCT_BESTSELLER_TABS.map((bt) => (
-                <option key={bt} value={bt}>
-                  {bt}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            label="Bahan (Fabric)"
+            value={fabric}
+            onChange={(val) => setFabric(val as Product['fabricType'])}
+            options={PRODUCT_FABRICS.map((f) => ({ value: f, label: f }))}
+          />
+          <CustomSelect
+            label="Skala Fit"
+            value={fitScale}
+            onChange={(val) => setFitScale(val as Product['fitScale'])}
+            options={PRODUCT_FIT_SCALES.map((fs) => ({ value: fs, label: fs }))}
+          />
+          <CustomSelect
+            label="Bestseller Tab (Opsional)"
+            value={bestsellerTab}
+            onChange={setBestsellerTab}
+            options={[
+              { value: '', label: 'Tidak Ditampilkan' },
+              ...PRODUCT_BESTSELLER_TABS.map((bt) => ({ value: bt, label: bt })),
+            ]}
+          />
         </div>
 
         {/* Images & WebP Upload */}
-        <div className="p-4 bg-surface border border-border-ecru space-y-3">
+        <div className="p-4 sm:p-5 bg-surface border border-border-ecru rounded-2xl space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary">
               Foto Utama &amp; Galeri (Auto-compress WebP maks 5 MB)
             </span>
-            {compressionInfo && <span className="text-[11px] text-status-stock">{compressionInfo}</span>}
           </div>
 
-          {uploadError && (
-            <div className="p-2 bg-error-container/70 border border-error/30 text-error">
-              {uploadError}
-            </div>
-          )}
+          {uploadError && <AlertBanner variant="error">{uploadError}</AlertBanner>}
+          {compressionInfo && <AlertBanner variant="success">{compressionInfo}</AlertBanner>}
 
           <div className="flex flex-wrap items-center gap-3">
-            <label className="px-4 py-2 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer">
+            <label
+              className={getButtonClassName({
+                variant: 'primary',
+                size: 'sm',
+                className: uploadingImg ? 'opacity-60 pointer-events-none' : '',
+              })}
+            >
+              <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
               {uploadingImg ? 'Mengupload WebP...' : 'Upload Foto Utama'}
               <input
                 type="file"
@@ -361,7 +342,14 @@ export const AdminProductFormPage: React.FC = () => {
                 className="hidden"
               />
             </label>
-            <label className="px-4 py-2 border border-primary text-primary font-label-uppercase text-[10px] uppercase tracking-wider cursor-pointer">
+            <label
+              className={getButtonClassName({
+                variant: 'outline',
+                size: 'sm',
+                className: uploadingImg ? 'opacity-60 pointer-events-none' : '',
+              })}
+            >
+              <span className="material-symbols-outlined text-[16px]">add_photo_alternate</span>
               + Tambah Foto Galeri
               <input
                 type="file"
@@ -373,31 +361,34 @@ export const AdminProductFormPage: React.FC = () => {
             </label>
           </div>
 
-          <input
+          <InputField
             type="url"
             value={image}
             onChange={(e) => setImage(e.target.value)}
             placeholder="Atau tempel URL foto utama https://..."
-            className="w-full h-10 bg-surface-card border border-border-ecru px-3 text-primary"
           />
 
           {(image || galleryUrls.length > 0) && (
             <div className="flex flex-wrap gap-3 pt-1">
               {image && (
-                <div className="relative">
-                  <img src={image} alt="Main" className="w-20 h-24 object-cover border border-primary" />
-                  <span className="absolute bottom-0 inset-x-0 bg-primary/80 text-white text-[9px] text-center py-0.5">
+                <div className="relative rounded-xl overflow-hidden border border-primary">
+                  <img src={image} alt="Main" className="w-20 h-24 object-cover" />
+                  <span className="absolute bottom-0 inset-x-0 bg-primary/85 text-white text-[9px] text-center py-0.5 font-label-uppercase">
                     UTAMA
                   </span>
                 </div>
               )}
               {galleryUrls.map((url, idx) => (
                 <div key={`${url}-${idx}`} className="relative">
-                  <img src={url} alt={`Gallery ${idx}`} className="w-20 h-24 object-cover border border-border-ecru" />
+                  <img
+                    src={url}
+                    alt={`Gallery ${idx}`}
+                    className="w-20 h-24 object-cover rounded-xl border border-border-ecru"
+                  />
                   <button
                     type="button"
                     onClick={() => setGalleryUrls((prev) => prev.filter((_, i) => i !== idx))}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-white rounded-full text-[10px] cursor-pointer"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-white rounded-full text-[10px] flex items-center justify-center shadow cursor-pointer"
                   >
                     ×
                   </button>
@@ -408,139 +399,102 @@ export const AdminProductFormPage: React.FC = () => {
         </div>
 
         {/* Variants & Metadata */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-text-muted mb-1">Nama Warna</label>
-            <input
-              type="text"
-              value={colorName}
-              onChange={(e) => setColorName(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Hex Warna</label>
-            <input
-              type="color"
-              value={colorHex}
-              onChange={(e) => setColorHex(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-2"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Ukuran (pisahkan koma) *</label>
-            <input
-              required
-              type="text"
-              value={sizesText}
-              onChange={(e) => setSizesText(e.target.value)}
-              placeholder="S, M, L, XL"
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Stok Awal / Status</label>
-            <input
-              type="number"
-              min={0}
-              value={initialStock}
-              onChange={(e) => setInitialStock(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          <InputField
+            label="Nama Warna"
+            type="text"
+            value={colorName}
+            onChange={(e) => setColorName(e.target.value)}
+          />
+          <ColorPickerField
+            label="Warna (Swatch & Hex)"
+            value={colorHex}
+            onChange={setColorHex}
+            onPresetNameSelect={(presetName) => setColorName(presetName)}
+          />
+          <InputField
+            label="Ukuran (pisahkan koma)"
+            required
+            type="text"
+            value={sizesText}
+            onChange={(e) => setSizesText(e.target.value)}
+            placeholder="S, M, L, XL"
+          />
+          <InputField
+            label="Stok Awal / Status"
+            type="number"
+            min={0}
+            value={initialStock}
+            onChange={(e) => setInitialStock(e.target.value)}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-text-muted mb-1">Subtitle Singkat</label>
-            <input
-              type="text"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Badge (Opsional)</label>
-            <input
-              type="text"
-              value={badge}
-              onChange={(e) => setBadge(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Fit Note</label>
-            <input
-              type="text"
-              value={fitNote}
-              onChange={(e) => setFitNote(e.target.value)}
-              className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-text-muted mb-1">Info Model</label>
-          <input
+          <InputField
+            label="Subtitle Singkat"
             type="text"
-            value={modelInfo}
-            onChange={(e) => setModelInfo(e.target.value)}
-            className="w-full h-10 bg-surface border border-border-ecru px-3 text-primary"
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+          />
+          <InputField
+            label="Badge (Opsional)"
+            type="text"
+            value={badge}
+            onChange={(e) => setBadge(e.target.value)}
+          />
+          <InputField
+            label="Fit Note"
+            type="text"
+            value={fitNote}
+            onChange={(e) => setFitNote(e.target.value)}
           />
         </div>
 
-        <div>
-          <label className="block text-text-muted mb-1">Deskripsi Produk *</label>
-          <textarea
-            required
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Jelaskan siluet, material, dan keunggulan produk..."
-            className="w-full p-3 bg-surface border border-border-ecru text-primary"
-          />
-        </div>
+        <InputField
+          label="Info Model"
+          type="text"
+          value={modelInfo}
+          onChange={(e) => setModelInfo(e.target.value)}
+        />
+
+        <TextareaField
+          label="Deskripsi Produk"
+          required
+          rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Jelaskan siluet, material, dan keunggulan produk..."
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-text-muted mb-1">Detail Bahan (1 poin per baris)</label>
-            <textarea
-              rows={3}
-              value={fabricDetailsText}
-              onChange={(e) => setFabricDetailsText(e.target.value)}
-              className="w-full p-3 bg-surface border border-border-ecru text-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-text-muted mb-1">Cara Rawat (1 poin per baris)</label>
-            <textarea
-              rows={3}
-              value={careText}
-              onChange={(e) => setCareText(e.target.value)}
-              className="w-full p-3 bg-surface border border-border-ecru text-primary"
-            />
-          </div>
+          <TextareaField
+            label="Detail Bahan (1 poin per baris)"
+            rows={3}
+            value={fabricDetailsText}
+            onChange={(e) => setFabricDetailsText(e.target.value)}
+          />
+          <TextareaField
+            label="Cara Rawat (1 poin per baris)"
+            rows={3}
+            value={careText}
+            onChange={(e) => setCareText(e.target.value)}
+          />
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-border-ecru">
           <Link
             to="/admin/products"
-            className="px-5 py-2.5 border border-border-ecru bg-surface text-primary"
+            className={getButtonClassName({ variant: 'outline', size: 'md' })}
           >
             Batal
           </Link>
-          <button
-            type="submit"
-            disabled={saving || uploadingImg}
-            className="px-6 py-2.5 bg-primary text-on-primary font-label-uppercase uppercase tracking-wider cursor-pointer disabled:opacity-50"
-          >
+          <Button type="submit" variant="primary" size="md" disabled={saving || uploadingImg}>
             {saving
               ? 'Menyimpan...'
               : isEdit
               ? 'Simpan Perubahan Produk'
               : 'Simpan Produk ke Database'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

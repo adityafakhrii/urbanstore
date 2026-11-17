@@ -152,8 +152,12 @@ export const OrderInvoicePage: React.FC = () => {
               <strong className="text-primary">{order.paymentMethod}</strong>
             </p>
             <p>
-              <span className="text-text-muted">Kurir:</span>{' '}
-              <strong className="uppercase text-primary">{order.courier}</strong>
+              <span className="text-text-muted">Layanan Kurir:</span>{' '}
+              <strong className="text-primary">
+                {order.shippingExpedition
+                  ? `${order.shippingExpedition} (${order.courier.toUpperCase()})`
+                  : order.courier.toUpperCase()}
+              </strong>
             </p>
             {order.trackingNumber && (
               <p>

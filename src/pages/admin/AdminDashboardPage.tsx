@@ -13,6 +13,8 @@ import {
   fetchVariantsAdmin,
   formatRupiah,
 } from '../../services/supabaseService';
+import { getOrderStatusBadge } from '../../utils/payment';
+import { AlertBanner, Button, StatusBadge, getButtonClassName } from '../../components/ui';
 
 const CONFIRMED_STATUSES: AdminOrderRow['status'][] = ['paid', 'packed', 'shipped', 'delivered'];
 
@@ -154,28 +156,29 @@ export const AdminDashboardPage: React.FC = () => {
   const lowStockList = metrics.lowStockVariants.slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-ecru pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-ecru pb-6">
         <div>
           <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
             ADMIN OVERVIEW · EXECUTIVE SUMMARY
           </span>
-          <h1 className="font-headline-sm text-2xl text-primary">
+          <h1 className="font-headline-sm text-2xl sm:text-3xl text-primary">
             Selamat Datang, {profile?.full_name || 'Administrator'}
           </h1>
-          <p className="text-xs text-text-muted mt-0.5">
+          <p className="text-xs text-text-muted mt-1">
             Ringkasan performa toko, antrean verifikasi, dan status stok UrbanStore hari ini.
           </p>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => void loadDashboard()}
-          className="px-4 py-2 border border-border-ecru bg-surface-card text-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:border-primary cursor-pointer self-start sm:self-end"
+          className="self-start sm:self-end"
         >
           Refresh Dashboard
-        </button>
+        </Button>
       </div>
 
       {/* Block A: Action Alert Banner (conditional) */}
@@ -183,63 +186,57 @@ export const AdminDashboardPage: React.FC = () => {
         (metrics.waitingVerificationCount > 0 ||
           metrics.paidNoTrackingCount > 0 ||
           metrics.criticalStockCount > 0) && (
-          <section className="bg-surface-sand border border-secondary/40 p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-start sm:items-center gap-3">
-              <span className="material-symbols-outlined text-[20px] text-secondary shrink-0 mt-0.5 sm:mt-0">
-                notifications_active
-              </span>
-              <div className="text-xs text-primary space-y-0.5">
-                <p className="font-medium">Perhatian Operasional Diperlukan:</p>
-                <p className="text-text-muted">
-                  {[
-                    metrics.waitingVerificationCount > 0
-                      ? `${metrics.waitingVerificationCount} pesanan menunggu verifikasi bukti transfer`
-                      : null,
-                    metrics.paidNoTrackingCount > 0
-                      ? `${metrics.paidNoTrackingCount} pesanan lunas belum diinput nomor resi`
-                      : null,
-                    metrics.criticalStockCount > 0
-                      ? `${metrics.criticalStockCount} varian memiliki stok kritis (≤ 3 pcs)`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
+          <AlertBanner
+            variant="warning"
+            title="Perhatian Operasional Diperlukan"
+            action={
+              <div className="flex flex-wrap gap-2">
+                {metrics.waitingVerificationCount > 0 && (
+                  <Link
+                    to="/admin/orders?status=waiting_verification"
+                    className={getButtonClassName({ variant: 'primary', size: 'sm' })}
+                  >
+                    Verifikasi Order →
+                  </Link>
+                )}
+                {metrics.paidNoTrackingCount > 0 && (
+                  <Link
+                    to="/admin/orders?status=needs_shipping"
+                    className={getButtonClassName({ variant: 'outline', size: 'sm' })}
+                  >
+                    Input Resi →
+                  </Link>
+                )}
+                {metrics.criticalStockCount > 0 && (
+                  <Link
+                    to="/admin/products"
+                    className={getButtonClassName({ variant: 'outline', size: 'sm' })}
+                  >
+                    Cek Stok →
+                  </Link>
+                )}
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 shrink-0">
-              {metrics.waitingVerificationCount > 0 && (
-                <Link
-                  to="/admin/orders?status=waiting_verification"
-                  className="px-3.5 py-2 bg-primary text-on-primary font-label-uppercase text-[10px] uppercase tracking-wider hover:bg-neutral-800"
-                >
-                  Verifikasi Order →
-                </Link>
-              )}
-              {metrics.paidNoTrackingCount > 0 && (
-                <Link
-                  to="/admin/orders?status=needs_shipping"
-                  className="px-3.5 py-2 border border-primary text-primary font-label-uppercase text-[10px] uppercase tracking-wider hover:bg-surface-card"
-                >
-                  Input Resi →
-                </Link>
-              )}
-              {metrics.criticalStockCount > 0 && (
-                <Link
-                  to="/admin/products"
-                  className="px-3.5 py-2 border border-border-ecru bg-surface-card text-primary font-label-uppercase text-[10px] uppercase tracking-wider hover:border-primary"
-                >
-                  Cek Stok →
-                </Link>
-              )}
-            </div>
-          </section>
+            }
+          >
+            {[
+              metrics.waitingVerificationCount > 0
+                ? `${metrics.waitingVerificationCount} pesanan menunggu verifikasi bukti transfer`
+                : null,
+              metrics.paidNoTrackingCount > 0
+                ? `${metrics.paidNoTrackingCount} pesanan lunas belum diinput nomor resi`
+                : null,
+              metrics.criticalStockCount > 0
+                ? `${metrics.criticalStockCount} varian memiliki stok kritis (≤ 3 pcs)`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </AlertBanner>
         )}
 
       {/* Block B: 4 Main KPI Summary Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-surface-card border border-border-ecru space-y-1">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="p-5 sm:p-6 bg-surface-card border border-border-ecru rounded-2xl space-y-1">
           <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-text-muted block">
             Omzet Terkonfirmasi (Lunas)
           </span>
@@ -257,7 +254,7 @@ export const AdminDashboardPage: React.FC = () => {
               ? '/admin/orders?status=waiting_verification'
               : '/admin/orders?status=needs_shipping'
           }
-          className="p-5 bg-surface-card border border-border-ecru hover:border-primary transition-colors space-y-1 block"
+          className="p-5 sm:p-6 bg-surface-card border border-border-ecru rounded-2xl hover:border-primary transition-colors space-y-1 block"
         >
           <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-text-muted block">
             Perlu Tindakan Segera
@@ -272,7 +269,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <Link
           to="/admin/products"
-          className="p-5 bg-surface-card border border-border-ecru hover:border-primary transition-colors space-y-1 block"
+          className="p-5 sm:p-6 bg-surface-card border border-border-ecru rounded-2xl hover:border-primary transition-colors space-y-1 block"
         >
           <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-text-muted block">
             Katalog &amp; Stok Varian
@@ -288,7 +285,7 @@ export const AdminDashboardPage: React.FC = () => {
           </p>
         </Link>
 
-        <div className="p-5 bg-surface-card border border-border-ecru space-y-1">
+        <div className="p-5 sm:p-6 bg-surface-card border border-border-ecru rounded-2xl space-y-1">
           <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-text-muted block">
             Promo &amp; VIP List
           </span>
@@ -305,7 +302,7 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Block C: Sales Trend 7 Days + Quick Actions / Top Products (7/5) */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: 7-Day Trend & Status Pipeline */}
-        <div className="lg:col-span-7 bg-surface-card border border-border-ecru p-5 sm:p-6 space-y-5">
+        <div className="lg:col-span-7 bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-5">
           <div className="flex items-center justify-between border-b border-border-ecru pb-3">
             <div>
               <h2 className="font-headline-sm text-base text-primary">Aktivitas Order 7 Hari Terakhir</h2>
@@ -313,9 +310,7 @@ export const AdminDashboardPage: React.FC = () => {
                 Volume nilai transaksi non-batal per hari
               </p>
             </div>
-            <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-secondary">
-              {orders.length} Total Order
-            </span>
+            <StatusBadge label={`${orders.length} Total Order`} />
           </div>
 
           {/* Pure CSS Bar Chart */}
@@ -325,11 +320,11 @@ export const AdminDashboardPage: React.FC = () => {
                 <span className="text-[10px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   {day.count > 0 ? `${day.count} ord` : '0'}
                 </span>
-                <div className="w-full flex-1 flex items-end bg-surface/60 rounded-sm overflow-hidden">
+                <div className="w-full flex-1 flex items-end bg-surface/60 rounded-xl overflow-hidden">
                   <div
                     title={`${day.key}: ${formatRupiah(day.revenue)} (${day.count} order)`}
                     style={{ height: `${day.heightPct}%` }}
-                    className={`w-full transition-all duration-300 ${
+                    className={`w-full rounded-t-xl transition-all duration-300 ${
                       day.revenue > 0 ? 'bg-primary group-hover:bg-secondary' : 'bg-border-ecru/60'
                     }`}
                   />
@@ -343,24 +338,24 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* Order Pipeline Summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border-ecru text-xs">
-            <div className="bg-surface p-2.5 border border-border-ecru/70">
+            <div className="bg-surface p-3 rounded-xl border border-border-ecru/70">
               <span className="text-[10px] uppercase text-text-muted block">Menunggu Bayar</span>
               <span className="font-semibold text-primary text-sm">{metrics.pendingCount}</span>
             </div>
-            <div className="bg-surface p-2.5 border border-border-ecru/70">
+            <div className="bg-surface p-3 rounded-xl border border-border-ecru/70">
               <span className="text-[10px] uppercase text-text-muted block">Verifikasi Bukti</span>
               <span className="font-semibold text-secondary text-sm">
                 {metrics.waitingVerificationCount}
               </span>
             </div>
-            <div className="bg-surface p-2.5 border border-border-ecru/70">
+            <div className="bg-surface p-3 rounded-xl border border-border-ecru/70">
               <span className="text-[10px] uppercase text-text-muted block">Perlu Kirim / Resi</span>
               <span className="font-semibold text-primary text-sm">
                 {metrics.paidNoTrackingCount}
               </span>
             </div>
-            <div className="bg-surface p-2.5 border border-border-ecru/70">
-              <span className="text-[10px] uppercase text-text-muted block">Selesai (Delivered)</span>
+            <div className="bg-surface p-3 rounded-xl border border-border-ecru/70">
+              <span className="text-[10px] uppercase text-text-muted block">Pesanan Selesai</span>
               <span className="font-semibold text-status-stock text-sm">
                 {metrics.deliveredCount}
               </span>
@@ -370,28 +365,43 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Right: Quick Actions & Top Products */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-surface-card border border-border-ecru p-5 space-y-3">
+          <div className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-3">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary">
               Aksi Cepat Admin
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2.5">
               <Link
                 to="/admin/products/new"
-                className="flex items-center justify-between px-4 py-2.5 bg-primary text-on-primary text-xs font-label-uppercase uppercase tracking-wider hover:bg-neutral-800"
+                className={getButtonClassName({
+                  variant: 'primary',
+                  size: 'md',
+                  fullWidth: true,
+                  className: 'justify-between',
+                })}
               >
                 <span>+ Tambah Produk Baru</span>
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
               </Link>
               <Link
                 to="/admin/orders?status=waiting_verification"
-                className="flex items-center justify-between px-4 py-2.5 border border-border-ecru bg-surface hover:border-primary text-xs font-label-uppercase uppercase tracking-wider text-primary"
+                className={getButtonClassName({
+                  variant: 'outline',
+                  size: 'md',
+                  fullWidth: true,
+                  className: 'justify-between',
+                })}
               >
                 <span>Antrean Verifikasi Bayar</span>
                 <span className="material-symbols-outlined text-[16px]">receipt_long</span>
               </Link>
               <Link
                 to="/admin/promos"
-                className="flex items-center justify-between px-4 py-2.5 border border-border-ecru bg-surface hover:border-primary text-xs font-label-uppercase uppercase tracking-wider text-primary"
+                className={getButtonClassName({
+                  variant: 'outline',
+                  size: 'md',
+                  fullWidth: true,
+                  className: 'justify-between',
+                })}
               >
                 <span>Kelola Kode Promo</span>
                 <span className="material-symbols-outlined text-[16px]">local_offer</span>
@@ -399,7 +409,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-surface-card border border-border-ecru p-5 space-y-3">
+          <div className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-3">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary">
               Produk Terlaris &amp; Metode Bayar
             </h2>
@@ -408,7 +418,7 @@ export const AdminDashboardPage: React.FC = () => {
             ) : (
               <ul className="divide-y divide-border-ecru/70 text-xs">
                 {topProducts.map((tp) => (
-                  <li key={tp.sku} className="py-2 flex items-center justify-between gap-2">
+                  <li key={tp.sku} className="py-2.5 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-primary truncate">{tp.name}</p>
                       <p className="text-[10px] font-mono text-text-muted">{tp.sku}</p>
@@ -427,7 +437,7 @@ export const AdminDashboardPage: React.FC = () => {
                 {paymentBreakdown.map(([method, count]) => (
                   <span
                     key={method}
-                    className="px-2.5 py-1 bg-surface-sand text-[10px] text-primary border border-border-ecru"
+                    className="px-3 py-1 rounded-full bg-surface-sand text-[10px] text-primary border border-border-ecru"
                   >
                     {method}: <strong>{count}</strong>
                   </span>
@@ -441,7 +451,7 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Block D: 2 Mini Tables "Need Attention" (6/6) */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <div className="bg-surface-card border border-border-ecru p-5 space-y-4">
+        <div className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-border-ecru pb-3">
             <h2 className="font-headline-sm text-base text-primary">Pesanan Terbaru</h2>
             <Link
@@ -458,38 +468,39 @@ export const AdminDashboardPage: React.FC = () => {
             <p className="text-xs text-text-muted py-4">Belum ada pesanan masuk.</p>
           ) : (
             <div className="divide-y divide-border-ecru text-xs">
-              {recentOrders.map((ord) => (
-                <div key={ord.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-primary">
-                        #{ord.order_number}
-                      </span>
-                      <span className="px-2 py-0.5 bg-surface-sand text-[10px] uppercase text-secondary">
-                        {ord.status}
-                      </span>
+              {recentOrders.map((ord) => {
+                const badge = getOrderStatusBadge(ord.status);
+                return (
+                  <div key={ord.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-semibold text-primary">
+                          #{ord.order_number}
+                        </span>
+                        <StatusBadge label={badge.label} className={badge.cls} />
+                      </div>
+                      <p className="text-text-muted truncate mt-1">
+                        {ord.full_name} · {ord.payment_method}
+                      </p>
                     </div>
-                    <p className="text-text-muted truncate mt-0.5">
-                      {ord.full_name} · {ord.payment_method}
-                    </p>
+                    <div className="text-right shrink-0 space-y-1">
+                      <p className="font-semibold text-primary">{formatRupiah(ord.total)}</p>
+                      <Link
+                        to={`/orders/${encodeURIComponent(ord.order_number)}/invoice`}
+                        className="text-[10px] uppercase tracking-wider text-secondary hover:text-primary underline block"
+                      >
+                        Invoice
+                      </Link>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 space-y-1">
-                    <p className="font-semibold text-primary">{formatRupiah(ord.total)}</p>
-                    <Link
-                      to={`/orders/${encodeURIComponent(ord.order_number)}/invoice`}
-                      className="text-[10px] uppercase tracking-wider text-secondary hover:text-primary underline block"
-                    >
-                      Invoice
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Low Stock Variants Warning */}
-        <div className="bg-surface-card border border-border-ecru p-5 space-y-4">
+        <div className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-border-ecru pb-3">
             <h2 className="font-headline-sm text-base text-primary">Peringatan Stok Menipis</h2>
             <Link
@@ -521,15 +532,14 @@ export const AdminDashboardPage: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span
-                        className={`px-2.5 py-0.5 text-[10px] font-label-uppercase uppercase ${
+                      <StatusBadge
+                        label={v.stock_qty === 0 ? 'HABIS' : `Sisa ${v.stock_qty}`}
+                        className={
                           v.stock_qty === 0
                             ? 'bg-error-container text-error font-semibold'
                             : 'bg-surface-sand text-secondary'
-                        }`}
-                      >
-                        {v.stock_qty === 0 ? 'HABIS' : `Sisa ${v.stock_qty}`}
-                      </span>
+                        }
+                      />
                       <Link
                         to="/admin/products"
                         className="text-[10px] uppercase tracking-wider text-primary underline"

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { ToastBanner } from '../components/ToastBanner';
+import { Button, getButtonClassName } from '../components/ui';
 
 const ADMIN_NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -30,7 +31,10 @@ export const AdminLayout: React.FC = () => {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-border-ecru bg-surface-card sticky top-0 h-screen">
         <div className="px-6 h-16 flex items-center justify-between border-b border-border-ecru">
           <div>
-            <Link to="/admin/dashboard" className="font-headline-sm text-base tracking-[0.2em] text-primary block">
+            <Link
+              to="/admin/dashboard"
+              className="font-headline-sm text-base tracking-[0.2em] text-primary block"
+            >
               URBANSTORE
             </Link>
             <span className="font-label-uppercase text-[9px] uppercase tracking-widest text-secondary">
@@ -45,10 +49,10 @@ export const AdminLayout: React.FC = () => {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 text-xs font-label-uppercase uppercase tracking-wider transition-colors ${
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-label-uppercase uppercase tracking-wider transition-colors ${
                   isActive
-                    ? 'bg-primary text-on-primary'
-                    : 'text-secondary hover:bg-surface-muted hover:text-primary'
+                    ? 'bg-primary text-on-primary shadow-xs'
+                    : 'text-secondary hover:bg-surface-sand hover:text-primary'
                 }`
               }
             >
@@ -68,19 +72,15 @@ export const AdminLayout: React.FC = () => {
           <div className="flex flex-col gap-2">
             <Link
               to="/"
-              className="flex items-center justify-center gap-2 px-3 py-2 border border-border-ecru text-[11px] font-label-uppercase uppercase tracking-wider text-primary hover:bg-surface-muted transition-colors"
+              className={getButtonClassName({ variant: 'outline', size: 'sm', fullWidth: true })}
             >
               <span className="material-symbols-outlined text-[15px]">storefront</span>
               Lihat Storefront
             </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center justify-center gap-2 px-3 py-2 border border-red-200 text-red-700 hover:bg-red-50 text-[11px] font-label-uppercase uppercase tracking-wider transition-colors cursor-pointer"
-            >
+            <Button variant="danger" size="sm" fullWidth onClick={handleLogout}>
               <span className="material-symbols-outlined text-[15px]">logout</span>
               Keluar
-            </button>
+            </Button>
           </div>
         </div>
       </aside>
@@ -88,12 +88,12 @@ export const AdminLayout: React.FC = () => {
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 border-b border-border-ecru bg-surface-card px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 border-b border-border-ecru bg-surface-card px-5 sm:px-8 lg:px-10 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileNavOpen((prev) => !prev)}
-              className="lg:hidden p-2 border border-border-ecru text-primary cursor-pointer"
+              className="lg:hidden p-2 rounded-xl border border-border-ecru text-primary hover:bg-surface-sand cursor-pointer"
               aria-label="Toggle Menu Admin"
             >
               <span className="material-symbols-outlined text-[20px]">
@@ -101,21 +101,29 @@ export const AdminLayout: React.FC = () => {
               </span>
             </button>
             <span className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary">
-              Store Operations & Inventory Management
+              Store Operations &amp; Inventory Management
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Link
               to="/admin/products/new"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:opacity-90 transition-opacity"
+              className={getButtonClassName({
+                variant: 'primary',
+                size: 'sm',
+                className: 'hidden sm:inline-flex',
+              })}
             >
               <span className="material-symbols-outlined text-[15px]">add</span>
               Tambah Produk
             </Link>
             <Link
               to="/"
-              className="lg:hidden px-3 py-2 border border-border-ecru font-label-uppercase text-[10px] uppercase tracking-wider text-primary"
+              className={getButtonClassName({
+                variant: 'outline',
+                size: 'sm',
+                className: 'lg:hidden',
+              })}
             >
               Storefront
             </Link>
@@ -124,15 +132,15 @@ export const AdminLayout: React.FC = () => {
 
         {/* Mobile Drawer Nav */}
         {mobileNavOpen && (
-          <div className="lg:hidden bg-surface-card border-b border-border-ecru p-4 space-y-2">
+          <div className="lg:hidden bg-surface-card border-b border-border-ecru px-5 py-4 space-y-2">
             {ADMIN_NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 onClick={() => setMobileNavOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 text-xs font-label-uppercase uppercase tracking-wider ${
-                    isActive ? 'bg-primary text-on-primary' : 'text-secondary hover:bg-surface-muted'
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-label-uppercase uppercase tracking-wider ${
+                    isActive ? 'bg-primary text-on-primary' : 'text-secondary hover:bg-surface-sand'
                   }`
                 }
               >
@@ -140,18 +148,14 @@ export const AdminLayout: React.FC = () => {
                 {item.label}
               </NavLink>
             ))}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-label-uppercase uppercase tracking-wider text-red-700 hover:bg-red-50 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
+            <Button variant="danger" size="sm" fullWidth onClick={handleLogout}>
+              <span className="material-symbols-outlined text-[16px]">logout</span>
               Keluar
-            </button>
+            </Button>
           </div>
         )}
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-5 sm:px-8 lg:px-10 py-8 sm:py-10 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
       </div>

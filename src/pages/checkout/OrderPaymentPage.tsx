@@ -357,12 +357,16 @@ export const OrderPaymentPage: React.FC = () => {
             )}
           </div>
           <div>
-            <p className="text-text-muted mb-1">Kurir &amp; Resi</p>
-            <p className="text-primary font-medium uppercase">{order.courier}</p>
+            <p className="text-text-muted mb-1">Ekspedisi &amp; No. Resi</p>
+            <p className="text-primary font-medium">
+              {order.shippingExpedition
+                ? `${order.shippingExpedition} (${order.courier.toUpperCase()})`
+                : order.courier.toUpperCase()}
+            </p>
             <p className="text-text-muted mt-0.5">
               No. Resi:{' '}
               {order.trackingNumber ? (
-                <span className="font-mono text-primary">{order.trackingNumber}</span>
+                <span className="font-mono text-primary font-medium">{order.trackingNumber}</span>
               ) : (
                 'Menunggu pengiriman'
               )}

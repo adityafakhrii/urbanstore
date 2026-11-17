@@ -41,6 +41,7 @@ export interface OrderRecord {
   itemsCount: number;
   status?: OrderStatusType;
   trackingNumber?: string;
+  shippingExpedition?: string;
   paymentProofUrl?: string;
   paymentExpiresAt?: string;
   paidAt?: string;
@@ -104,6 +105,7 @@ export interface AdminOrderRow {
   total: number;
   status: OrderStatusType;
   tracking_number: string | null;
+  shipping_expedition?: string | null;
   payment_proof_url: string | null;
   payment_expires_at: string;
   paid_at: string | null;
@@ -539,6 +541,7 @@ function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
     itemsCount,
     status: row.status as OrderRecord['status'],
     trackingNumber: (row.tracking_number as string | null) ?? undefined,
+    shippingExpedition: (row.shipping_expedition as string | null) ?? undefined,
     paymentProofUrl: (row.payment_proof_url as string | null) ?? undefined,
     paymentExpiresAt: (row.payment_expires_at as string | null) ?? undefined,
     paidAt: (row.paid_at as string | null) ?? undefined,
@@ -554,31 +557,69 @@ function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
   };
 }
 
-const ORDER_SELECT_COLUMNS =
+const ORDER_SELECT_COLUMNS_WITH_EXPEDITION =
+  'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, shipping_expedition, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
+
+const ORDER_SELECT_COLUMNS_LEGACY =
   'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
+
+function isMissingExpeditionColError(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false;
+  return (
+    err.code === '42703' ||
+    err.code === 'PGRST204' ||
+    (err.message || '').includes('shipping_expedition')
+  );
+}
 
 export async function fetchCustomerOrders(userId: string): Promise<OrderRecord[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
+  const primary = await supabase
     .from('orders')
-    .select(ORDER_SELECT_COLUMNS)
+    .select(ORDER_SELECT_COLUMNS_WITH_EXPEDITION)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error || !data) return [];
-  return data.map((row) => mapDbOrderToOrderRecord(row as Record<string, unknown>));
+  let rows: unknown[] | null = primary.data as unknown[] | null;
+  let queryError = primary.error;
+
+  if (isMissingExpeditionColError(queryError)) {
+    const fallback = await supabase
+      .from('orders')
+      .select(ORDER_SELECT_COLUMNS_LEGACY)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    rows = fallback.data as unknown[] | null;
+    queryError = fallback.error;
+  }
+
+  if (queryError || !rows) return [];
+  return rows.map((row) => mapDbOrderToOrderRecord(row as Record<string, unknown>));
 }
 
 export async function fetchOrderByNumberFromDb(orderNumber: string): Promise<OrderRecord | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase
+  const primary = await supabase
     .from('orders')
-    .select(ORDER_SELECT_COLUMNS)
+    .select(ORDER_SELECT_COLUMNS_WITH_EXPEDITION)
     .eq('order_number', orderNumber)
     .maybeSingle();
 
-  if (error || !data) return null;
-  return mapDbOrderToOrderRecord(data as Record<string, unknown>);
+  let row: unknown = primary.data;
+  let queryError = primary.error;
+
+  if (isMissingExpeditionColError(queryError)) {
+    const fallback = await supabase
+      .from('orders')
+      .select(ORDER_SELECT_COLUMNS_LEGACY)
+      .eq('order_number', orderNumber)
+      .maybeSingle();
+    row = fallback.data;
+    queryError = fallback.error;
+  }
+
+  if (queryError || !row) return null;
+  return mapDbOrderToOrderRecord(row as Record<string, unknown>);
 }
 
 export async function subscribeNewsletterInDb(email: string): Promise<{ ok: boolean; error?: string }> {
@@ -626,10 +667,26 @@ export async function fetchAllOrdersAdmin(): Promise<AdminOrderRow[]> {
 
 export async function updateOrderAdmin(
   orderId: string,
-  updates: { status: AdminOrderRow['status']; tracking_number?: string | null; paid_at?: string | null }
+  updates: {
+    status: AdminOrderRow['status'];
+    tracking_number?: string | null;
+    shipping_expedition?: string | null;
+    paid_at?: string | null;
+  }
 ): Promise<{ error?: string }> {
   if (!supabase) return { error: 'Supabase belum aktif.' };
-  const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
+  let { error } = await supabase.from('orders').update(updates).eq('id', orderId);
+  if (isMissingExpeditionColError(error)) {
+    const { shipping_expedition, tracking_number, ...rest } = updates;
+    const combinedTracking =
+      shipping_expedition && tracking_number
+        ? `${shipping_expedition} - ${tracking_number}`
+        : tracking_number;
+    ({ error } = await supabase
+      .from('orders')
+      .update({ ...rest, tracking_number: combinedTracking ?? null })
+      .eq('id', orderId));
+  }
   return error ? { error: error.message } : {};
 }
 

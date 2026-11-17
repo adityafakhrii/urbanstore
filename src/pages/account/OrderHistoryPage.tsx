@@ -100,7 +100,7 @@ export const OrderHistoryPage: React.FC = () => {
                   </p>
                   {order.trackingNumber && (
                     <p className="text-xs text-status-stock">
-                      Resi ({order.courier.toUpperCase()}):{' '}
+                      Pengiriman ({order.shippingExpedition || order.courier.toUpperCase()}) · Resi:{' '}
                       <span className="font-mono font-medium">{order.trackingNumber}</span>
                     </p>
                   )}
