@@ -13,7 +13,7 @@ export const StorefrontLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-surface font-body-md text-on-surface antialiased">
       <Header />
-      <main className="flex-1">
+      <main className="w-full pt-28 bg-surface flex-1 print:pt-0">
         <Outlet />
       </main>
       <Footer />
