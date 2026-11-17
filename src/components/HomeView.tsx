@@ -92,7 +92,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           {/* Hero Visual: Group of models in tonal cream, beige, and tailored silhouettes */}
-          <div className="w-full relative mt-2 rounded-t-lg overflow-hidden border-b border-border-ecru">
+          <div className="w-full relative mt-2 rounded-2xl overflow-hidden border border-border-ecru">
             <img
               className="w-full h-[360px] sm:h-[480px] lg:h-[580px] object-cover object-top"
               alt="Editorial fashion studio lookbook lineup of eight diverse stylish models standing shoulder to shoulder wearing minimalist cream, sand, and taupe tailored blazers"
