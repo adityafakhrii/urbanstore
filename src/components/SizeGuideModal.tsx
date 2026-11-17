@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useModalEffects } from '../utils/storage';
 import { fetchSizeGuides, SizeGuideRow } from '../services/supabaseService';
 
+import { Button } from './ui';
+
 interface SizeGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -62,7 +64,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-surface-card border-l border-border-ecru p-6 lg:p-8 flex flex-col justify-between overflow-y-auto z-10">
+        <div className="w-screen max-w-md bg-surface-card border-l border-border-ecru rounded-l-2xl p-6 lg:p-8 flex flex-col justify-between overflow-y-auto z-10">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-border-ecru mb-6">
               <div>
@@ -122,7 +124,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
             </div>
 
             {/* Interactive Anti-Zonk Quick Calculator */}
-            <div className="mb-6 p-4 bg-surface-container-low border border-border-ecru rounded-DEFAULT">
+            <div className="mb-6 p-4 bg-surface-container-low border border-border-ecru rounded-2xl">
               <span className="font-label-uppercase text-[10px] uppercase tracking-wider text-secondary block mb-2">
                 CEK REKOMENDASI ANTI-ZONK
               </span>
@@ -133,7 +135,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
                     type="number"
                     value={heightCm}
                     onChange={(e) => setHeightCm(e.target.value)}
-                    className="w-full bg-surface-card border border-border-ecru px-3 py-1.5 text-body-sm text-primary focus:outline-none focus:border-primary"
+                    className="w-full h-10 bg-surface-card border border-border-ecru rounded-xl px-3 text-body-sm text-primary focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
@@ -142,13 +144,13 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
                     type="number"
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
-                    className="w-full bg-surface-card border border-border-ecru px-3 py-1.5 text-body-sm text-primary focus:outline-none focus:border-primary"
+                    className="w-full h-10 bg-surface-card border border-border-ecru rounded-xl px-3 text-body-sm text-primary focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-border-ecru text-xs">
                 <span className="text-text-muted">Size paling pas buat kamu:</span>
-                <span className="font-semibold text-primary bg-surface-card px-2.5 py-0.5 border border-border-ecru">
+                <span className="font-semibold text-primary bg-surface-card px-3 py-0.5 rounded-full border border-border-ecru">
                   Size {recommended}
                 </span>
               </div>
@@ -165,7 +167,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
                   key={t.id}
                   type="button"
                   onClick={() => setGarmentTab(t.id)}
-                  className={`py-1.5 font-label-uppercase text-[10px] uppercase tracking-wider border cursor-pointer ${
+                  className={`py-2 rounded-xl font-label-uppercase text-[10px] uppercase tracking-wider border cursor-pointer transition-colors ${
                     garmentTab === t.id
                       ? 'bg-primary text-on-primary border-primary'
                       : 'bg-surface-card text-text-muted border-border-ecru hover:border-primary'
@@ -189,7 +191,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
 
                 if (rows.length === 0) {
                   return (
-                    <div className="p-4 text-xs text-text-muted border border-border-ecru bg-surface-sand">
+                    <div className="p-4 text-xs text-text-muted border border-border-ecru rounded-xl bg-surface-sand">
                       Data tabel ukuran untuk kategori ini belum tersedia di database.
                     </div>
                   );
@@ -244,13 +246,9 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
           </div>
 
           <div className="pt-6 border-t border-border-ecru mt-6">
-            <button
-              type="button"
-              className="w-full py-3 bg-primary text-on-primary font-label-uppercase text-label-uppercase tracking-wider uppercase hover:bg-neutral-800 transition-colors cursor-pointer"
-              onClick={onClose}
-            >
+            <Button variant="primary" size="lg" fullWidth onClick={onClose}>
               Paham, Gas
-            </button>
+            </Button>
           </div>
         </div>
       </div>

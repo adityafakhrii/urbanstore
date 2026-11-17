@@ -166,7 +166,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             </div>
 
             {/* Primary Portrait Image */}
-            <div className="flex-1 relative aspect-[3/4] bg-surface-card border border-border-ecru overflow-hidden">
+            <div className="flex-1 relative aspect-[3/4] bg-surface-card border border-border-ecru rounded-2xl overflow-hidden">
               <img
                 src={activeImage}
                 alt={product.alt}
@@ -204,7 +204,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </div>
 
           {/* Right: Contiguous Purchase Module (5 cols) */}
-          <div className="lg:col-span-5 bg-surface-card border border-border-ecru p-6 sm:p-8">
+          <div className="lg:col-span-5 bg-surface-card border border-border-ecru rounded-2xl p-6 sm:p-8">
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="font-label-uppercase text-label-uppercase uppercase tracking-widest text-secondary">
                 {product.subcategory} · {product.fabricType}
@@ -309,7 +309,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               </div>
 
               {sizeError && (
-                <div className="mt-2.5 p-2.5 bg-error-container/60 border border-error/30 text-error font-body-sm text-xs flex items-center gap-1.5">
+                <div className="mt-2.5 p-3 rounded-xl bg-error-container/60 border border-error/30 text-error font-body-sm text-xs flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[16px]">error</span>
                   <span>{sizeError}</span>
                 </div>

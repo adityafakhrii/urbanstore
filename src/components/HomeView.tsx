@@ -165,7 +165,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           {/* Asymmetrical Editorial Layout Grid */}
           {!featuredProduct ? (
-            <div className="bg-surface-card border border-border-ecru p-12 text-center">
+            <div className="bg-surface-card border border-border-ecru rounded-2xl p-12 text-center">
               <span className="material-symbols-outlined text-[36px] text-text-muted mb-3">inventory_2</span>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-2">
                 Katalog produk masih kosong
@@ -177,13 +177,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
               {/* Left Column: Featured Major Look (5 cols) */}
-              <div className="lg:col-span-5 bg-surface-card border border-border-ecru flex flex-col group overflow-hidden">
+              <div className="lg:col-span-5 bg-surface-card border border-border-ecru rounded-2xl flex flex-col group overflow-hidden">
                 <div
                   onClick={() => onSelectProduct(featuredProduct)}
                   className="relative w-full aspect-[4/5] lg:aspect-[3/4] overflow-hidden bg-surface-container-low cursor-pointer"
                 >
                   {/* Label Badge */}
-                  <div className="absolute top-4 left-4 z-10 bg-primary text-on-primary font-label-uppercase text-[10px] tracking-widest px-2.5 py-1">
+                  <div className="absolute top-4 left-4 z-10 bg-primary text-on-primary font-label-uppercase text-[10px] tracking-widest px-3 py-1 rounded-full">
                     {featuredProduct.badges[0]?.text || 'DROP EKSKLUSIF'}
                   </div>
                   <img
@@ -449,7 +449,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       {/* Quick Size Selector Chips */}
                       <div className="flex flex-wrap items-center gap-1.5 mb-4">
                         {product.sizes.length === 1 ? (
-                          <span className="px-2.5 py-1 text-[11px] font-body-sm bg-surface-container border border-border-ecru text-text-muted">
+                          <span className="px-3 py-1 rounded-lg text-[11px] font-body-sm bg-surface-container border border-border-ecru text-text-muted">
                             {product.sizes[0]}
                           </span>
                         ) : (
@@ -467,7 +467,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                                     [product.id]: sz,
                                   }))
                                 }
-                                className={`w-8 h-8 flex items-center justify-center text-[11px] font-body-sm border transition-colors ${
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-body-sm border transition-colors ${
                                   isDisabled
                                     ? 'border-border-ecru opacity-40 cursor-not-allowed line-through'
                                     : isSelected
@@ -505,7 +505,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('curated-drops')}
-              className="inline-flex items-center justify-center px-10 py-3.5 border border-primary text-primary hover:bg-primary hover:text-on-primary font-label-uppercase text-label-uppercase tracking-[0.14em] uppercase transition-all duration-300 cursor-pointer"
+              className="inline-flex items-center justify-center px-10 py-3.5 rounded-xl border border-primary text-primary hover:bg-primary hover:text-on-primary font-label-uppercase text-label-uppercase tracking-[0.14em] uppercase transition-all duration-300 cursor-pointer"
             >
               Lihat Semua Koleksi ({products.length} Kurasi)
             </button>

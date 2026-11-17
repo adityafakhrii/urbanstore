@@ -735,7 +735,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
       <section className="w-full py-space-xl">
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin">
           {filteredProducts.length === 0 ? (
-            <div className="bg-surface-card border border-border-ecru p-12 text-center my-6">
+            <div className="bg-surface-card border border-border-ecru rounded-2xl p-12 text-center my-6">
               <span className="material-symbols-outlined text-[36px] text-text-muted mb-3">checkroom</span>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-2">
                 Belum ada outfit yang cocok sama kombinasi filter ini
@@ -922,7 +922,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             className="fixed inset-0 bg-[#1A1A1A]/30 backdrop-blur-[2px]"
             onClick={() => setManifestoModalOpen(false)}
           />
-          <div className="relative bg-surface-card border border-border-ecru max-w-lg w-full p-8 z-10 shadow-xl">
+          <div className="relative bg-surface-card border border-border-ecru rounded-2xl max-w-lg w-full p-8 z-10 shadow-xl">
             <div className="flex items-center justify-between pb-4 border-b border-border-ecru mb-5">
               <div>
                 <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary">
@@ -933,7 +933,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               <button
                 type="button"
                 onClick={() => setManifestoModalOpen(false)}
-                className="p-1 text-on-surface hover:text-secondary cursor-pointer"
+                className="p-1.5 rounded-full text-on-surface hover:bg-surface-sand cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
@@ -943,7 +943,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                 Di UrbanStore, kami percaya baju yang bagus itu bukan yang cuma kelihatan estetik di foto studio, tapi
                 yang jatuhnya pas di postur tubuh nyata dan adem dipakai seharian.
               </p>
-              <div className="p-4 bg-surface-sand border border-border-ecru space-y-2 text-body-sm">
+              <div className="p-4 bg-surface-sand border border-border-ecru rounded-xl space-y-2 text-body-sm">
                 <div className="font-semibold text-primary">3 Janji Anti-Zonk UrbanStore:</div>
                 <p>1. Semua pola diuji di 5 tipe postur tubuh Indonesia sebelum masuk produksi.</p>
                 <p>2. Serat alami 100% transparan: GOTS Certified Linen, Mulberry Silk 22mm, &amp; Cashmere.</p>
@@ -957,14 +957,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                   setManifestoModalOpen(false);
                   onOpenSizeGuide();
                 }}
-                className="px-5 py-2.5 border border-primary text-primary font-label-uppercase text-label-uppercase uppercase cursor-pointer"
+                className="px-5 py-2.5 rounded-xl border border-primary text-primary font-label-uppercase text-label-uppercase uppercase hover:bg-surface-sand transition-colors cursor-pointer"
               >
                 Cek Size Guide
               </button>
               <button
                 type="button"
                 onClick={() => setManifestoModalOpen(false)}
-                className="px-5 py-2.5 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase hover:bg-neutral-800 transition-colors cursor-pointer"
               >
                 Paham, Lanjut Eksplor
               </button>
