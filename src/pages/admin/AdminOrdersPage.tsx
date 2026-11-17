@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext';
 import {
   AdminOrderRow,
@@ -19,8 +19,31 @@ const ORDER_STATUS_OPTIONS: AdminOrderRow['status'][] = [
   'expired',
 ];
 
+type OrderFilterKey =
+  | 'all'
+  | 'waiting_verification'
+  | 'needs_shipping'
+  | 'pending'
+  | 'completed'
+  | 'closed';
+
+const ORDER_FILTER_TABS: { key: OrderFilterKey; label: string }[] = [
+  { key: 'all', label: 'Semua' },
+  { key: 'waiting_verification', label: 'Perlu Verifikasi' },
+  { key: 'needs_shipping', label: 'Belum Ada Resi' },
+  { key: 'pending', label: 'Menunggu Bayar' },
+  { key: 'completed', label: 'Lunas & Selesai' },
+  { key: 'closed', label: 'Batal / Expired' },
+];
+
 export const AdminOrdersPage: React.FC = () => {
   const { showToast } = useStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawFilter = (searchParams.get('status') || 'all') as OrderFilterKey;
+  const activeFilter: OrderFilterKey = ORDER_FILTER_TABS.some((t) => t.key === rawFilter)
+    ? rawFilter
+    : 'all';
+
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [orderEdits, setOrderEdits] = useState<
@@ -54,6 +77,52 @@ export const AdminOrdersPage: React.FC = () => {
   const paidCount = orders.filter((o) =>
     ['paid', 'packed', 'shipped', 'delivered'].includes(o.status)
   ).length;
+
+  const filterCounts = useMemo(
+    () => ({
+      all: orders.length,
+      waiting_verification: orders.filter((o) => o.status === 'waiting_verification').length,
+      needs_shipping: orders.filter(
+        (o) => (o.status === 'paid' || o.status === 'packed') && !o.tracking_number
+      ).length,
+      pending: orders.filter((o) => o.status === 'pending').length,
+      completed: orders.filter((o) =>
+        ['paid', 'packed', 'shipped', 'delivered'].includes(o.status)
+      ).length,
+      closed: orders.filter((o) => o.status === 'cancelled' || o.status === 'expired').length,
+    }),
+    [orders]
+  );
+
+  const filteredOrders = useMemo(() => {
+    switch (activeFilter) {
+      case 'waiting_verification':
+        return orders.filter((o) => o.status === 'waiting_verification');
+      case 'needs_shipping':
+        return orders.filter(
+          (o) => (o.status === 'paid' || o.status === 'packed') && !o.tracking_number
+        );
+      case 'pending':
+        return orders.filter((o) => o.status === 'pending');
+      case 'completed':
+        return orders.filter((o) =>
+          ['paid', 'packed', 'shipped', 'delivered'].includes(o.status)
+        );
+      case 'closed':
+        return orders.filter((o) => o.status === 'cancelled' || o.status === 'expired');
+      default:
+        return orders;
+    }
+  }, [orders, activeFilter]);
+
+  const handleSelectFilter = (key: OrderFilterKey) => {
+    if (key === 'all') {
+      searchParams.delete('status');
+      setSearchParams(searchParams, { replace: true });
+    } else {
+      setSearchParams({ status: key }, { replace: true });
+    }
+  };
 
   const handleConfirmPayment = async (ord: AdminOrderRow) => {
     const edit = orderEdits[ord.id];
@@ -137,17 +206,59 @@ export const AdminOrdersPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border-ecru pb-4">
+        {ORDER_FILTER_TABS.map((tab) => {
+          const isSelected = activeFilter === tab.key;
+          const count = filterCounts[tab.key];
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => handleSelectFilter(tab.key)}
+              className={`px-3.5 py-1.5 text-[11px] font-label-uppercase uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                isSelected
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface-card text-secondary border-border-ecru hover:border-primary hover:text-primary'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`px-1.5 py-0.2 text-[10px] rounded-full ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-surface-sand text-primary'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="p-12 text-center bg-surface-card border border-border-ecru text-xs text-text-muted">
           Memuat daftar pesanan dari Supabase...
         </div>
-      ) : orders.length === 0 ? (
-        <div className="p-12 text-center bg-surface-card border border-border-ecru text-xs text-text-muted">
-          Belum ada pesanan masuk.
+      ) : filteredOrders.length === 0 ? (
+        <div className="p-12 text-center bg-surface-card border border-border-ecru text-xs text-text-muted space-y-2">
+          <p>
+            {orders.length === 0
+              ? 'Belum ada pesanan masuk.'
+              : 'Tidak ada pesanan pada filter ini.'}
+          </p>
+          {activeFilter !== 'all' && orders.length > 0 && (
+            <button
+              type="button"
+              onClick={() => handleSelectFilter('all')}
+              className="underline text-primary cursor-pointer"
+            >
+              Tampilkan semua pesanan
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((ord) => {
+          {filteredOrders.map((ord) => {
             const edit = orderEdits[ord.id] || {
               status: ord.status,
               tracking: ord.tracking_number || '',
