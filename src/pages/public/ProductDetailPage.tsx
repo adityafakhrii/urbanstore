@@ -1,24 +1,9 @@
 import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ProductDetailView } from '../../components/ProductDetailView';
-import { ActivePage } from '../../components/Header';
+import { ActivePage, activePageToPath } from '../../components/Header';
 import { useStore } from '../../context/StoreContext';
 import { Product } from '../../data/products';
-
-function activePageToPath(page: ActivePage): string {
-  switch (page) {
-    case 'home':
-      return '/';
-    case 'admin':
-      return '/admin/orders';
-    case 'checkout':
-      return '/checkout';
-    case 'pdp':
-      return '/curated-drops';
-    default:
-      return `/${page}`;
-  }
-}
 
 export const ProductDetailPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();

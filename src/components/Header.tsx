@@ -7,6 +7,21 @@ import { useStore } from '../context/StoreContext';
 
 export type ActivePage = 'home' | 'women' | 'men' | 'bags' | 'shoes' | 'curated-drops' | 'pdp' | 'checkout' | 'admin';
 
+export function activePageToPath(page: ActivePage): string {
+  switch (page) {
+    case 'home':
+      return '/';
+    case 'admin':
+      return '/admin/dashboard';
+    case 'checkout':
+      return '/checkout';
+    case 'pdp':
+      return '/curated-drops';
+    default:
+      return `/${page}`;
+  }
+}
+
 const NAV_ITEMS = [
   { path: '/', label: 'Home' },
   { path: '/men', label: 'Pria' },
