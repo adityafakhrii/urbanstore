@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BRAND_ASSETS, Product } from '../data/products';
 import { ActivePage } from './Header';
 import { handleImageError, useModalEffects } from '../utils/storage';
+import { CustomSelect } from './ui';
 
 interface CatalogViewProps {
   products: Product[];
@@ -452,7 +453,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             <button
               type="button"
               onClick={() => setFilterDrawerOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-container-low hover:bg-surface-container rounded-DEFAULT text-primary font-label-uppercase text-label-uppercase tracking-wider transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-3.5 bg-surface-container-low hover:bg-surface-container border border-border-ecru rounded-xl text-primary font-label-uppercase text-label-uppercase tracking-wider transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[17px]">tune</span>
               <span>Filters</span>
@@ -461,24 +462,22 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               )}
             </button>
 
-            <div className="relative inline-block text-left">
-              <select
+            <div className="w-48">
+              <CustomSelect
+                size="sm"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none bg-surface-container-low hover:bg-surface-container text-on-surface font-label-uppercase text-label-uppercase pl-3 pr-8 py-1.5 rounded-DEFAULT focus:outline-none cursor-pointer"
-              >
-                <option value="Kurasi / Favorit">Kurasi / Favorit</option>
-                <option value="Drop Terbaru">Drop Terbaru</option>
-                <option value="Harga: Rendah ke Tinggi">Harga: Rendah ke Tinggi</option>
-                <option value="Harga: Tinggi ke Rendah">Harga: Tinggi ke Rendah</option>
-                <option value="Paling Dicari">Paling Dicari</option>
-              </select>
-              <span className="material-symbols-outlined text-[16px] pointer-events-none absolute right-2 top-2 text-text-muted">
-                expand_more
-              </span>
+                onChange={setSortBy}
+                options={[
+                  { value: 'Kurasi / Favorit', label: 'Kurasi / Favorit' },
+                  { value: 'Drop Terbaru', label: 'Drop Terbaru' },
+                  { value: 'Harga: Rendah ke Tinggi', label: 'Harga: Rendah ke Tinggi' },
+                  { value: 'Harga: Tinggi ke Rendah', label: 'Harga: Tinggi ke Rendah' },
+                  { value: 'Paling Dicari', label: 'Paling Dicari' },
+                ]}
+              />
             </div>
 
-            <div className="hidden sm:flex items-center bg-surface-container-low p-0.5 rounded-DEFAULT">
+            <div className="hidden sm:flex items-center bg-surface-container-low p-0.5 rounded-xl border border-border-ecru">
               <button
                 type="button"
                 aria-label="3 columns grid"

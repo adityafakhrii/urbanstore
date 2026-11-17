@@ -10,6 +10,14 @@ import {
 } from '../../services/supabaseService';
 import { INDO_PROVINCES } from '../../utils/payment';
 import { handleImageError } from '../../utils/storage';
+import {
+  AlertBanner,
+  Button,
+  CustomSelect,
+  InputField,
+  TextareaField,
+  getButtonClassName,
+} from '../../components/ui';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -57,6 +65,13 @@ export const CheckoutPage: React.FC = () => {
     if (!postalCode && profile.default_postal_code) setPostalCode(profile.default_postal_code);
   }, [profile, user, fullName, email, whatsapp, province, city, district, address, postalCode]);
 
+  const provinceOptions = [
+    ...INDO_PROVINCES.map((prov) => ({ value: prov, label: prov })),
+    ...(province && !INDO_PROVINCES.includes(province)
+      ? [{ value: province, label: province }]
+      : []),
+  ];
+
   const subtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   const discount = promoApplied ? promoApplied.amount : 0;
   const shippingCost =
@@ -102,6 +117,11 @@ export const CheckoutPage: React.FC = () => {
   const handleCompleteCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0 || submitting) return;
+
+    if (!province.trim()) {
+      setCheckoutError('Pilih provinsi pengiriman terlebih dahulu.');
+      return;
+    }
 
     const digitsOnly = whatsapp.replace(/\D/g, '');
     const isValidWhatsapp =
@@ -193,19 +213,19 @@ export const CheckoutPage: React.FC = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <div className="border border-border-ecru bg-surface-card p-10 space-y-4">
-          <span className="material-symbols-outlined text-[42px] text-secondary block">
-            shopping_bag
-          </span>
-          <h1 className="font-headline-sm text-headline-sm text-primary">Tas Belanja Masih Kosong</h1>
+      <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 text-center">
+        <div className="border border-border-ecru rounded-2xl bg-surface-card p-10 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-surface-sand flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-[32px] text-secondary">shopping_bag</span>
+          </div>
+          <h1 className="font-headline-sm text-2xl text-primary">Keranjang Belanja Masih Kosong</h1>
           <p className="font-body-sm text-text-muted max-w-md mx-auto">
             Tambahkan outfit pilihanmu terlebih dahulu sebelum melanjutkan ke halaman checkout.
           </p>
           <div className="pt-2">
             <Link
               to="/curated-drops"
-              className="inline-block px-6 py-3 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-wider"
+              className={getButtonClassName({ variant: 'primary', size: 'md' })}
             >
               Jelajahi Curated Drops
             </Link>
@@ -216,182 +236,134 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-      <div className="border-b border-border-ecru pb-6 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="page-shell py-8 sm:py-12 space-y-8">
+      <div className="border-b border-border-ecru pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
             SECURE CHECKOUT · URBANSTORE INDONESIA
           </span>
-          <h1 className="font-headline-sm text-headline-sm text-primary">
+          <h1 className="font-headline-sm text-2xl sm:text-3xl text-primary">
             Pengiriman &amp; Pembayaran
           </h1>
         </div>
-        <Link
-          to="/curated-drops"
-          className="font-label-uppercase text-[11px] uppercase tracking-wider text-secondary hover:text-primary underline underline-offset-4"
-        >
-          ← Lanjut Belanja
+        <Link to="/cart" className={getButtonClassName({ variant: 'outline', size: 'sm' })}>
+          ← Kembali ke Keranjang
         </Link>
       </div>
 
-      {checkoutError && (
-        <div className="mb-6 p-4 bg-error-container/70 border border-error/40 text-error text-xs">
-          {checkoutError}
-        </div>
-      )}
+      {checkoutError && <AlertBanner variant="error">{checkoutError}</AlertBanner>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* Left: Checkout Form */}
         <form id="checkout-form" onSubmit={handleCompleteCheckout} className="lg:col-span-7 space-y-6">
-          <section className="bg-surface-card border border-border-ecru p-6 space-y-4">
+          <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
               01 · Data Penerima
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-body-sm text-xs text-text-muted mb-1">Nama Lengkap *</label>
-                <input
-                  required
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nama penerima paket"
-                  className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                />
-              </div>
-              <div>
-                <label className="block font-body-sm text-xs text-text-muted mb-1">Email *</label>
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@domain.com"
-                  className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                />
-              </div>
+              <InputField
+                label="Nama Lengkap"
+                required
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nama penerima paket"
+              />
+              <InputField
+                label="Email"
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@domain.com"
+              />
             </div>
 
-            <div>
-              <label className="block font-body-sm text-xs text-text-muted mb-1">
-                No. WhatsApp Aktif *
-              </label>
-              <input
-                required
-                type="tel"
-                value={whatsapp}
-                onChange={(e) => {
-                  setWhatsapp(e.target.value);
-                  setWhatsappError(null);
-                }}
-                placeholder="081234567890"
-                className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-              />
-              {whatsappError && <p className="text-[11px] text-error mt-1">{whatsappError}</p>}
-            </div>
+            <InputField
+              label="No. WhatsApp Aktif"
+              required
+              type="tel"
+              value={whatsapp}
+              onChange={(e) => {
+                setWhatsapp(e.target.value);
+                setWhatsappError(null);
+              }}
+              placeholder="081234567890"
+              error={whatsappError}
+            />
           </section>
 
-          <section className="bg-surface-card border border-border-ecru p-6 space-y-4">
+          <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
               02 · Alamat Pengiriman Lengkap
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-body-sm text-xs text-text-muted mb-1">Provinsi *</label>
-                <select
-                  required
-                  value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                  className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                >
-                  <option value="">Pilih Provinsi</option>
-                  {INDO_PROVINCES.map((prov) => (
-                    <option key={prov} value={prov}>
-                      {prov}
-                    </option>
-                  ))}
-                  {province && !INDO_PROVINCES.includes(province) && (
-                    <option value={province}>{province}</option>
-                  )}
-                </select>
-              </div>
-              <div>
-                <label className="block font-body-sm text-xs text-text-muted mb-1">
-                  Kota / Kabupaten *
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Contoh: Jakarta Selatan / Kota Bandung"
-                  className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                />
-              </div>
+              <CustomSelect
+                label="Provinsi"
+                required
+                value={province}
+                onChange={setProvince}
+                options={provinceOptions}
+                placeholder="Pilih Provinsi"
+              />
+              <InputField
+                label="Kota / Kabupaten"
+                required
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Contoh: Jakarta Selatan / Kota Bandung"
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-body-sm text-xs text-text-muted mb-1">Kecamatan *</label>
-                <input
-                  required
-                  type="text"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  placeholder="Contoh: Kebayoran Baru"
-                  className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                />
-              </div>
-              <div>
-                <label className="block font-body-sm text-xs text-text-muted mb-1">Kode Pos *</label>
-                <input
-                  required
-                  type="text"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="12190"
-                  className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-body-sm text-xs text-text-muted mb-1">
-                Alamat Lengkap (Jalan, No. Rumah, RT/RW, Patokan) *
-              </label>
-              <textarea
+              <InputField
+                label="Kecamatan"
                 required
-                rows={3}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Jl. Senopati No. 18, RT 02/RW 03, samping toko kopi"
-                className="w-full bg-surface border border-border-ecru p-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
+                type="text"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                placeholder="Contoh: Kebayoran Baru"
+              />
+              <InputField
+                label="Kode Pos"
+                required
+                type="text"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                placeholder="12190"
               />
             </div>
 
-            <div>
-              <label className="block font-body-sm text-xs text-text-muted mb-1">
-                Catatan Pengiriman (Opsional)
-              </label>
-              <input
-                type="text"
-                value={deliveryNotes}
-                onChange={(e) => setDeliveryNotes(e.target.value)}
-                placeholder="Misal: Titip ke satpam jika rumah kosong"
-                className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-              />
-            </div>
+            <TextareaField
+              label="Alamat Lengkap (Jalan, No. Rumah, RT/RW, Patokan)"
+              required
+              rows={3}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Jl. Senopati No. 18, RT 02/RW 03, samping toko kopi"
+            />
+
+            <InputField
+              label="Catatan Pengiriman (Opsional)"
+              type="text"
+              value={deliveryNotes}
+              onChange={(e) => setDeliveryNotes(e.target.value)}
+              placeholder="Misal: Titip ke satpam jika rumah kosong"
+            />
           </section>
 
-          <section className="bg-surface-card border border-border-ecru p-6 space-y-4">
+          <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-5">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
               03 · Kurir &amp; Metode Pembayaran
             </h2>
 
             <div>
-              <p className="font-body-sm text-xs text-text-muted mb-2">Layanan Pengiriman</p>
+              <p className="font-body-sm text-xs font-medium text-text-muted mb-2">
+                Layanan Pengiriman (Hitung Ongkir)
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   {
@@ -406,21 +378,23 @@ export const CheckoutPage: React.FC = () => {
                     key={opt.id}
                     type="button"
                     onClick={() => setCourier(opt.id)}
-                    className={`p-3 border text-left transition-colors cursor-pointer ${
+                    className={`p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
                       courier === opt.id
-                        ? 'border-primary bg-surface-sand'
+                        ? 'border-primary bg-surface-sand ring-2 ring-primary/10'
                         : 'border-border-ecru bg-surface hover:border-primary/50'
                     }`}
                   >
                     <p className="text-xs font-medium text-primary">{opt.label}</p>
-                    <p className="text-[11px] text-secondary mt-0.5">{opt.cost}</p>
+                    <p className="text-[11px] text-secondary mt-0.5 font-medium">{opt.cost}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="font-body-sm text-xs text-text-muted mb-2">Metode Pembayaran (Transfer / QRIS)</p>
+              <p className="font-body-sm text-xs font-medium text-text-muted mb-2">
+                Metode Pembayaran (Transfer / QRIS)
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(
                   ['BCA Virtual Account', 'Mandiri', 'QRIS', 'Visa / Mastercard'] as const
@@ -429,15 +403,15 @@ export const CheckoutPage: React.FC = () => {
                     key={method}
                     type="button"
                     onClick={() => setPaymentMethod(method)}
-                    className={`p-3 border text-left flex items-center justify-between transition-colors cursor-pointer ${
+                    className={`p-3.5 border rounded-xl text-left flex items-center justify-between transition-all cursor-pointer ${
                       paymentMethod === method
-                        ? 'border-primary bg-surface-sand'
+                        ? 'border-primary bg-surface-sand ring-2 ring-primary/10'
                         : 'border-border-ecru bg-surface hover:border-primary/50'
                     }`}
                   >
                     <span className="text-xs font-medium text-primary">{method}</span>
                     {paymentMethod === method && (
-                      <span className="material-symbols-outlined text-[16px] text-primary">
+                      <span className="material-symbols-outlined text-[18px] text-primary">
                         check_circle
                       </span>
                     )}
@@ -449,7 +423,7 @@ export const CheckoutPage: React.FC = () => {
         </form>
 
         {/* Right: Order Summary & Cart Adjustments */}
-        <aside className="lg:col-span-5 bg-surface-card border border-border-ecru p-6 space-y-5 lg:sticky lg:top-24">
+        <aside className="lg:col-span-5 bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-5 lg:sticky lg:top-28">
           <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
             Ringkasan Pesanan ({cartItems.reduce((s, i) => s + i.quantity, 0)} Item)
           </h2>
@@ -464,7 +438,7 @@ export const CheckoutPage: React.FC = () => {
                   src={item.product.image}
                   alt={item.product.name}
                   onError={handleImageError}
-                  className="w-16 h-20 object-cover bg-surface-muted shrink-0"
+                  className="w-16 h-20 object-cover rounded-xl bg-surface-muted shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between gap-2">
@@ -472,7 +446,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeCartItem(item.product.id, item.size, item.color)}
-                      className="text-text-muted hover:text-error cursor-pointer"
+                      className="text-text-muted hover:text-error p-0.5 rounded-full cursor-pointer"
                       aria-label="Hapus item"
                     >
                       <span className="material-symbols-outlined text-[15px]">close</span>
@@ -482,19 +456,19 @@ export const CheckoutPage: React.FC = () => {
                     {item.color} · Size {item.size}
                   </p>
                   <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center border border-border-ecru bg-surface">
+                    <div className="flex items-center border border-border-ecru rounded-xl bg-surface overflow-hidden">
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.product.id, item.size, item.color, -1)}
-                        className="px-2 py-0.5 text-xs text-primary cursor-pointer"
+                        className="px-2.5 py-1 text-xs text-primary hover:bg-surface-sand cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="px-2.5 text-xs text-primary">{item.quantity}</span>
+                      <span className="px-2.5 text-xs text-primary font-medium">{item.quantity}</span>
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.product.id, item.size, item.color, 1)}
-                        className="px-2 py-0.5 text-xs text-primary cursor-pointer"
+                        className="px-2.5 py-1 text-xs text-primary hover:bg-surface-sand cursor-pointer"
                       >
                         +
                       </button>
@@ -509,27 +483,25 @@ export const CheckoutPage: React.FC = () => {
           </div>
 
           {/* Promo Input */}
-          <form onSubmit={handleApplyPromo} className="space-y-1.5">
-            <div className="flex gap-2">
-              <input
+          <form onSubmit={handleApplyPromo} className="space-y-2">
+            <div className="flex gap-2 items-start">
+              <InputField
+                containerClassName="flex-1"
                 type="text"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
                 placeholder="Kode Promo (contoh: ANTIZONK)"
-                className="flex-1 h-10 bg-surface border border-border-ecru px-3 text-xs text-primary focus:outline-none focus:border-primary"
               />
-              <button
-                type="submit"
-                className="px-4 h-10 border border-primary text-primary font-label-uppercase text-[10px] uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-colors cursor-pointer"
-              >
+              <Button type="submit" variant="outline" size="md">
                 Pakai
-              </button>
+              </Button>
             </div>
-            {promoError && <p className="text-[11px] text-error">{promoError}</p>}
+            {promoError && <AlertBanner variant="error">{promoError}</AlertBanner>}
             {promoApplied && (
-              <p className="text-[11px] text-status-stock">
-                Kode {promoApplied.code} aktif — Potongan {formatRupiah(promoApplied.amount)}
-              </p>
+              <AlertBanner variant="success">
+                Kode <strong>{promoApplied.code}</strong> aktif — Potongan{' '}
+                {formatRupiah(promoApplied.amount)}
+              </AlertBanner>
             )}
           </form>
 
@@ -549,20 +521,22 @@ export const CheckoutPage: React.FC = () => {
               <span>Ongkos Kirim ({courier})</span>
               <span>{shippingCost === 0 ? 'GRATIS' : formatRupiah(shippingCost)}</span>
             </div>
-            <div className="flex justify-between text-base font-medium text-primary pt-3 border-t border-border-ecru">
+            <div className="flex justify-between text-base font-semibold text-primary pt-3 border-t border-border-ecru">
               <span>Total Pembayaran</span>
               <span>{formatRupiah(grandTotal)}</span>
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             form="checkout-form"
+            variant="primary"
+            size="lg"
+            fullWidth
             disabled={submitting}
-            className="w-full h-12 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-[0.14em] hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50"
           >
             {submitting ? 'Membuat Pesanan...' : 'Buat Pesanan Sekarang'}
-          </button>
+          </Button>
 
           <p className="text-[11px] text-text-muted text-center">
             Batas waktu pembayaran adalah 60 menit setelah pesanan dibuat.

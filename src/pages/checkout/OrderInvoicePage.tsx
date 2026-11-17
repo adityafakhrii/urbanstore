@@ -7,6 +7,7 @@ import {
   formatRupiah,
 } from '../../services/supabaseService';
 import { getInvoiceStamp } from '../../utils/payment';
+import { Button, getButtonClassName } from '../../components/ui';
 
 export const OrderInvoicePage: React.FC = () => {
   const { orderNumber } = useParams<{ orderNumber: string }>();
@@ -50,15 +51,15 @@ export const OrderInvoicePage: React.FC = () => {
 
   if (!order) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center">
-        <div className="border border-border-ecru bg-surface-card p-10 space-y-4">
-          <h1 className="font-headline-sm text-headline-sm text-primary">Invoice Tidak Ditemukan</h1>
+      <div className="max-w-xl mx-auto px-5 py-14 text-center">
+        <div className="border border-border-ecru rounded-2xl bg-surface-card p-10 space-y-4">
+          <h1 className="font-headline-sm text-2xl text-primary">Invoice Tidak Ditemukan</h1>
           <p className="font-body-sm text-text-muted">
             Order <span className="font-mono">{orderNumber}</span> tidak ditemukan.
           </p>
           <Link
             to="/account/orders"
-            className="inline-block px-6 py-3 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider"
+            className={getButtonClassName({ variant: 'primary', size: 'md' })}
           >
             Kembali ke Pesanan
           </Link>
@@ -85,28 +86,24 @@ export const OrderInvoicePage: React.FC = () => {
     .join(', ');
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-4xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
       {/* Action Toolbar (hidden when printing to PDF) */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 print:hidden">
         <Link
           to={`/orders/${encodeURIComponent(order.id)}/payment`}
-          className="inline-flex items-center gap-1.5 font-label-uppercase text-[11px] uppercase tracking-wider text-secondary hover:text-primary"
+          className={getButtonClassName({ variant: 'outline', size: 'sm' })}
         >
           <span className="material-symbols-outlined text-[15px]">arrow_back</span>
-          Kembali ke Halaman Pembayaran
+          Kembali ke Pembayaran
         </Link>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:bg-neutral-800 transition-colors cursor-pointer"
-        >
+        <Button variant="primary" size="md" onClick={() => window.print()}>
           <span className="material-symbols-outlined text-[16px]">print</span>
           Cetak / Download PDF
-        </button>
+        </Button>
       </div>
 
       {/* Printable Invoice Sheet */}
-      <article className="bg-white border border-border-ecru p-6 sm:p-10 shadow-sm print:border-0 print:shadow-none print:p-0">
+      <article className="bg-white border border-border-ecru rounded-2xl p-6 sm:p-10 shadow-sm print:border-0 print:rounded-none print:shadow-none print:p-0">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b-2 border-primary pb-6 mb-6">
           <div>
             <h1 className="font-headline-sm text-2xl text-primary tracking-wide">URBANSTORE</h1>
@@ -124,14 +121,14 @@ export const OrderInvoicePage: React.FC = () => {
               color: stamp.colorHex,
               backgroundColor: stamp.bgHex,
             }}
-            className="inline-block px-4 py-1.5 border-2 text-[11px] font-bold uppercase tracking-widest self-start"
+            className="inline-block px-4 py-1.5 rounded-full border-2 text-[11px] font-bold uppercase tracking-widest self-start"
           >
             {stamp.label}
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 text-xs">
-          <div className="bg-surface border border-border-ecru p-4 space-y-1">
+          <div className="bg-surface border border-border-ecru rounded-xl p-4 space-y-1">
             <h2 className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary mb-2">
               Ditagihkan &amp; Dikirim Ke
             </h2>
@@ -142,7 +139,7 @@ export const OrderInvoicePage: React.FC = () => {
             {order.deliveryNotes && <p className="text-secondary">Catatan: {order.deliveryNotes}</p>}
           </div>
 
-          <div className="bg-surface border border-border-ecru p-4 space-y-1">
+          <div className="bg-surface border border-border-ecru rounded-xl p-4 space-y-1">
             <h2 className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary mb-2">
               Informasi Pembayaran &amp; Kurir
             </h2>

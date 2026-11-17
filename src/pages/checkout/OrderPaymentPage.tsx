@@ -16,6 +16,7 @@ import {
   getRemainingSeconds,
   isOrderPaymentExpired,
 } from '../../utils/payment';
+import { AlertBanner, StatusBadge, getButtonClassName } from '../../components/ui';
 
 export const OrderPaymentPage: React.FC = () => {
   const { orderNumber } = useParams<{ orderNumber: string }>();
@@ -69,24 +70,21 @@ export const OrderPaymentPage: React.FC = () => {
 
   if (!order) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center">
-        <div className="border border-border-ecru bg-surface-card p-10 space-y-4">
-          <h1 className="font-headline-sm text-headline-sm text-primary">Pesanan Tidak Ditemukan</h1>
+      <div className="max-w-xl mx-auto px-5 py-14 text-center">
+        <div className="border border-border-ecru rounded-2xl bg-surface-card p-10 space-y-4">
+          <h1 className="font-headline-sm text-2xl text-primary">Pesanan Tidak Ditemukan</h1>
           <p className="font-body-sm text-text-muted">
             Nomor order <span className="font-mono">{orderNumber}</span> tidak ditemukan atau tidak berada
             pada sesi akun ini.
           </p>
-          <div className="flex justify-center gap-3 pt-2">
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
             <Link
               to="/account/orders"
-              className="px-5 py-2.5 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider"
+              className={getButtonClassName({ variant: 'primary', size: 'sm' })}
             >
               Riwayat Pesanan
             </Link>
-            <Link
-              to="/"
-              className="px-5 py-2.5 border border-border-ecru font-label-uppercase text-[11px] uppercase tracking-wider text-primary"
-            >
+            <Link to="/" className={getButtonClassName({ variant: 'outline', size: 'sm' })}>
               Ke Beranda
             </Link>
           </div>
@@ -95,7 +93,6 @@ export const OrderPaymentPage: React.FC = () => {
     );
   }
 
-  // Force re-evaluation using nowTick
   void nowTick;
   const expired = isOrderPaymentExpired(order);
   const remainingSec = order.status === 'pending' ? getRemainingSeconds(order.paymentExpiresAt) : 0;
@@ -171,9 +168,9 @@ export const OrderPaymentPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 space-y-6">
+    <div className="max-w-4xl mx-auto px-5 sm:px-8 py-8 sm:py-12 space-y-6">
       {/* Header Status */}
-      <div className="bg-surface-card border border-border-ecru p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
             KONFIRMASI &amp; INSTRUKSI PEMBAYARAN
@@ -184,12 +181,10 @@ export const OrderPaymentPage: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className={`px-3 py-1.5 text-[10px] font-label-uppercase uppercase tracking-wider ${badge.cls}`}>
-            {badge.label}
-          </span>
+          <StatusBadge label={badge.label} className={badge.cls} />
           <Link
             to={`/orders/${encodeURIComponent(order.id)}/invoice`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 border border-primary text-primary font-label-uppercase text-[11px] uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-colors"
+            className={getButtonClassName({ variant: 'outline', size: 'sm' })}
           >
             <span className="material-symbols-outlined text-[15px]">description</span>
             Lihat Invoice / PDF
@@ -199,34 +194,29 @@ export const OrderPaymentPage: React.FC = () => {
 
       {/* 1-Hour Countdown */}
       {order.status === 'pending' && (
-        <div
-          className={`border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-            expired ? 'bg-error-container/60 border-error/40' : 'bg-surface-sand border-border-ecru'
-          }`}
+        <AlertBanner
+          variant={expired ? 'error' : 'warning'}
+          title={
+            expired
+              ? 'Batas Waktu Pembayaran Telah Berakhir'
+              : 'Selesaikan Pembayaran Sebelum Waktu Habis'
+          }
+          action={
+            <span className="font-mono text-2xl font-bold tracking-wider">
+              {expired ? '00:00' : formatCountdown(remainingSec)}
+            </span>
+          }
         >
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[24px] text-secondary">timer</span>
-            <div>
-              <p className="text-xs font-medium text-primary">
-                {expired ? 'Batas Waktu Pembayaran Telah Berakhir' : 'Selesaikan Pembayaran Sebelum Waktu Habis'}
-              </p>
-              <p className="text-[11px] text-text-muted">
-                {expired
-                  ? 'Order ini sudah melewati batas waktu 60 menit.'
-                  : 'Stok akan tetap tertahan untukmu selama 1 jam.'}
-              </p>
-            </div>
-          </div>
-          <div className="font-mono text-2xl font-bold text-primary tracking-wider">
-            {expired ? '00:00' : formatCountdown(remainingSec)}
-          </div>
-        </div>
+          {expired
+            ? 'Order ini sudah melewati batas waktu 60 menit.'
+            : 'Stok akan tetap tertahan untukmu selama 1 jam sejak checkout.'}
+        </AlertBanner>
       )}
 
       {/* Payment Account Info & Proof Upload */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Transfer Info */}
-        <section className="bg-surface-card border border-border-ecru p-6 space-y-4">
+        <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
           <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
             Informasi Rekening Tujuan ({order.paymentMethod})
           </h2>
@@ -238,14 +228,14 @@ export const OrderPaymentPage: React.FC = () => {
             </div>
             <div>
               <p className="text-text-muted">Nomor Rekening / VA</p>
-              <div className="flex items-center justify-between gap-2 bg-surface border border-border-ecru px-3 py-2 mt-1">
+              <div className="flex items-center justify-between gap-2 bg-surface border border-border-ecru rounded-xl px-3.5 py-2.5 mt-1">
                 <span className="font-mono text-base font-semibold text-primary">
                   {account.accountNumber}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleCopyText('rekening', account.accountNumber)}
-                  className="text-[11px] font-label-uppercase uppercase tracking-wider text-secondary hover:text-primary cursor-pointer"
+                  className="px-2.5 py-1 rounded-full bg-surface-sand text-[10px] font-label-uppercase uppercase tracking-wider text-secondary hover:text-primary cursor-pointer"
                 >
                   {copiedField === 'rekening' ? 'Disalin!' : 'Salin'}
                 </button>
@@ -257,14 +247,14 @@ export const OrderPaymentPage: React.FC = () => {
             </div>
             <div>
               <p className="text-text-muted">Total Transfer</p>
-              <div className="flex items-center justify-between gap-2 bg-surface border border-border-ecru px-3 py-2 mt-1">
+              <div className="flex items-center justify-between gap-2 bg-surface border border-border-ecru rounded-xl px-3.5 py-2.5 mt-1">
                 <span className="font-mono text-base font-bold text-primary">
                   {formatRupiah(order.total)}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleCopyText('nominal', String(order.total))}
-                  className="text-[11px] font-label-uppercase uppercase tracking-wider text-secondary hover:text-primary cursor-pointer"
+                  className="px-2.5 py-1 rounded-full bg-surface-sand text-[10px] font-label-uppercase uppercase tracking-wider text-secondary hover:text-primary cursor-pointer"
                 >
                   {copiedField === 'nominal' ? 'Disalin!' : 'Salin Nominal'}
                 </button>
@@ -275,16 +265,12 @@ export const OrderPaymentPage: React.FC = () => {
         </section>
 
         {/* Proof Upload */}
-        <section className="bg-surface-card border border-border-ecru p-6 space-y-4">
+        <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
           <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
             Unggah Bukti Transfer
           </h2>
 
-          {proofError && (
-            <div className="p-3 bg-error-container/70 border border-error/40 text-error text-xs">
-              {proofError}
-            </div>
-          )}
+          {proofError && <AlertBanner variant="error">{proofError}</AlertBanner>}
 
           {order.paymentProofUrl && (
             <div className="space-y-2">
@@ -295,17 +281,17 @@ export const OrderPaymentPage: React.FC = () => {
               <img
                 src={order.paymentProofUrl}
                 alt="Bukti Transfer"
-                className="w-full max-h-56 object-contain border border-border-ecru bg-surface"
+                className="w-full max-h-56 object-contain rounded-xl border border-border-ecru bg-surface"
               />
             </div>
           )}
 
           {proofCompressionInfo && (
-            <p className="text-[11px] text-secondary">{proofCompressionInfo}</p>
+            <AlertBanner variant="success">{proofCompressionInfo}</AlertBanner>
           )}
 
           {!isPaid && !expired && (
-            <label className="block border border-dashed border-primary/50 bg-surface hover:bg-surface-sand transition-colors p-5 text-center cursor-pointer">
+            <label className="block border border-dashed border-primary/40 rounded-2xl bg-surface hover:bg-surface-sand transition-colors p-5 text-center cursor-pointer">
               <input
                 type="file"
                 accept="image/*"
@@ -332,13 +318,13 @@ export const OrderPaymentPage: React.FC = () => {
           <div className="pt-2 flex flex-wrap gap-3">
             <Link
               to="/account/orders"
-              className="flex-1 text-center py-2.5 border border-border-ecru text-[11px] font-label-uppercase uppercase tracking-wider text-primary hover:bg-surface-muted"
+              className={getButtonClassName({ variant: 'outline', size: 'sm', className: 'flex-1' })}
             >
               Semua Pesanan Saya
             </Link>
             <Link
               to="/curated-drops"
-              className="flex-1 text-center py-2.5 bg-primary text-on-primary text-[11px] font-label-uppercase uppercase tracking-wider hover:bg-neutral-800"
+              className={getButtonClassName({ variant: 'primary', size: 'sm', className: 'flex-1' })}
             >
               Belanja Lagi
             </Link>
@@ -347,7 +333,7 @@ export const OrderPaymentPage: React.FC = () => {
       </div>
 
       {/* Shipping & Items Summary */}
-      <section className="bg-surface-card border border-border-ecru p-6 space-y-4">
+      <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
         <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
           Detail Pengiriman &amp; Item
         </h2>
@@ -374,7 +360,12 @@ export const OrderPaymentPage: React.FC = () => {
             <p className="text-text-muted mb-1">Kurir &amp; Resi</p>
             <p className="text-primary font-medium uppercase">{order.courier}</p>
             <p className="text-text-muted mt-0.5">
-              No. Resi: {order.trackingNumber ? <span className="font-mono text-primary">{order.trackingNumber}</span> : 'Menunggu pengiriman'}
+              No. Resi:{' '}
+              {order.trackingNumber ? (
+                <span className="font-mono text-primary">{order.trackingNumber}</span>
+              ) : (
+                'Menunggu pengiriman'
+              )}
             </p>
           </div>
         </div>

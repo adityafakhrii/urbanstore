@@ -3,6 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { INDO_PROVINCES } from '../../utils/payment';
+import {
+  AlertBanner,
+  Button,
+  CustomSelect,
+  InputField,
+  TextareaField,
+  getButtonClassName,
+} from '../../components/ui';
 
 export const ProfilePage: React.FC = () => {
   const { user, profile, isAdmin, updateProfile, signOut } = useAuth();
@@ -29,6 +37,11 @@ export const ProfilePage: React.FC = () => {
     setAddress(profile.default_address || '');
     setPostalCode(profile.default_postal_code || '');
   }, [profile]);
+
+  const provinceOptions = [
+    ...INDO_PROVINCES.map((p) => ({ value: p, label: p })),
+    ...(province && !INDO_PROVINCES.includes(province) ? [{ value: province, label: province }] : []),
+  ];
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +73,13 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-8">
+    <div className="max-w-5xl mx-auto px-5 sm:px-8 py-8 sm:py-12 space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-ecru pb-6">
         <div>
           <span className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary block mb-1">
             AKUN URBANSTORE
           </span>
-          <h1 className="font-headline-sm text-headline-sm text-primary">
+          <h1 className="font-headline-sm text-2xl sm:text-3xl text-primary">
             Halo, {profile?.full_name || user?.email || 'Member'}
           </h1>
           <p className="font-body-sm text-xs text-text-muted mt-1">
@@ -74,158 +87,124 @@ export const ProfilePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {isAdmin && (
             <Link
               to="/admin/dashboard"
-              className="px-4 py-2 bg-primary text-on-primary font-label-uppercase text-[11px] uppercase tracking-wider"
+              className={getButtonClassName({ variant: 'primary', size: 'sm' })}
             >
               Buka Admin Console →
             </Link>
           )}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="px-4 py-2 border border-red-200 text-red-700 hover:bg-red-50 font-label-uppercase text-[11px] uppercase tracking-wider cursor-pointer"
-          >
+          <Button variant="danger" size="sm" onClick={handleLogout}>
             Keluar
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Quick Nav Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Link
           to="/account/orders"
-          className="p-5 bg-surface-card border border-border-ecru hover:border-primary transition-colors flex items-center justify-between"
+          className="p-5 sm:p-6 bg-surface-card border border-border-ecru rounded-2xl hover:border-primary transition-colors flex items-center justify-between"
         >
           <div>
             <p className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary">
               Riwayat Transaksi
             </p>
-            <p className="font-headline-sm text-lg text-primary mt-1">{orders.length} Pesanan</p>
+            <p className="font-headline-sm text-xl text-primary mt-1">{orders.length} Pesanan</p>
           </div>
-          <span className="material-symbols-outlined text-[24px] text-primary">receipt_long</span>
+          <div className="w-11 h-11 rounded-full bg-surface-sand flex items-center justify-center">
+            <span className="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
+          </div>
         </Link>
 
         <Link
           to="/wishlist"
-          className="p-5 bg-surface-card border border-border-ecru hover:border-primary transition-colors flex items-center justify-between"
+          className="p-5 sm:p-6 bg-surface-card border border-border-ecru rounded-2xl hover:border-primary transition-colors flex items-center justify-between"
         >
           <div>
             <p className="font-label-uppercase text-[10px] uppercase tracking-widest text-secondary">
               Koleksi Tersimpan
             </p>
-            <p className="font-headline-sm text-lg text-primary mt-1">{wishlistIds.length} Wishlist</p>
+            <p className="font-headline-sm text-xl text-primary mt-1">{wishlistIds.length} Wishlist</p>
           </div>
-          <span className="material-symbols-outlined text-[24px] text-primary">favorite</span>
+          <div className="w-11 h-11 rounded-full bg-surface-sand flex items-center justify-center">
+            <span className="material-symbols-outlined text-[22px] text-primary">favorite</span>
+          </div>
         </Link>
       </div>
 
       {/* Edit Profile & Address Form */}
-      <form onSubmit={handleSaveProfile} className="bg-surface-card border border-border-ecru p-6 sm:p-8 space-y-5">
+      <form
+        onSubmit={handleSaveProfile}
+        className="bg-surface-card border border-border-ecru rounded-2xl p-6 sm:p-8 space-y-5"
+      >
         <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
           Profil &amp; Alamat Pengiriman Default
         </h2>
 
-        {errorMsg && (
-          <div className="p-3 bg-error-container/70 border border-error/40 text-error text-xs">
-            {errorMsg}
-          </div>
-        )}
+        {errorMsg && <AlertBanner variant="error">{errorMsg}</AlertBanner>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-body-sm text-xs text-text-muted mb-1">Nama Lengkap</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-            />
-          </div>
-          <div>
-            <label className="block font-body-sm text-xs text-text-muted mb-1">No. WhatsApp</label>
-            <input
-              type="tel"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-body-sm text-xs text-text-muted mb-1">Provinsi Default</label>
-            <select
-              value={province}
-              onChange={(e) => setProvince(e.target.value)}
-              className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-            >
-              <option value="">Pilih Provinsi</option>
-              {INDO_PROVINCES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-              {province && !INDO_PROVINCES.includes(province) && (
-                <option value={province}>{province}</option>
-              )}
-            </select>
-          </div>
-          <div>
-            <label className="block font-body-sm text-xs text-text-muted mb-1">Kota / Kabupaten</label>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Contoh: Jakarta Selatan"
-              className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-body-sm text-xs text-text-muted mb-1">Kecamatan</label>
-            <input
-              type="text"
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              placeholder="Contoh: Kebayoran Baru"
-              className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-            />
-          </div>
-          <div>
-            <label className="block font-body-sm text-xs text-text-muted mb-1">Kode Pos</label>
-            <input
-              type="text"
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              placeholder="12190"
-              className="w-full h-11 bg-surface border border-border-ecru px-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block font-body-sm text-xs text-text-muted mb-1">Alamat Jalan Lengkap</label>
-          <textarea
-            rows={3}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="w-full bg-surface border border-border-ecru p-3 text-body-sm text-primary focus:outline-none focus:border-primary rounded-DEFAULT"
+          <InputField
+            label="Nama Lengkap"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+          <InputField
+            label="No. WhatsApp"
+            type="tel"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-6 py-3 bg-primary text-on-primary font-label-uppercase text-label-uppercase uppercase tracking-wider hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <CustomSelect
+            label="Provinsi Default"
+            value={province}
+            onChange={setProvince}
+            options={provinceOptions}
+            placeholder="Pilih Provinsi"
+          />
+          <InputField
+            label="Kota / Kabupaten"
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Contoh: Jakarta Selatan"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <InputField
+            label="Kecamatan"
+            type="text"
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            placeholder="Contoh: Kebayoran Baru"
+          />
+          <InputField
+            label="Kode Pos"
+            type="text"
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            placeholder="12190"
+          />
+        </div>
+
+        <TextareaField
+          label="Alamat Jalan Lengkap"
+          rows={3}
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+
+        <Button type="submit" variant="primary" size="md" disabled={saving}>
           {saving ? 'Menyimpan...' : 'Simpan Perubahan Profil'}
-        </button>
+        </Button>
       </form>
     </div>
   );

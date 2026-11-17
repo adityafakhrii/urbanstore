@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { QuickBagDrawer } from '../components/QuickBagDrawer';
 import { SizeGuideModal } from '../components/SizeGuideModal';
 import { ToastBanner } from '../components/ToastBanner';
 import { useStore } from '../context/StoreContext';
@@ -17,7 +16,6 @@ export const StorefrontLayout: React.FC = () => {
         <Outlet />
       </main>
       <Footer />
-      <QuickBagDrawer />
       <SizeGuideModal isOpen={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} />
       <ToastBanner />
     </div>

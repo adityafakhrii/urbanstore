@@ -13,6 +13,7 @@ import { CatalogPage } from './pages/public/CatalogPage';
 import { ProductDetailPage } from './pages/public/ProductDetailPage';
 import { WishlistPage } from './pages/public/WishlistPage';
 import { AboutPage } from './pages/public/AboutPage';
+import { CartPage } from './pages/public/CartPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 
@@ -77,6 +78,7 @@ export function App() {
             <Route path="curated-drops" element={<CatalogPage categoryPage="curated-drops" />} />
             <Route path="product/:productId" element={<ProductDetailPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="cart" element={<CartPage />} />
             <Route path="about" element={<AboutPage />} />
 
             {/* Checkout, Payment & Invoice Routes */}

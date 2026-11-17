@@ -35,7 +35,7 @@ const CATALOG_PATHS = ['/women', '/men', '/bags', '/shoes', '/curated-drops'];
 
 export const Header: React.FC = () => {
   const { user, profile, isAdmin } = useAuth();
-  const { totalCartCount, wishlistIds, setBagDrawerOpen, setSizeGuideOpen } = useStore();
+  const { totalCartCount, wishlistIds, setSizeGuideOpen } = useStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -225,17 +225,16 @@ export const Header: React.FC = () => {
                 )}
               </Link>
 
-              <button
-                type="button"
-                onClick={() => setBagDrawerOpen(true)}
-                aria-label="Shopping Bag"
-                className="p-1.5 text-on-surface hover:text-secondary transition-colors relative cursor-pointer"
+              <Link
+                to="/cart"
+                aria-label="Keranjang Belanja"
+                className="p-1.5 text-on-surface hover:text-secondary transition-colors relative"
               >
                 <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
                 <span className="absolute top-0.5 right-0 bg-primary text-on-primary font-label-uppercase text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                   {formattedCartCount}
                 </span>
-              </button>
+              </Link>
 
               <Link
                 to="/account/orders"
@@ -259,7 +258,7 @@ export const Header: React.FC = () => {
                   onError={handleImageError}
                   src={BRAND_ASSETS.avatar}
                 />
-                <span className="hidden sm:inline-block font-label-uppercase text-[10px] uppercase tracking-wider px-2 py-0.5 border border-border-ecru bg-surface-card text-primary">
+                <span className="hidden sm:inline-block font-label-uppercase text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-border-ecru bg-surface-card text-primary">
                   {user ? (isAdmin ? 'ADMIN' : 'MEMBER') : 'MASUK'}
                 </span>
               </Link>

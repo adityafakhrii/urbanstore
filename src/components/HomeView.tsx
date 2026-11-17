@@ -74,7 +74,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* CTA Buttons & Size Guide Link */}
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-12">
             <a
-              className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-8 bg-primary text-on-primary font-label-uppercase text-label-uppercase tracking-[0.14em] uppercase transition-all duration-300 hover:bg-neutral-800 hover:shadow-lg shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-8 rounded-xl bg-primary text-on-primary font-label-uppercase text-label-uppercase tracking-[0.14em] uppercase transition-all duration-300 hover:bg-neutral-800 hover:shadow-lg shadow-sm"
               href="#weekly-edit"
             >
               Explore Drop Baru

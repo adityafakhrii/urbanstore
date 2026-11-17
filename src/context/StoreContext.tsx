@@ -23,8 +23,6 @@ interface StoreContextValue {
   wishlistIds: string[];
   orders: OrderRecord[];
   totalCartCount: number;
-  bagDrawerOpen: boolean;
-  setBagDrawerOpen: (open: boolean) => void;
   sizeGuideOpen: boolean;
   setSizeGuideOpen: (open: boolean) => void;
   toastMessage: string | null;
@@ -58,7 +56,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadFromStorage<OrderRecord[]>(STORAGE_KEYS.orders, [])
   );
 
-  const [bagDrawerOpen, setBagDrawerOpen] = useState<boolean>(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -263,8 +260,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wishlistIds,
         orders,
         totalCartCount,
-        bagDrawerOpen,
-        setBagDrawerOpen,
         sizeGuideOpen,
         setSizeGuideOpen,
         toastMessage,
