@@ -72,7 +72,7 @@ export const Header: React.FC = () => {
   const formattedCartCount = totalCartCount < 10 ? `0${totalCartCount}` : `${totalCartCount}`;
 
   return (
-    <header className="fixed top-0 w-full z-50">
+    <header className="sticky top-0 w-full z-50 print:hidden">
       {/* Top Announcement Bar */}
       <div className="w-full bg-[#FCEAE6] border-b border-border-ecru py-1.5 px-margin-mobile lg:px-margin">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between text-on-surface">
@@ -108,7 +108,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="h-20 bg-background/95 backdrop-blur-md border-b border-border-ecru shadow-[0_1px_8px_rgba(0,0,0,0.02)]">
+      <div className="h-16 sm:h-[72px] bg-background/95 backdrop-blur-md border-b border-border-ecru shadow-[0_1px_8px_rgba(0,0,0,0.02)]">
         <div className="max-w-[1440px] h-full mx-auto px-margin-mobile lg:px-margin flex items-center justify-between gap-gutter">
           {/* Mobile Hamburger + Desktop Nav */}
           <div className="flex items-center gap-3 shrink-0">

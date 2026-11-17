@@ -52,9 +52,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <div className="flex flex-col w-full">
       {/* HERO SECTION */}
       <section className="relative w-full bg-surface-sand/40 overflow-hidden">
-        <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pt-10 lg:pt-16 pb-6 flex flex-col items-center text-center">
+        <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pt-12 lg:pt-16 pb-8 flex flex-col items-center text-center">
           {/* Eyebrow Badge */}
-          <div className="inline-flex items-center gap-2 mb-6 px-3.5 py-1 rounded-full bg-surface-container border border-border-ecru">
+          <div className="inline-flex items-center gap-2 mb-5 px-3.5 py-1 rounded-full bg-surface-container border border-border-ecru">
             <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
             <span className="font-label-uppercase text-label-uppercase uppercase tracking-[0.2em] text-on-surface-variant text-[10px]">
               CURATED DROP — VOL. 01
@@ -62,13 +62,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           {/* Headline */}
-          <h1 className="font-display-hero text-[42px] leading-[48px] sm:text-[56px] sm:leading-[62px] lg:text-[68px] lg:leading-[74px] text-primary tracking-[-0.025em] max-w-4xl mx-auto">
+          <h1 className="font-display-hero text-[42px] leading-[48px] sm:text-[56px] sm:leading-[62px] lg:text-[64px] lg:leading-[70px] text-primary tracking-[-0.025em] max-w-3xl mx-auto">
             Fit check approved. <span className="italic font-normal text-secondary">Mewah tapi nggak ribet.</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="font-body-lg text-body-lg text-text-muted max-w-2xl mx-auto mt-5 mb-8">
-            Outfit timeless yang kepake terus. Pas di badan, masuk di budget, tinggal mix-and-match.
+          <p className="font-body-lg text-body-lg text-text-muted max-w-xl mx-auto mt-4 mb-8">
+            Outfit timeless siap mix-and-match. Nyaman di badan, pas di budget.
           </p>
 
           {/* CTA Buttons & Size Guide Link */}

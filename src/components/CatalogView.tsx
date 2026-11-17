@@ -79,56 +79,41 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   // Header metadata based on active navigation tab
   const collectionMeta = useMemo(() => {
-    const countLabel = `${baseCatalogProducts.length} Kurasi Pilihan`;
+    const countLabel = `${baseCatalogProducts.length} Produk`;
     switch (activePage) {
       case 'men':
         return {
           breadcrumbCategory: 'Pria',
-          breadcrumbLeaf: 'Tailored Menswear',
-          edition: 'EDISI 04 / MODERN MENSWEAR ATELIER',
-          title: 'Kapsul Kurasi Cowok',
-          description:
-            'Potongan relaxed tailoring dari katun twill organik, linen Eropa, dan aksesori kulit calfskin. Fit rapi tanpa kaku, langsung siap dipakai harian.',
+          title: 'Koleksi Pria',
+          description: 'Tailoring santai dari linen & katun organik untuk keseharian.',
           totalText: countLabel,
         };
       case 'bags':
         return {
           breadcrumbCategory: 'Tas',
-          breadcrumbLeaf: 'Leather Goods',
-          edition: 'EDISI 04 / ITALIAN CALFSKIN ARCHIVE',
-          title: 'Koleksi Tas Kulit Kurasi',
-          description:
-            'Siluet struktural dari full-grain Italian calfskin dengan hardware brass minimalis. Tahan banting buat ngantor sampe hangout malam.',
+          title: 'Tas Kulit Kurasi',
+          description: 'Siluet struktural calfskin dengan hardware brass minimalis.',
           totalText: countLabel,
         };
       case 'shoes':
         return {
           breadcrumbCategory: 'Sepatu',
-          breadcrumbLeaf: 'Artisanal Footwear',
-          edition: 'EDISI 04 / HANDWELTED FOOTWEAR',
-          title: 'Sepatu Kulit & Loafers',
-          description:
-            'Konstruksi Blake-stitched dengan bantalan insole memory foam berlapis calfskin. Empuk dari langkah pertama tanpa drama lecet.',
+          title: 'Sepatu & Loafers',
+          description: 'Konstruksi Blake-stitched yang ringan dan nyaman seharian.',
           totalText: countLabel,
         };
       case 'curated-drops':
         return {
           breadcrumbCategory: 'Curated Drops',
-          breadcrumbLeaf: 'Vol. 01 Archive',
-          edition: 'CURATED DROP — VOL. 01 / FULL ARCHIVE',
-          title: 'Edisi Terbatas Minggu Ini',
-          description:
-            'Rangkaian kapsul lengkap pria dan wanita dari rilisan terbaru UrbanStore Atelier. Diproduksi terbatas dalam batch kecil.',
+          title: 'Curated Drops — Vol. 01',
+          description: 'Rilisan kapsul terbatas pria & wanita dari UrbanStore Atelier.',
           totalText: countLabel,
         };
       default:
         return {
           breadcrumbCategory: 'Wanita',
-          breadcrumbLeaf: 'Kapsul Kurasi',
-          edition: 'EDISI 04 / AUTUMN-WARM MINIMAL',
-          title: 'Kapsul Kurasi Cewek',
-          description:
-            'Siluet timeless dari bahan linen alami Eropa, sutra twill halus, dan kasmir organik. Cutting relaxed fit yang nyaman di badan, auto-approved buat daily wear.',
+          title: 'Koleksi Wanita',
+          description: 'Siluet timeless berbahan linen Eropa, sutra, dan kasmir.',
           totalText: countLabel,
         };
     }
@@ -401,10 +386,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   return (
     <div className="flex flex-col w-full">
       {/* Top Collection Header & Breadcrumbs */}
-      <section className="w-full bg-surface-bright pb-space-lg">
+      <section className="w-full bg-surface-bright pt-8 pb-6 sm:pt-10 sm:pb-7">
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin">
           {/* Breadcrumb Bar */}
-          <nav className="flex items-center gap-2 pt-space-md pb-space-sm font-label-uppercase text-label-uppercase text-text-muted">
+          <nav className="flex items-center gap-2 mb-3 font-label-uppercase text-[11px] text-text-muted">
             <button
               type="button"
               onClick={() => onNavigate('home')}
@@ -413,46 +398,30 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               Home
             </button>
             <span className="text-surface-dim">/</span>
-            <button
-              type="button"
-              onClick={() => onNavigate(activePage)}
-              className="hover:text-primary transition-colors cursor-pointer uppercase"
-            >
+            <span className="text-primary font-medium uppercase">
               {collectionMeta.breadcrumbCategory}
-            </button>
-            <span className="text-surface-dim">/</span>
-            <span className="text-primary font-semibold">{collectionMeta.breadcrumbLeaf}</span>
+            </span>
           </nav>
 
-          {/* Headline & Editorial Narrative */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg pt-space-sm pb-space-md">
-            <div className="max-w-2xl">
-              <span className="font-label-uppercase text-label-uppercase text-secondary uppercase tracking-widest block mb-2">
-                {collectionMeta.edition}
-              </span>
-              <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight mb-3">
+          {/* Clean Concise Headline */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h1 className="font-headline-lg text-3xl sm:text-4xl text-primary tracking-tight mb-1.5">
                 {collectionMeta.title}
               </h1>
-              <p className="font-body-md text-body-md text-text-muted max-w-xl">
+              <p className="font-body-md text-sm text-text-muted max-w-xl">
                 {collectionMeta.description}
               </p>
             </div>
-            <div className="flex items-baseline gap-4 self-start lg:self-end">
-              <div className="bg-surface-container-low px-4 py-2 rounded-DEFAULT">
-                <span className="font-label-uppercase text-label-uppercase text-text-muted block text-[10px]">
-                  Total Kurasi
-                </span>
-                <span className="font-body-md text-body-md font-medium text-primary">
-                  {collectionMeta.totalText}
-                </span>
-              </div>
-            </div>
+            <span className="font-label-uppercase text-[11px] uppercase tracking-wider text-text-muted bg-surface-container-low px-3.5 py-1.5 rounded-full self-start sm:self-end shrink-0">
+              {collectionMeta.totalText}
+            </span>
           </div>
         </div>
       </section>
 
       {/* Category Filter Bar & Control Bar */}
-      <div className="sticky top-20 z-40 bg-surface-bright/95 backdrop-blur-md shadow-sm">
+      <div className="sticky top-[92px] sm:top-[100px] z-30 bg-surface-bright/95 backdrop-blur-md border-y border-border-ecru/70">
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-space-md">
           {/* Subcategory Pills */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
@@ -824,33 +793,28 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             {/* Editorial Copy & Fit Philosophy */}
             <div className="lg:col-span-7 lg:pl-space-lg">
               <span className="font-label-uppercase text-label-uppercase uppercase tracking-widest text-secondary block mb-2">
-                UKURAN PRESISI &amp; TRANSPARAN
+                SIZE GUIDE ANTI-ZONK
               </span>
-              <h2 className="font-headline-md text-headline-md text-primary mb-3">
-                Fit Anti-Zonk — Nggak Perlu Nebak Ukuran Badan.
+              <h2 className="font-headline-md text-headline-md text-primary mb-2.5">
+                Fit Presisi Tanpa Nebak Ukuran
               </h2>
-              <p className="font-body-md text-body-md text-text-muted mb-space-md max-w-xl">
-                Nggak ada lagi drama salah size. Tiap outfit kami ukur detail dari lingkar dada, pinggang, sampe
-                panjang baju. Dicocokin langsung sama postur tubuh nyata biar pas di badan kamu.
+              <p className="font-body-md text-body-md text-text-muted mb-space-md max-w-lg">
+                Setiap siluet diukur detail agar pas sesuai postur tubuh tropis.
               </p>
 
               {/* Metric Key Highlights */}
-              <div className="grid grid-cols-3 gap-4 mb-space-md py-3">
+              <div className="grid grid-cols-3 gap-4 mb-space-md py-3 border-y border-border-ecru/60">
                 <div>
-                  <span className="font-headline-sm text-headline-sm text-primary block">Tuker 30 Hari</span>
-                  <span className="font-body-sm text-[12px] text-text-muted">
-                    Salah ukuran? Tuker santai tanpa ribet
-                  </span>
+                  <span className="font-headline-sm text-headline-sm text-primary block">30 Hari</span>
+                  <span className="font-body-sm text-[12px] text-text-muted">Bebas tukar size</span>
                 </div>
                 <div>
                   <span className="font-headline-sm text-headline-sm text-primary block">100%</span>
-                  <span className="font-body-sm text-[12px] text-text-muted">Bahan serat alami tersertifikasi</span>
+                  <span className="font-body-sm text-[12px] text-text-muted">Serat alami pilihan</span>
                 </div>
                 <div>
                   <span className="font-headline-sm text-headline-sm text-primary block">2mm</span>
-                  <span className="font-body-sm text-[12px] text-text-muted">
-                    Jahitan french seam rapi &amp; presisi
-                  </span>
+                  <span className="font-body-sm text-[12px] text-text-muted">Jahitan presisi</span>
                 </div>
               </div>
 
