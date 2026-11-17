@@ -178,8 +178,16 @@ interface DbProductRow {
   fit_scale: Product['fitScale'];
 }
 
+export function formatThousandDot(amount: number | string): string {
+  const num =
+    typeof amount === 'number'
+      ? Math.max(0, Math.round(amount))
+      : Number(String(amount).replace(/\D/g, '')) || 0;
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export function formatRupiah(amount: number): string {
-  return `Rp ${amount.toLocaleString('id-ID')}`;
+  return `Rp ${formatThousandDot(amount)}`;
 }
 
 function mapDbProductToProduct(row: DbProductRow): Product {

@@ -10,7 +10,7 @@ import {
   updateProductPriceStockAdmin,
   updateVariantStockAdmin,
 } from '../../services/supabaseService';
-import { Button, ConfirmDialog, getButtonClassName } from '../../components/ui';
+import { Button, ConfirmDialog, CurrencyInputField, getButtonClassName } from '../../components/ui';
 
 export const AdminProductsPage: React.FC = () => {
   const { products, loadCatalog, showToast } = useStore();
@@ -150,16 +150,16 @@ export const AdminProductsPage: React.FC = () => {
                       </td>
                       <td className="p-4 uppercase text-text-muted">{p.category}</td>
                       <td className="p-4">
-                        <input
-                          type="number"
+                        <CurrencyInputField
+                          size="sm"
+                          containerClassName="w-40"
                           value={edit.price}
-                          onChange={(e) =>
+                          onValueChange={(nextPrice) =>
                             setProductPriceEdits((prev) => ({
                               ...prev,
-                              [p.id]: { ...edit, price: Number(e.target.value) },
+                              [p.id]: { ...edit, price: nextPrice },
                             }))
                           }
-                          className="w-32 h-9 px-3 rounded-xl bg-surface border border-border-ecru text-primary focus:outline-none focus:border-primary"
                         />
                       </td>
                       <td className="p-4">

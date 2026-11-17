@@ -7,7 +7,7 @@ import {
   formatRupiah,
   togglePromoAdmin,
 } from '../../services/supabaseService';
-import { Button, InputField, StatusBadge } from '../../components/ui';
+import { Button, CurrencyInputField, InputField, StatusBadge } from '../../components/ui';
 
 export const AdminPromosPage: React.FC = () => {
   const { showToast } = useStore();
@@ -15,8 +15,8 @@ export const AdminPromosPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [promoDescInput, setPromoDescInput] = useState('');
-  const [promoDiscountInput, setPromoDiscountInput] = useState('50000');
-  const [promoMinInput, setPromoMinInput] = useState('300000');
+  const [promoDiscountInput, setPromoDiscountInput] = useState<number>(50000);
+  const [promoMinInput, setPromoMinInput] = useState<number>(300000);
 
   const loadPromos = useCallback(async () => {
     setLoading(true);
@@ -80,19 +80,15 @@ export const AdminPromosPage: React.FC = () => {
           placeholder="URBAN25"
           className="uppercase font-mono"
         />
-        <InputField
+        <CurrencyInputField
           label="Potongan (IDR)"
-          type="number"
-          min={1000}
           value={promoDiscountInput}
-          onChange={(e) => setPromoDiscountInput(e.target.value)}
+          onValueChange={setPromoDiscountInput}
         />
-        <InputField
+        <CurrencyInputField
           label="Min. Subtotal"
-          type="number"
-          min={0}
           value={promoMinInput}
-          onChange={(e) => setPromoMinInput(e.target.value)}
+          onValueChange={setPromoMinInput}
         />
         <InputField
           label="Keterangan"

@@ -19,6 +19,7 @@ import {
   AlertBanner,
   Button,
   ColorPickerField,
+  CurrencyInputField,
   CustomSelect,
   InputField,
   TextareaField,
@@ -35,7 +36,7 @@ export const AdminProductFormPage: React.FC = () => {
 
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
-  const [price, setPrice] = useState('450000');
+  const [price, setPrice] = useState<number>(450000);
   const [subtitle, setSubtitle] = useState('');
   const [category, setCategory] = useState<Product['category']>('women');
   const [subcategory, setSubcategory] = useState<Product['subcategory']>('Dress & Setelan');
@@ -65,7 +66,7 @@ export const AdminProductFormPage: React.FC = () => {
     if (!existingProduct) return;
     setName(existingProduct.name);
     setSku(existingProduct.sku);
-    setPrice(String(existingProduct.price));
+    setPrice(existingProduct.price);
     setSubtitle(existingProduct.subtitle);
     setCategory(existingProduct.category);
     setSubcategory(existingProduct.subcategory);
@@ -265,13 +266,11 @@ export const AdminProductFormPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <InputField
+          <CurrencyInputField
             label="Harga (IDR)"
             required
-            type="number"
-            min={0}
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onValueChange={setPrice}
           />
           <CustomSelect
             label="Kategori"

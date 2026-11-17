@@ -523,3 +523,96 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     </div>
   );
 };
+
+/* -------------------------------------------------------------------------- */
+/* 7. CurrencyInputField (Auto Thousand Dot "." Formatting, Rp Prefix)        */
+/* -------------------------------------------------------------------------- */
+
+function formatDotGrouped(digitsOnly: string): string {
+  if (!digitsOnly) return '';
+  const strippedLeading = digitsOnly.replace(/^0+(?=\d)/, '');
+  return strippedLeading.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+export interface CurrencyInputFieldProps extends BaseFieldProps {
+  value: number | string;
+  onValueChange: (numericValue: number) => void;
+  placeholder?: string;
+  size?: 'sm' | 'md';
+  id?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+export const CurrencyInputField: React.FC<CurrencyInputFieldProps> = ({
+  label,
+  hint,
+  error,
+  required,
+  containerClassName = '',
+  value,
+  onValueChange,
+  placeholder = '0',
+  size = 'md',
+  id,
+  disabled = false,
+  className = '',
+}) => {
+  const autoId = useId();
+  const fieldId = id || autoId;
+
+  const rawDigits =
+    typeof value === 'number'
+      ? value > 0
+        ? String(Math.round(value))
+        : value === 0
+        ? '0'
+        : ''
+      : String(value).replace(/\D/g, '');
+
+  const displayValue = rawDigits === '' ? '' : formatDotGrouped(rawDigits);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextDigits = e.target.value.replace(/\D/g, '');
+    if (!nextDigits) {
+      onValueChange(0);
+      return;
+    }
+    onValueChange(Number(nextDigits));
+  };
+
+  return (
+    <div className={containerClassName}>
+      <FieldLabel htmlFor={fieldId} label={label} required={required} />
+      <div className="relative">
+        <span
+          className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-medium text-text-muted ${
+            size === 'sm' ? 'text-[11px]' : 'text-xs'
+          }`}
+        >
+          Rp
+        </span>
+        <input
+          id={fieldId}
+          type="text"
+          inputMode="numeric"
+          required={required}
+          disabled={disabled}
+          value={displayValue}
+          onChange={handleChange}
+          placeholder={placeholder}
+          className={[
+            CONTROL_BASE,
+            size === 'sm' ? 'h-9 pl-9 pr-3 text-xs' : 'h-11 pl-10 pr-3.5',
+            'tabular-nums font-medium',
+            error ? CONTROL_ERROR : '',
+            className,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        />
+      </div>
+      <FieldFooter hint={hint} error={error} />
+    </div>
+  );
+};
