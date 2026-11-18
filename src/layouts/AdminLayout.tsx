@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { ToastBanner } from '../components/ToastBanner';
 import { Button, getButtonClassName } from '../components/ui';
+import { BRAND_ASSETS } from '../data/products';
 
 const ADMIN_NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -30,18 +31,22 @@ export const AdminLayout: React.FC = () => {
     <div className="min-h-screen flex bg-surface font-body-md text-on-surface antialiased">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-border-ecru bg-surface-card sticky top-0 h-screen print:hidden">
-        <div className="px-6 h-16 flex items-center justify-between border-b border-border-ecru">
-          <div>
-            <Link
-              to="/admin/dashboard"
-              className="font-headline-sm text-base tracking-[0.2em] text-primary block"
-            >
-              URBANSTORE
-            </Link>
-            <span className="font-label-uppercase text-[9px] uppercase tracking-widest text-secondary">
-              Admin Console
-            </span>
-          </div>
+        <div className="px-5 h-16 flex items-center justify-between border-b border-border-ecru">
+          <Link to="/admin/dashboard" className="flex items-center gap-2.5">
+            <img
+              src={BRAND_ASSETS.logo}
+              alt="UrbanStore Logo"
+              className="h-8 w-8 rounded-xl object-cover border border-border-ecru shrink-0"
+            />
+            <div>
+              <span className="font-headline-sm text-sm tracking-[0.18em] text-primary block leading-tight">
+                URBANSTORE
+              </span>
+              <span className="font-label-uppercase text-[9px] uppercase tracking-widest text-secondary block">
+                Admin Console
+              </span>
+            </div>
+          </Link>
         </div>
 
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">

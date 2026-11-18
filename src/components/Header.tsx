@@ -172,11 +172,10 @@ export const Header: React.FC = () => {
 
           {/* Center Brand Logo */}
           <div className="flex items-center justify-center shrink-0">
-            <Link to="/" className="flex items-center gap-space-sm">
+            <Link to="/" className="flex items-center gap-2.5 group">
               <img
-                alt="UrbanStore Editorial Logo"
-                className="h-8 w-auto object-contain"
-                referrerPolicy="no-referrer"
+                alt="UrbanStore US Lettermark Logo"
+                className="h-9 w-9 rounded-xl object-cover border border-border-ecru shadow-xs group-hover:scale-105 transition-transform"
                 onError={handleImageError}
                 src={BRAND_ASSETS.logo}
               />

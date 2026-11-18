@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { ToastBanner } from '../components/ToastBanner';
+import { BRAND_ASSETS } from '../data/products';
 
 export const AuthLayout: React.FC = () => {
   return (
@@ -9,9 +10,16 @@ export const AuthLayout: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link
             to="/"
-            className="font-headline-sm text-lg tracking-[0.22em] text-primary hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2.5 hover:opacity-85 transition-opacity"
           >
-            URBANSTORE
+            <img
+              src={BRAND_ASSETS.logo}
+              alt="UrbanStore Logo"
+              className="h-8 w-8 rounded-xl object-cover border border-border-ecru"
+            />
+            <span className="font-headline-sm text-lg tracking-[0.22em] text-primary">
+              URBANSTORE
+            </span>
           </Link>
           <Link
             to="/"

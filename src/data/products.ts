@@ -76,7 +76,7 @@ export const PRODUCT_BESTSELLER_TABS: NonNullable<Product['bestsellerTab']>[] = 
 ];
 
 export const BRAND_ASSETS = {
-  logo: 'https://lh3.googleusercontent.com/aida/ALJJyrBt5s65uqwk6n29eOl52urUKklI0O-DGI7A8G7PQ942xDTftriArdNBuQVDvAtSXeaJb15a0javsL716txQv_ZTAvLyz8EpBLRTeVJDt_XtkU1lH2dpK0Gkd4nF8NvQ7-6wHxbkw7gPnARHyXu-vQ2nRcZhnph-2He4S_khPvLhSv1vvj_SMp6WMdA7w6m-VbXeuu6cjF6EXMW1EAkBJnujyuDisOb14LvMXrkK6ite3w',
+  logo: '/images/urbanstore-logo.jpg',
   avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7rJTmJf41qRBRCovdyIHQbBvjZywgrylnOl3AROoVPjz1E3_txlARVNSeoFqwFqygIYDVwKJ8-3APFkYNlnLCsqPJtnnpdxDXDU92NMaAYeW5pzhjyEPGJoP-d9C-oCh3Lqs9z5LIgrooLUj-1FtA-SCuNI5tHZSHwbPEVl2R8oEjt02BmJs542-qowTLHSDz36INWgYujZrQBGPI8D7IHJFxjkA3IkGC-xt7aeMZ',
   heroLineup: '/images/hero-lineup.jpg',
   leatherBanner: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_6VwvsXVQVaiDYbpRPxck-liQri5GZIEVI03NdvsC2CwAOdYlqEfUw5sOy-35TQNq-0VXFH3A42ZG3-b-fd6KI0SO2DoVFzCWmKU0Qz4k2Lcb6wNnH-wqB8J5zEzhQzjoeLA_ARAg4fbTKNdhnCIj2xWdzmBYOFaXFa_PJT8pDwVxzwidJFebgmwbbr-FHb5d2a3eV6_FpgDYwFD8MrusZja2CkpP4YMFKizWHcRx',
