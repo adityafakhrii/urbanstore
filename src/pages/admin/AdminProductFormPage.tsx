@@ -11,9 +11,11 @@ import {
 } from '../../data/products';
 import {
   createProductAdmin,
+  formatRupiah,
   updateProductAdmin,
   uploadProductImageAdmin,
 } from '../../services/supabaseService';
+import { generateAdminProductDescription } from '../../services/aiAssistantService';
 import { MAX_IMAGE_SIZE_BYTES, formatBytes } from '../../utils/image';
 import {
   AlertBanner,
@@ -60,6 +62,8 @@ export const AdminProductFormPage: React.FC = () => {
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [aiDescError, setAiDescError] = useState<string | null>(null);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -203,6 +207,46 @@ export const AdminProductFormPage: React.FC = () => {
     await loadCatalog();
     showToast(isEdit ? 'Perubahan produk disimpan!' : 'Produk baru berhasil ditambahkan!');
     navigate('/admin/products');
+  };
+
+  const handleGenerateAiDescription = async () => {
+    if (!name.trim()) {
+      const msg = 'Isi Nama Produk terlebih dahulu agar AI bisa membuat deskripsi yang akurat.';
+      setAiDescError(msg);
+      showToast(msg);
+      return;
+    }
+
+    setAiDescError(null);
+    setGeneratingDesc(true);
+    const categoryLabel =
+      PRODUCT_CATEGORIES.find((c) => c.value === category)?.label || category;
+
+    const res = await generateAdminProductDescription({
+      name: name.trim(),
+      sku: sku.trim().toUpperCase(),
+      priceFormatted: formatRupiah(Math.max(0, Number(price) || 0)),
+      category: categoryLabel,
+      subcategory,
+      fabric,
+      fitScale,
+      colorName: colorName.trim() || 'Default',
+      sizes: sizesText.trim() || 'S, M, L',
+      subtitle: subtitle.trim(),
+      fitNote: fitNote.trim(),
+      modelInfo: modelInfo.trim(),
+      fabricDetails: fabricDetailsText.trim(),
+      careInstructions: careText.trim(),
+    });
+    setGeneratingDesc(false);
+
+    if (res.error || !res.description) {
+      setAiDescError(res.error || 'Gagal membuat deskripsi otomatis.');
+      return;
+    }
+
+    setDescription(res.description);
+    showToast('Deskripsi produk berhasil dibuat oleh AI!');
   };
 
   if (isEdit && !existingProduct && products.length > 0) {
@@ -456,14 +500,35 @@ export const AdminProductFormPage: React.FC = () => {
           onChange={(e) => setModelInfo(e.target.value)}
         />
 
-        <TextareaField
-          label="Deskripsi Produk"
-          required
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Jelaskan siluet, material, dan keunggulan produk..."
-        />
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-body-sm text-xs font-medium text-text-muted">
+              Deskripsi Produk <span className="text-secondary">*</span>
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={generatingDesc}
+              onClick={() => void handleGenerateAiDescription()}
+            >
+              <span className="material-symbols-outlined text-[15px] text-secondary">
+                auto_awesome
+              </span>
+              {generatingDesc ? 'Membuat Deskripsi AI...' : 'Generate Deskripsi AI'}
+            </Button>
+          </div>
+
+          {aiDescError && <AlertBanner variant="error">{aiDescError}</AlertBanner>}
+
+          <TextareaField
+            required
+            rows={5}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Jelaskan siluet, material, dan keunggulan produk... atau klik Generate Deskripsi AI di atas."
+            hint="Maksimal 3 paragraf ringkas berdasarkan data produk yang telah diisi."
+          />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextareaField

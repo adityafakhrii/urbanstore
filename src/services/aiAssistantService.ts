@@ -267,6 +267,7 @@ export async function sendCustomerAiMessage(params: {
   sizeGuides: SizeGuideRow[];
 }): Promise<{ reply?: string; modelUsed?: string; error?: string }> {
   const apiKey = (
+    import.meta.env.CS_GEMINI_API_KEY ||
     import.meta.env.GEMINI_API_KEY ||
     import.meta.env.VITE_GEMINI_API_KEY ||
     ''
@@ -275,7 +276,7 @@ export async function sendCustomerAiMessage(params: {
   if (!apiKey) {
     return {
       error:
-        'Layanan Asisten AI belum aktif karena GEMINI_API_KEY belum terdeteksi di konfigurasi aplikasi.',
+        'Layanan Asisten AI belum aktif karena CS_GEMINI_API_KEY belum terdeteksi di konfigurasi aplikasi.',
     };
   }
 
@@ -341,4 +342,112 @@ export async function sendCustomerAiMessage(params: {
   return {
     error: 'Maaf, asisten AI sedang mengalami gangguan koneksi. Silakan coba lagi sebentar lagi.',
   };
+}
+
+export interface AdminProductDescriptionInput {
+  name: string;
+  sku?: string;
+  priceFormatted: string;
+  category: string;
+  subcategory: string;
+  fabric: string;
+  fitScale: string;
+  colorName: string;
+  sizes: string;
+  subtitle?: string;
+  fitNote?: string;
+  modelInfo?: string;
+  fabricDetails?: string;
+  careInstructions?: string;
+}
+
+export async function generateAdminProductDescription(
+  input: AdminProductDescriptionInput
+): Promise<{ description?: string; error?: string }> {
+  const apiKey = (import.meta.env.ADMIN_GEMINI_API_KEY || '').trim();
+
+  if (!apiKey) {
+    return {
+      error:
+        'ADMIN_GEMINI_API_KEY belum terdeteksi di .env. Pastikan sudah ditambahkan lalu restart dev server.',
+    };
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  const systemInstruction = `Kamu adalah Senior Copywriter & Merchandiser untuk brand fashion UrbanStore Indonesia (gaya editorial quiet luxury modern).
+
+TUGAS:
+Buatkan deskripsi produk yang menarik minat beli pelanggan, jelas, informatif, dan elegan berdasarkan data form produk yang diberikan oleh Admin.
+
+ATURAN WAJIB:
+1. MAKSIMAL 3 PARAGRAF PENDEK: Tulis 2 hingga maksimal 3 paragraf singkat dan padat (total ideal 60–110 kata). Jangan terlalu panjang.
+2. DILARANG MENGADA-ADA: Gunakan HANYA fakta dari data input (nama, harga, kategori, bahan, warna, ukuran, fit, detail bahan/perawatan jika ada). Jangan mengarang klaim teknis, persentase komposisi baru, garansi palsu, atau dimensi yang tidak tertulis di input.
+3. BAHASA INDONESIA NATURAL & PERSUASIF: Fokus pada keunggulan siluet, kenyamanan pemakaian, kemudahan mix-and-match, dan nilai produk agar pembaca tertarik membeli.
+4. FORMAT BERSIH: DILARANG menggunakan tanda bintang (* atau **), pagar (#), backtick (\`), atau underscore (_). Tulis hanya teks paragraf bersih yang dipisahkan baris kosong.`;
+
+  const prompt = [
+    `Buatkan deskripsi produk UrbanStore untuk data berikut:`,
+    `- Nama Produk: ${input.name}`,
+    input.sku ? `- SKU: ${input.sku}` : null,
+    `- Harga: ${input.priceFormatted}`,
+    `- Kategori: ${input.category} / ${input.subcategory}`,
+    `- Bahan Utama: ${input.fabric}`,
+    `- Skala Fit: ${input.fitScale}`,
+    `- Warna: ${input.colorName}`,
+    `- Ukuran Tersedia: ${input.sizes}`,
+    input.subtitle ? `- Subtitle: ${input.subtitle}` : null,
+    input.fitNote ? `- Fit Note: ${input.fitNote}` : null,
+    input.modelInfo ? `- Info Ukuran/Model: ${input.modelInfo}` : null,
+    input.fabricDetails ? `- Detail Bahan:\n${input.fabricDetails}` : null,
+    input.careInstructions ? `- Cara Rawat:\n${input.careInstructions}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let lastErrorMsg = '';
+
+  for (const model of FREE_GEMINI_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction,
+          temperature: 0.45,
+          maxOutputTokens: 380,
+        },
+      });
+
+      const rawText = (response.text || '').trim();
+      if (!rawText) {
+        lastErrorMsg = 'Respons AI kosong.';
+        continue;
+      }
+
+      // Limit cleanly to max 3 paragraphs
+      const cleaned = sanitizeAiReply(rawText);
+      const paragraphs = cleaned
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .slice(0, 3);
+
+      return { description: paragraphs.join('\n\n') };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      lastErrorMsg = msg;
+      console.warn(`[Admin AI Description] Model ${model} gagal:`, msg);
+      if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+        return { error: 'ADMIN_GEMINI_API_KEY tidak valid. Periksa key di file .env.' };
+      }
+      continue;
+    }
+  }
+
+  if (lastErrorMsg.includes('429') || lastErrorMsg.includes('RESOURCE_EXHAUSTED')) {
+    return { error: 'Kuota ADMIN_GEMINI_API_KEY sedang penuh sementara. Coba lagi sebentar lagi.' };
+  }
+
+  return { error: 'Gagal membuat deskripsi AI. Periksa koneksi atau ADMIN_GEMINI_API_KEY.' };
 }

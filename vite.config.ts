@@ -6,7 +6,14 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
-    envPrefix: ['VITE_', 'SUPABASE_PROJECT_', 'SUPABASE_PUBLISHABLE_', 'GEMINI_'],
+    envPrefix: [
+      'VITE_',
+      'SUPABASE_PROJECT_',
+      'SUPABASE_PUBLISHABLE_',
+      'GEMINI_',
+      'ADMIN_GEMINI_',
+      'CS_GEMINI_',
+    ],
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, '.'),
