@@ -55,8 +55,6 @@ export const AdminProductFormPage: React.FC = () => {
   const [fitNote, setFitNote] = useState('True to size');
   const [modelInfo, setModelInfo] = useState('Model TB 170cm memakai Size S.');
   const [description, setDescription] = useState('');
-  const [fabricDetailsText, setFabricDetailsText] = useState('');
-  const [careText, setCareText] = useState('');
 
   const [uploadingImg, setUploadingImg] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
@@ -87,8 +85,6 @@ export const AdminProductFormPage: React.FC = () => {
     setFitNote(existingProduct.fitNote);
     setModelInfo(existingProduct.modelInfo);
     setDescription(existingProduct.description);
-    setFabricDetailsText(existingProduct.fabricDetails.join('\n'));
-    setCareText(existingProduct.careInstructions.join('\n'));
   }, [existingProduct]);
 
   const handleUploadImage = async (
@@ -170,14 +166,8 @@ export const AdminProductFormPage: React.FC = () => {
       inStock: (Number(initialStock) || 0) > 0,
       stockLabel: 'Ready stock — langsung bungkus & kirim dlm 1-2 hari',
       description: description.trim(),
-      fabricDetails: fabricDetailsText
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean),
-      careInstructions: careText
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean),
+      fabricDetails: existingProduct?.fabricDetails || [],
+      careInstructions: existingProduct?.careInstructions || [],
       modelInfo: modelInfo.trim() || 'Lihat panduan ukuran Anti-Zonk.',
       fitScale,
       initialStock: Math.max(0, Number(initialStock) || 0),
@@ -235,8 +225,6 @@ export const AdminProductFormPage: React.FC = () => {
       subtitle: subtitle.trim(),
       fitNote: fitNote.trim(),
       modelInfo: modelInfo.trim(),
-      fabricDetails: fabricDetailsText.trim(),
-      careInstructions: careText.trim(),
     });
     setGeneratingDesc(false);
 
@@ -527,21 +515,6 @@ export const AdminProductFormPage: React.FC = () => {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Jelaskan siluet, material, dan keunggulan produk... atau klik Generate Deskripsi AI di atas."
             hint="Maksimal 3 paragraf ringkas berdasarkan data produk yang telah diisi."
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <TextareaField
-            label="Detail Bahan (1 poin per baris)"
-            rows={3}
-            value={fabricDetailsText}
-            onChange={(e) => setFabricDetailsText(e.target.value)}
-          />
-          <TextareaField
-            label="Cara Rawat (1 poin per baris)"
-            rows={3}
-            value={careText}
-            onChange={(e) => setCareText(e.target.value)}
           />
         </div>
 
