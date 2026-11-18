@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
+import type { Product } from '../data/products';
+import { handleImageError } from '../utils/storage';
 import { fetchSizeGuides, SizeGuideRow } from '../services/supabaseService';
 import {
   AI_CHAT_DAILY_LIMIT,
@@ -28,6 +31,57 @@ const WELCOME_MESSAGE: AiChatMessage = {
   text: 'Halo! Saya Stylist & Customer Service UrbanStore.\nAda yang bisa saya bantu hari ini? Kamu bisa tanya rekomendasi outfit, cek stok katalog, hitung ukuran dari TB dan BB, atau info pengiriman.',
   timestamp: 'Sekarang',
 };
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function renderReplyWithProductLinks(
+  text: string,
+  products: Product[]
+): { nodes: React.ReactNode; matchedProducts: Product[] } {
+  if (products.length === 0) {
+    return { nodes: text, matchedProducts: [] };
+  }
+
+  // Match longest product names first so partial overlaps don't split longer names
+  const sortedProducts = [...products].sort((a, b) => b.name.length - a.name.length);
+  const byLowerName = new Map<string, Product>();
+  sortedProducts.forEach((p) => {
+    const key = p.name.trim().toLowerCase();
+    if (key) byLowerName.set(key, p);
+  });
+
+  const patterns = Array.from(byLowerName.keys()).map(escapeRegExp);
+  if (patterns.length === 0) {
+    return { nodes: text, matchedProducts: [] };
+  }
+
+  const regex = new RegExp(`(${patterns.join('|')})`, 'gi');
+  const parts = text.split(regex);
+  const matchedMap = new Map<string, Product>();
+
+  const nodes = parts.map((part, idx) => {
+    const hit = byLowerName.get(part.trim().toLowerCase());
+    if (!hit) return <React.Fragment key={idx}>{part}</React.Fragment>;
+
+    matchedMap.set(hit.id, hit);
+    return (
+      <Link
+        key={`${hit.id}-${idx}`}
+        to={`/product/${hit.id}`}
+        className="font-semibold text-secondary underline underline-offset-4 decoration-secondary/70 hover:text-primary transition-colors"
+      >
+        {part}
+      </Link>
+    );
+  });
+
+  return {
+    nodes,
+    matchedProducts: Array.from(matchedMap.values()),
+  };
+}
 
 export const CustomerAiChatWidget: React.FC = () => {
   const { user } = useAuth();
@@ -230,6 +284,10 @@ export const CustomerAiChatWidget: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-surface/60 min-h-[260px] max-h-[420px]">
             {messages.map((msg) => {
               const isUser = msg.role === 'user';
+              const rendered = !isUser
+                ? renderReplyWithProductLinks(msg.text, products)
+                : { nodes: msg.text, matchedProducts: [] as Product[] };
+
               return (
                 <div
                   key={msg.id}
@@ -242,8 +300,37 @@ export const CustomerAiChatWidget: React.FC = () => {
                         : 'bg-surface-card border border-border-ecru text-primary rounded-bl-sm shadow-xs'
                     }`}
                   >
-                    {msg.text}
+                    {rendered.nodes}
                   </div>
+
+                  {!isUser && rendered.matchedProducts.length > 0 && (
+                    <div className="mt-2 w-full max-w-[88%] space-y-1.5">
+                      {rendered.matchedProducts.slice(0, 4).map((prod) => (
+                        <Link
+                          key={prod.id}
+                          to={`/product/${prod.id}`}
+                          className="flex items-center gap-2.5 p-2 rounded-xl bg-surface-card border border-border-ecru hover:border-primary transition-colors shadow-2xs group"
+                        >
+                          <img
+                            src={prod.image}
+                            alt={prod.name}
+                            onError={handleImageError}
+                            className="w-10 h-12 object-cover rounded-lg bg-surface-muted shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-primary truncate group-hover:text-secondary transition-colors">
+                              {prod.name}
+                            </p>
+                            <p className="text-[10px] text-text-muted">{prod.priceFormatted}</p>
+                          </div>
+                          <span className="text-[10px] font-label-uppercase uppercase tracking-wider text-secondary px-2 shrink-0">
+                            Detail →
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
                   <span className="text-[10px] text-text-muted mt-1 px-1">{msg.timestamp}</span>
                 </div>
               );
