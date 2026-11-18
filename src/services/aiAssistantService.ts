@@ -451,3 +451,98 @@ ATURAN WAJIB:
 
   return { error: 'Gagal membuat deskripsi AI. Periksa koneksi atau ADMIN_GEMINI_API_KEY.' };
 }
+
+export interface AdminBusinessInsightInput {
+  periodLabel: string;
+  netRevenueFormatted: string;
+  confirmedOrdersCount: number;
+  aovFormatted: string;
+  completionRatePct: number;
+  expiredOrCancelledCount: number;
+  pendingAmountFormatted: string;
+  totalUnitsSold: number;
+  totalDiscountFormatted: string;
+  topCategorySummary: string;
+  topRegionSummary: string;
+  topProductsSummary: string;
+  slowMovingCount: number;
+  lowStockVariantsCount: number;
+  subscribersCount: number;
+}
+
+export async function generateAdminBusinessInsight(
+  input: AdminBusinessInsightInput
+): Promise<{ insight?: string; error?: string }> {
+  const apiKey = (import.meta.env.ADMIN_GEMINI_API_KEY || '').trim();
+
+  if (!apiKey) {
+    return {
+      error:
+        'ADMIN_GEMINI_API_KEY belum terdeteksi di .env. Pastikan sudah ditambahkan lalu restart dev server.',
+    };
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  const systemInstruction = `Kamu adalah Senior Retail & E-Commerce Business Analyst untuk UrbanStore Indonesia.
+
+TUGAS:
+Berikan ringkasan eksekutif (3-4 poin insight dan rekomendasi praktis) berdasarkan angka laporan penjualan real toko.
+
+ATURAN WAJIB:
+1. FAKTUAL: Gunakan HANYA angka dan fakta yang tertulis di laporan. Dilarang mengarang angka baru.
+2. PRAKTIS & TAJAM: Fokus pada kekuatan kategori/produk, potensi kebocoran konversi (jika ada order pending/expired), strategi stok atau promo untuk produk slow-moving, dan peluang wilayah pembeli.
+3. FORMAT BERSIH: DILARANG menggunakan tanda bintang (*), pagar (#), underscore (_), atau backtick (\`). Tulis 3-4 poin bernomor (1., 2., 3., 4.) yang singkat, jelas, dan langsung pada tindakan.`;
+
+  const prompt = [
+    `Analisa laporan bisnis UrbanStore untuk periode: ${input.periodLabel}`,
+    `- Pendapatan Bersih (Lunas): ${input.netRevenueFormatted} (${input.confirmedOrdersCount} transaksi)`,
+    `- Rata-rata Nilai Order (AOV): ${input.aovFormatted}`,
+    `- Tingkat Keberhasilan Bayar: ${input.completionRatePct}% (${input.expiredOrCancelledCount} batal/kedaluwarsa)`,
+    `- Potensi Omzet Tertunda (Pending/Verifikasi): ${input.pendingAmountFormatted}`,
+    `- Total Unit Terjual: ${input.totalUnitsSold} pcs | Total Diskon Promo: ${input.totalDiscountFormatted}`,
+    `- Kontribusi Kategori Teratas: ${input.topCategorySummary || 'Belum ada'}`,
+    `- Wilayah Pembeli Teratas: ${input.topRegionSummary || 'Belum ada'}`,
+    `- Produk Terlaris: ${input.topProductsSummary || 'Belum ada'}`,
+    `- Produk Aktif Belum Terjual (Slow-Moving): ${input.slowMovingCount} produk`,
+    `- Varian Stok Kritis (<= 3 pcs): ${input.lowStockVariantsCount} varian | VIP Subscribers: ${input.subscribersCount}`,
+  ].join('\n');
+
+  let lastErrorMsg = '';
+
+  for (const model of FREE_GEMINI_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction,
+          temperature: 0.35,
+          maxOutputTokens: 480,
+        },
+      });
+
+      const rawText = (response.text || '').trim();
+      if (!rawText) {
+        lastErrorMsg = 'Respons AI kosong.';
+        continue;
+      }
+
+      return { insight: sanitizeAiReply(rawText) };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      lastErrorMsg = msg;
+      console.warn(`[Admin AI Report] Model ${model} gagal:`, msg);
+      if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+        return { error: 'ADMIN_GEMINI_API_KEY tidak valid. Periksa key di file .env.' };
+      }
+      continue;
+    }
+  }
+
+  if (lastErrorMsg.includes('429') || lastErrorMsg.includes('RESOURCE_EXHAUSTED')) {
+    return { error: 'Kuota ADMIN_GEMINI_API_KEY sedang penuh sementara. Coba lagi sebentar lagi.' };
+  }
+
+  return { error: 'Gagal menghasilkan analisa bisnis AI. Periksa koneksi atau ADMIN_GEMINI_API_KEY.' };
+}

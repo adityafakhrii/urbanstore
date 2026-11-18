@@ -8,6 +8,7 @@ import { Button, getButtonClassName } from '../components/ui';
 const ADMIN_NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/admin/orders', label: 'Orders', icon: 'receipt_long' },
+  { to: '/admin/reports', label: 'Laporan Penjualan', icon: 'analytics' },
   { to: '/admin/products', label: 'Products & Inventory', icon: 'inventory_2' },
   { to: '/admin/promos', label: 'Promos', icon: 'local_offer' },
   { to: '/admin/subscribers', label: 'Subscribers', icon: 'mail' },
@@ -28,7 +29,7 @@ export const AdminLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex bg-surface font-body-md text-on-surface antialiased">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-border-ecru bg-surface-card sticky top-0 h-screen">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-border-ecru bg-surface-card sticky top-0 h-screen print:hidden">
         <div className="px-6 h-16 flex items-center justify-between border-b border-border-ecru">
           <div>
             <Link
@@ -88,7 +89,7 @@ export const AdminLayout: React.FC = () => {
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 border-b border-border-ecru bg-surface-card px-5 sm:px-8 lg:px-10 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 border-b border-border-ecru bg-surface-card px-5 sm:px-8 lg:px-10 flex items-center justify-between sticky top-0 z-30 print:hidden">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -155,7 +156,7 @@ export const AdminLayout: React.FC = () => {
           </div>
         )}
 
-        <main className="flex-1 px-5 sm:px-8 lg:px-10 py-8 sm:py-10 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-5 sm:px-8 lg:px-10 py-8 sm:py-10 max-w-7xl w-full mx-auto print:px-0 print:py-0 print:max-w-none">
           <Outlet />
         </main>
       </div>

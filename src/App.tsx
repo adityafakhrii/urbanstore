@@ -39,6 +39,9 @@ const AdminDashboardPage = lazy(() =>
 const AdminOrdersPage = lazy(() =>
   import('./pages/admin/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage }))
 );
+const AdminReportsPage = lazy(() =>
+  import('./pages/admin/AdminReportsPage').then((m) => ({ default: m.AdminReportsPage }))
+);
 const AdminProductsPage = lazy(() =>
   import('./pages/admin/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage }))
 );
@@ -107,6 +110,7 @@ export function App() {
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="reports" element={<AdminReportsPage />} />
               <Route path="products" element={<AdminProductsPage />} />
               <Route path="products/new" element={<AdminProductFormPage />} />
               <Route path="products/:productId/edit" element={<AdminProductFormPage />} />
