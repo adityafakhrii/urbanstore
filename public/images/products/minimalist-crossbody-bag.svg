@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Kano Messenger Crossbody">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="blackBag" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#2D2D2B" />
+        <stop offset="100%" stop-color="#141413" />
+      </linearGradient>
+      <rect x="145" y="625" width="310" height="72" rx="6" fill="#E3DCD0" stroke="#CEC6B6" stroke-width="1.5"/>
+      <!-- Crossbody Strap -->
+      <path d="M186 335 L186 165 Q300 115 414 165 L414 335" fill="none" stroke="#262624" stroke-width="16" stroke-linecap="round"/>
+      <!-- Bag Body -->
+      <rect x="164" y="330" width="272" height="292" rx="18" fill="url(#blackBag)" stroke="#0D0D0C" stroke-width="2"/>
+      <!-- Flap -->
+      <path d="M164 348 Q164 330 182 330 L418 330 Q436 330 436 348 L436 472 Q300 500 164 472 Z" fill="#232321" stroke="#3D3D3A" stroke-width="1.4"/>
+      <!-- Contrast Stitch & Brass Clasp -->
+      <path d="M178 462 Q300 488 422 462" fill="none" stroke="#5A534A" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <rect x="285" y="458" width="30" height="20" rx="5" fill="#C9A55A" stroke="#8C6E31" stroke-width="1.2"/>
+    </g>
+</svg>

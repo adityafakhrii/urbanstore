@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Vero Structured Calfskin Tote">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="caramelBag" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#B07342" />
+        <stop offset="60%" stop-color="#945B2E" />
+        <stop offset="100%" stop-color="#70421F" />
+      </linearGradient>
+      <!-- Pedestal -->
+      <rect x="130" y="625" width="340" height="72" rx="6" fill="#E4DDD0" stroke="#CFC6B6" stroke-width="1.5"/>
+      <!-- Top Handles -->
+      <path d="M235 305 C235 165 365 165 365 305" fill="none" stroke="#7A4822" stroke-width="15" stroke-linecap="round"/>
+      <path d="M245 305 C245 182 355 182 355 305" fill="none" stroke="#9D6234" stroke-width="10" stroke-linecap="round"/>
+      <!-- Structured Trapezoid Body -->
+      <path d="M168 302 L432 302 L462 624 L138 624 Z" rx="12" fill="url(#caramelBag)" stroke="#623819" stroke-width="1.8"/>
+      <!-- Subtle Front Seam & Brass Clasp -->
+      <path d="M190 302 L176 622 M410 302 L424 622" stroke="#6F411E" stroke-width="1.2" opacity="0.65"/>
+      <rect x="284" y="328" width="32" height="18" rx="4" fill="#D5B26B" stroke="#9A7B3B" stroke-width="1.2"/>
+      <circle cx="300" cy="337" r="3" fill="#623819"/>
+    </g>
+</svg>

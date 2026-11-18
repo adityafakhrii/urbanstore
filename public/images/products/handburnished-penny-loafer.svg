@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Marco Hand-Burnished Penny Loafer">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="cognacShoe" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#A6602C" />
+        <stop offset="65%" stop-color="#87481E" />
+        <stop offset="100%" stop-color="#5B2F12" />
+      </linearGradient>
+      <!-- Sandstone Slab -->
+      <rect x="90" y="592" width="420" height="86" rx="8" fill="#E3DBCC" stroke="#CBC1AE" stroke-width="1.5"/>
+      <!-- Back Loafer (subtle) -->
+      <path d="M126 420 Q150 385 186 410 Q242 440 365 446 Q418 452 422 486 L124 486 Z" fill="#733D18" opacity="0.88"/>
+      <!-- Front Hero Loafer -->
+      <path d="M122 486 Q135 422 184 446 Q258 486 355 478 Q468 478 488 538 Q490 568 455 574 L130 574 Q112 560 122 486 Z" fill="url(#cognacShoe)" stroke="#4A250C" stroke-width="1.8"/>
+      <!-- Penny Strap -->
+      <path d="M262 478 L328 478 L320 532 L270 532 Z" fill="#9E5927" stroke="#5B2F12" stroke-width="1.4"/>
+      <ellipse cx="295" cy="502" rx="14" ry="6" fill="#5B2F12"/>
+      <!-- Stacked Leather Sole & Heel -->
+      <path d="M124 574 L474 574 L470 592 L248 592 L242 586 L205 586 L200 592 L124 592 Z" fill="#3B2416" stroke="#22130A" stroke-width="1.4"/>
+      <path d="M180 468 Q260 510 385 496" fill="none" stroke="#532B10" stroke-width="1.5" stroke-dasharray="4 3"/>
+    </g>
+</svg>

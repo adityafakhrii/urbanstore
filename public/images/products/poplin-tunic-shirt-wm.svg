@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Elena Crisp Oversized Shirt">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    
+    <path d="M300 63 C300 47 318 43 320 59 C322 71 302 75 300 85" fill="none" stroke="#9B7B4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M180 127 Q300 87 420 127 L416 137 Q300 101 184 137 Z" fill="#5A4230" stroke="#3D2B1F" stroke-width="1.5"/>
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="crispWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFFFFF" />
+        <stop offset="100%" stop-color="#ECEAE4" />
+      </linearGradient>
+      <!-- Sleeves -->
+      <path d="M188 150 L114 420 L164 434 L218 240 Z" fill="url(#crispWhite)" stroke="#D4CFC4" stroke-width="1.5"/>
+      <path d="M412 150 L486 420 L436 434 L382 240 Z" fill="url(#crispWhite)" stroke="#D4CFC4" stroke-width="1.5"/>
+      <!-- Shirt Body with Curved Hem -->
+      <path d="M248 124 L352 124 L412 150 L402 520 Q300 558 198 520 L188 150 Z" fill="url(#crispWhite)" stroke="#D4CFC4" stroke-width="1.5"/>
+      <!-- Crisp Pointed Collar -->
+      <path d="M248 124 L298 158 L266 196 L236 144 Z" fill="#F6F4EE" stroke="#CBC5B9" stroke-width="1.3"/>
+      <path d="M352 124 L302 158 L334 196 L364 144 Z" fill="#F6F4EE" stroke="#CBC5B9" stroke-width="1.3"/>
+      <!-- Placket & Pearl Buttons -->
+      <rect x="292" y="156" width="16" height="378" fill="#F7F5F0" stroke="#DDD8CD" stroke-width="1"/>
+      <circle cx="300" cy="195" r="4" fill="#E6E0D4" stroke="#BDB7AA" stroke-width="0.8"/>
+      <circle cx="300" cy="250" r="4" fill="#E6E0D4" stroke="#BDB7AA" stroke-width="0.8"/>
+      <circle cx="300" cy="305" r="4" fill="#E6E0D4" stroke="#BDB7AA" stroke-width="0.8"/>
+      <circle cx="300" cy="360" r="4" fill="#E6E0D4" stroke="#BDB7AA" stroke-width="0.8"/>
+      <circle cx="300" cy="415" r="4" fill="#E6E0D4" stroke="#BDB7AA" stroke-width="0.8"/>
+      <!-- Chest Patch Pocket -->
+      <path d="M332 232 L380 232 L380 284 L356 294 L332 284 Z" fill="#F8F6F1" stroke="#D4CFC4" stroke-width="1.2"/>
+    </g>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Ayla Pleated Wide Palazzo">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="taupePant" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#B8A997" />
+        <stop offset="100%" stop-color="#9A8976" />
+      </linearGradient>
+      <!-- Waistband -->
+      <rect x="210" y="128" width="180" height="32" rx="4" fill="#9E8D7A" stroke="#7F6E5C" stroke-width="1.5"/>
+      <rect x="232" y="132" width="8" height="24" rx="2" fill="#8C7B68"/>
+      <rect x="360" y="132" width="8" height="24" rx="2" fill="#8C7B68"/>
+      <!-- Wide Legs -->
+      <path d="M210 160 L390 160 L432 668 L314 668 L300 325 L286 668 L168 668 Z" fill="url(#taupePant)" stroke="#7F6E5C" stroke-width="1.5"/>
+      <path d="M210 160 L390 160 L432 668 L314 668 L300 325 L286 668 L168 668 Z" fill="url(#linenWeave)" />
+      <!-- Double Front Pleats -->
+      <path d="M246 160 L234 662" fill="none" stroke="#7F6E5C" stroke-width="1.6"/>
+      <path d="M266 160 L262 340" fill="none" stroke="#8C7B68" stroke-width="1.2"/>
+      <path d="M354 160 L366 662" fill="none" stroke="#7F6E5C" stroke-width="1.6"/>
+      <path d="M334 160 L338 340" fill="none" stroke="#8C7B68" stroke-width="1.2"/>
+      <line x1="300" y1="160" x2="300" y2="290" stroke="#7F6E5C" stroke-width="1.5"/>
+    </g>
+</svg>

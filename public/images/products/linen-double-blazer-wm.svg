@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Sora Linen Double-Breasted Blazer">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    
+    <path d="M300 63 C300 47 318 43 320 59 C322 71 302 75 300 85" fill="none" stroke="#9B7B4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M180 127 Q300 87 420 127 L416 137 Q300 101 184 137 Z" fill="#5A4230" stroke="#3D2B1F" stroke-width="1.5"/>
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="sandBlazer" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#E0D3C0" />
+        <stop offset="60%" stop-color="#D2C2AB" />
+        <stop offset="100%" stop-color="#BEA98F" />
+      </linearGradient>
+      <!-- Sleeves -->
+      <path d="M192 146 L124 445 L176 456 L220 230 Z" fill="url(#sandBlazer)" stroke="#A79277" stroke-width="1.5"/>
+      <path d="M408 146 L476 445 L424 456 L380 230 Z" fill="url(#sandBlazer)" stroke="#A79277" stroke-width="1.5"/>
+      <!-- Body -->
+      <path d="M248 122 L352 122 L408 146 L390 300 L402 535 Q300 546 198 535 L210 300 L192 146 Z" fill="url(#sandBlazer)" stroke="#A79277" stroke-width="1.5"/>
+      <path d="M248 122 L352 122 L408 146 L390 300 L402 535 Q300 546 198 535 L210 300 L192 146 Z" fill="url(#linenWeave)" />
+      <!-- Lapels -->
+      <path d="M250 124 L298 310 L242 260 L226 170 Z" fill="#C9B79D" stroke="#9C876D" stroke-width="1.2"/>
+      <path d="M350 124 L302 310 L358 260 L374 170 Z" fill="#C9B79D" stroke="#9C876D" stroke-width="1.2"/>
+      <!-- Double-Breasted Placket & Horn Buttons -->
+      <line x1="274" y1="300" x2="274" y2="538" stroke="#A79277" stroke-width="1.2"/>
+      <circle cx="268" cy="340" r="7" fill="#4A382B" stroke="#2D2018" stroke-width="1"/>
+      <circle cx="332" cy="340" r="7" fill="#4A382B" stroke="#2D2018" stroke-width="1"/>
+      <circle cx="268" cy="405" r="7" fill="#4A382B" stroke="#2D2018" stroke-width="1"/>
+      <circle cx="332" cy="405" r="7" fill="#4A382B" stroke="#2D2018" stroke-width="1"/>
+      <!-- Welt Pockets -->
+      <rect x="218" y="420" width="52" height="9" rx="2" fill="#B5A187" stroke="#9C876D" stroke-width="1"/>
+      <rect x="330" y="420" width="52" height="9" rx="2" fill="#B5A187" stroke="#9C876D" stroke-width="1"/>
+    </g>
+</svg>

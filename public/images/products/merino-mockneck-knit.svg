@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Arga Fine Knit Mockneck">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    
+    <path d="M300 70 C300 54 318 50 320 66 C322 78 302 82 300 92" fill="none" stroke="#9B7B4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M180 134 Q300 94 420 134 L416 144 Q300 108 184 144 Z" fill="#5A4230" stroke="#3D2B1F" stroke-width="1.5"/>
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="taupeKnit" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#A89A89" />
+        <stop offset="100%" stop-color="#857766" />
+      </linearGradient>
+      <!-- Sleeves -->
+      <path d="M188 158 L116 446 L168 458 L220 245 Z" fill="url(#taupeKnit)" stroke="#6F6253" stroke-width="1.5"/>
+      <path d="M412 158 L484 446 L432 458 L380 245 Z" fill="url(#taupeKnit)" stroke="#6F6253" stroke-width="1.5"/>
+      <!-- Sweater Body -->
+      <path d="M244 134 L356 134 L412 158 L398 518 L202 518 L188 158 Z" fill="url(#taupeKnit)" stroke="#6F6253" stroke-width="1.5"/>
+      <!-- Mockneck Collar -->
+      <rect x="248" y="102" width="104" height="36" rx="8" fill="#8C7E6E" stroke="#6F6253" stroke-width="1.5"/>
+      <!-- Raglan Seam Lines -->
+      <line x1="248" y1="138" x2="212" y2="245" stroke="#6F6253" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <line x1="352" y1="138" x2="388" y2="245" stroke="#6F6253" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <!-- Ribbed Hem & Cuffs -->
+      <rect x="202" y="486" width="196" height="32" rx="2" fill="#7D7060" stroke="#6F6253" stroke-width="1.2"/>
+    </g>
+</svg>

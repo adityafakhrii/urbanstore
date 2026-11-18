@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Damar Tailored Pleated Chino">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="oliveChino" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#6F7664" />
+        <stop offset="100%" stop-color="#4F5546" />
+      </linearGradient>
+      <!-- Waistband -->
+      <rect x="214" y="128" width="172" height="30" rx="4" fill="#585E4E" stroke="#3F4437" stroke-width="1.5"/>
+      <circle cx="300" cy="143" r="5" fill="#322C24"/>
+      <!-- Tapered Legs -->
+      <path d="M214 158 L386 158 L382 664 L314 664 L300 326 L286 664 L218 664 Z" fill="url(#oliveChino)" stroke="#3F4437" stroke-width="1.5"/>
+      <!-- Center Press Creases -->
+      <line x1="252" y1="168" x2="252" y2="660" stroke="#42483B" stroke-width="1.4"/>
+      <line x1="348" y1="168" x2="348" y2="660" stroke="#42483B" stroke-width="1.4"/>
+      <!-- Side Slant Pockets -->
+      <path d="M216 164 L242 232" stroke="#3F4437" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M384 164 L358 232" stroke="#3F4437" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="300" y1="158" x2="300" y2="280" stroke="#3F4437" stroke-width="1.5"/>
+    </g>
+</svg>

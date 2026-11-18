@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Bima Unstructured Linen Blazer">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    
+    <path d="M300 60 C300 44 318 40 320 56 C322 68 302 72 300 82" fill="none" stroke="#9B7B4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M180 124 Q300 84 420 124 L416 134 Q300 98 184 134 Z" fill="#5A4230" stroke="#3D2B1F" stroke-width="1.5"/>
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="camelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#C89F6B" />
+        <stop offset="65%" stop-color="#B08450" />
+        <stop offset="100%" stop-color="#8E673B" />
+      </linearGradient>
+      <!-- Sleeves -->
+      <path d="M180 144 L118 456 L174 468 L216 235 Z" fill="url(#camelGrad)" stroke="#7D5A33" stroke-width="1.5"/>
+      <path d="M420 144 L482 456 L426 468 L384 235 Z" fill="url(#camelGrad)" stroke="#7D5A33" stroke-width="1.5"/>
+      <!-- Jacket Body -->
+      <path d="M244 120 L356 120 L420 144 L398 548 Q300 562 202 548 L180 144 Z" fill="url(#camelGrad)" stroke="#7D5A33" stroke-width="1.5"/>
+      <path d="M244 120 L356 120 L420 144 L398 548 Q300 562 202 548 L180 144 Z" fill="url(#linenWeave)" />
+      <!-- Lapels -->
+      <path d="M246 122 L300 318 L244 252 L226 172 Z" fill="#A37846" stroke="#7D5A33" stroke-width="1.2"/>
+      <path d="M354 122 L300 318 L356 252 L374 172 Z" fill="#A37846" stroke="#7D5A33" stroke-width="1.2"/>
+      <!-- 2-Button Closure -->
+      <line x1="300" y1="318" x2="300" y2="554" stroke="#7D5A33" stroke-width="1.4"/>
+      <circle cx="300" cy="350" r="7.5" fill="#3B291D" stroke="#241810" stroke-width="1"/>
+      <circle cx="300" cy="418" r="7.5" fill="#3B291D" stroke="#241810" stroke-width="1"/>
+      <!-- Patch Pockets -->
+      <rect x="218" y="405" width="58" height="68" rx="6" fill="#A67A49" stroke="#7D5A33" stroke-width="1.2"/>
+      <rect x="324" y="405" width="58" height="68" rx="6" fill="#A67A49" stroke="#7D5A33" stroke-width="1.2"/>
+    </g>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Botanical Mulberry Silk Scarf">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="scarfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#EBDCC9" />
+        <stop offset="50%" stop-color="#D7BE9F" />
+        <stop offset="100%" stop-color="#BD9872" />
+      </linearGradient>
+      <!-- Artfully Draped Square Silk Scarf -->
+      <path d="M148 164 Q300 138 452 164 L484 548 Q340 656 124 584 Z" fill="url(#scarfGrad)" stroke="#A67E58" stroke-width="1.6"/>
+      <!-- Architectural Inner Frame -->
+      <path d="M174 192 Q300 170 426 192 L452 526 Q336 616 154 556 Z" fill="none" stroke="#855224" stroke-width="2.5" opacity="0.7"/>
+      <path d="M196 218 Q300 200 404 218 L424 500 Q328 578 178 526 Z" fill="none" stroke="#FAF8F4" stroke-width="2" opacity="0.65"/>
+      <!-- Soft Silk Drape & Center Motif -->
+      <circle cx="300" cy="365" r="56" fill="none" stroke="#855224" stroke-width="2" opacity="0.55"/>
+      <circle cx="300" cy="365" r="24" fill="#855224" opacity="0.22"/>
+      <path d="M240 220 Q285 390 250 580" fill="none" stroke="#FAF8F4" stroke-width="3" opacity="0.45"/>
+    </g>
+</svg>

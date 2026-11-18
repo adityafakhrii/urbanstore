@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Klara Silk Column Dress">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    
+    <path d="M300 54 C300 38 318 34 320 50 C322 62 302 66 300 76" fill="none" stroke="#9B7B4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M180 118 Q300 78 420 118 L416 128 Q300 92 184 128 Z" fill="#5A4230" stroke="#3D2B1F" stroke-width="1.5"/>
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="silkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FCF9F2" />
+        <stop offset="50%" stop-color="#F2ECE0" />
+        <stop offset="100%" stop-color="#E5DDD0" />
+      </linearGradient>
+      <!-- Straps -->
+      <path d="M236 112 L248 188 M364 112 L352 188" stroke="#D8CEBE" stroke-width="6" stroke-linecap="round"/>
+      <!-- Bias-cut Dress Silhouette -->
+      <path d="M245 186 Q300 222 355 186 L372 310 Q382 460 398 672 Q300 688 202 672 Q218 460 228 310 Z" fill="url(#silkGrad)" stroke="#CFC4B2" stroke-width="1.5"/>
+      <!-- Soft Silk Drape Folds -->
+      <path d="M258 202 Q300 236 342 202" fill="none" stroke="#D5CBB9" stroke-width="2"/>
+      <path d="M248 340 Q272 480 256 668" fill="none" stroke="#DDD4C4" stroke-width="2" opacity="0.8"/>
+      <path d="M342 355 Q324 500 344 668" fill="none" stroke="#D1C6B4" stroke-width="2" opacity="0.7"/>
+      <path d="M300 222 L300 676" fill="none" stroke="#E2D9C9" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>
+    </g>
+</svg>

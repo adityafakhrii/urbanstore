@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Luna Crescent Shoulder Bag">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="creamBag" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FAF6EC" />
+        <stop offset="100%" stop-color="#E2D8C5" />
+      </linearGradient>
+      <rect x="140" y="620" width="320" height="76" rx="6" fill="#DDD5C5" stroke="#C8BEAB" stroke-width="1.5"/>
+      <!-- Strap -->
+      <path d="M170 370 C165 170 435 170 430 370" fill="none" stroke="#D5CBB7" stroke-width="22" stroke-linecap="round"/>
+      <!-- Brass Buckle -->
+      <rect x="155" y="255" width="26" height="22" rx="4" fill="none" stroke="#C49D56" stroke-width="4"/>
+      <!-- Crescent Hobo Body -->
+      <path d="M156 368 Q300 448 444 368 Q452 575 300 618 Q148 575 156 368 Z" fill="url(#creamBag)" stroke="#BFB39D" stroke-width="1.8"/>
+      <path d="M180 398 Q300 470 420 398" fill="none" stroke="#CFC4AF" stroke-width="2" stroke-dasharray="4 3"/>
+    </g>
+</svg>

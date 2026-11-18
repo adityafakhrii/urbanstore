@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Raka Twill Chore Overshirt">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF8F4" />
+      <stop offset="100%" stop-color="#EFEAE0" />
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1C1C19" stop-opacity="0.16" />
+      <stop offset="70%" stop-color="#1C1C19" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#1C1C19" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1C1C19" flood-opacity="0.12" />
+    </filter>
+    <pattern id="linenWeave" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="#1C1C19" stroke-width="0.35" stroke-opacity="0.045" />
+    </pattern>
+  </defs>
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+  <ellipse cx="300" cy="705" rx="185" ry="26" fill="url(#floorShadow)" />
+  
+    
+    <path d="M300 64 C300 48 318 44 320 60 C322 72 302 76 300 86" fill="none" stroke="#9B7B4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M180 128 Q300 88 420 128 L416 138 Q300 102 184 138 Z" fill="#5A4230" stroke="#3D2B1F" stroke-width="1.5"/>
+  
+    <g filter="url(#softShadow)">
+      <linearGradient id="espressoTwill" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#4A382D" />
+        <stop offset="100%" stop-color="#2D2019" />
+      </linearGradient>
+      <!-- Sleeves -->
+      <path d="M184 148 L118 446 L172 458 L216 238 Z" fill="url(#espressoTwill)" stroke="#1E140F" stroke-width="1.5"/>
+      <path d="M416 148 L482 446 L428 458 L384 238 Z" fill="url(#espressoTwill)" stroke="#1E140F" stroke-width="1.5"/>
+      <!-- Boxy Jacket Body -->
+      <path d="M244 124 L356 124 L416 148 L406 530 L194 530 L184 148 Z" fill="url(#espressoTwill)" stroke="#1E140F" stroke-width="1.5"/>
+      <!-- Collar -->
+      <path d="M244 124 L298 164 L264 196 L232 146 Z" fill="#3B2B22" stroke="#1E140F" stroke-width="1.3"/>
+      <path d="M356 124 L302 164 L336 196 L368 146 Z" fill="#3B2B22" stroke="#1E140F" stroke-width="1.3"/>
+      <!-- Center Placket & Buttons -->
+      <line x1="300" y1="164" x2="300" y2="530" stroke="#221712" stroke-width="1.5"/>
+      <circle cx="300" cy="215" r="6" fill="#6E523F"/>
+      <circle cx="300" cy="285" r="6" fill="#6E523F"/>
+      <circle cx="300" cy="355" r="6" fill="#6E523F"/>
+      <circle cx="300" cy="425" r="6" fill="#6E523F"/>
+      <!-- 3 Utility Patch Pockets -->
+      <rect x="216" y="220" width="54" height="62" rx="4" fill="#3C2C23" stroke="#1E140F" stroke-width="1.2"/>
+      <rect x="214" y="390" width="64" height="76" rx="5" fill="#3C2C23" stroke="#1E140F" stroke-width="1.2"/>
+      <rect x="322" y="390" width="64" height="76" rx="5" fill="#3C2C23" stroke="#1E140F" stroke-width="1.2"/>
+    </g>
+</svg>
