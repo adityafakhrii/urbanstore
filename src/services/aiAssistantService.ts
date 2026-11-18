@@ -6,9 +6,10 @@ export const AI_CHAT_DAILY_LIMIT = 5;
 const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const FREE_GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash-lite',
 ];
 
 export interface AiChatMessage {
@@ -262,16 +263,14 @@ export async function sendCustomerAiMessage(params: {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       lastErrorMsg = msg;
-      // Try next free model if model unavailable or rate-limited
-      if (
-        msg.includes('404') ||
-        msg.includes('429') ||
-        msg.includes('NOT_FOUND') ||
-        msg.includes('RESOURCE_EXHAUSTED')
-      ) {
-        continue;
+      console.warn(`[UrbanStore AI] Model ${model} gagal:`, msg);
+      if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+        return {
+          error: 'GEMINI_API_KEY tidak valid. Periksa kembali key di file .env kamu.',
+        };
       }
-      break;
+      // Try next Gemini 3 free-tier model
+      continue;
     }
   }
 
