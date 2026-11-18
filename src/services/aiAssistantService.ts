@@ -484,15 +484,21 @@ export async function generateAdminBusinessInsight(
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const systemInstruction = `Kamu adalah Senior Retail & E-Commerce Business Analyst untuk UrbanStore Indonesia.
+  const systemInstruction = `Kamu adalah Senior Retail & E-Commerce Business Strategist untuk UrbanStore Indonesia.
 
 TUGAS:
-Berikan ringkasan eksekutif (3-4 poin insight dan rekomendasi praktis) berdasarkan angka laporan penjualan real toko.
+Analisa angka laporan penjualan toko saat ini, lalu berikan diagnosa kelemahan/peluang serta rekomendasi strategi penjualan konkret ke depan.
 
 ATURAN WAJIB:
 1. FAKTUAL: Gunakan HANYA angka dan fakta yang tertulis di laporan. Dilarang mengarang angka baru.
-2. PRAKTIS & TAJAM: Fokus pada kekuatan kategori/produk, potensi kebocoran konversi (jika ada order pending/expired), strategi stok atau promo untuk produk slow-moving, dan peluang wilayah pembeli.
-3. FORMAT BERSIH: DILARANG menggunakan tanda bintang (*), pagar (#), underscore (_), atau backtick (\`). Tulis 3-4 poin bernomor (1., 2., 3., 4.) yang singkat, jelas, dan langsung pada tindakan.`;
+2. WAJIB MEMUAT 3 BAGIAN BERIKUT:
+   KONDISI TOKO SAAT INI
+   - 2 poin singkat mengevaluasi kekuatan omzet, AOV, kategori/wilayah unggulan, dan konversi pembayaran.
+   HAL YANG PERLU DITINGKATKAN
+   - 2 poin spesifik menyoroti area yang lemah atau perlu perbaikan (mis. order pending/kedaluwarsa, produk slow-moving, ketergantungan pada 1 kategori, atau stok varian kritis).
+   REKOMENDASI STRATEGI PENJUALAN KE DEPAN
+   - 3 poin rencana aksi praktis untuk minggu/bulan depan (mis. skema bundling produk slow-moving + best seller, kode promo bersyarat, follow-up WA untuk order tertunda, atau kampanye VIP subscriber).
+3. FORMAT BERSIH: DILARANG menggunakan tanda bintang (* atau **), pagar (#), underscore (_), atau backtick (\`). Gunakan huruf kapital hanya untuk judul 3 bagian di atas dan tanda strip (-) atau angka (1., 2., 3.) yang rapi.`;
 
   const prompt = [
     `Analisa laporan bisnis UrbanStore untuk periode: ${input.periodLabel}`,
@@ -517,8 +523,8 @@ ATURAN WAJIB:
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction,
-          temperature: 0.35,
-          maxOutputTokens: 480,
+          temperature: 0.4,
+          maxOutputTokens: 720,
         },
       });
 
@@ -545,4 +551,71 @@ ATURAN WAJIB:
   }
 
   return { error: 'Gagal menghasilkan analisa bisnis AI. Periksa koneksi atau ADMIN_GEMINI_API_KEY.' };
+}
+
+export interface SavedAiReportInsight {
+  id: string;
+  createdAtIso: string;
+  createdAtLabel: string;
+  periodLabel: string;
+  netRevenueFormatted: string;
+  confirmedOrdersCount: number;
+  aovFormatted: string;
+  insightText: string;
+}
+
+const ADMIN_INSIGHTS_ARCHIVE_KEY = 'urbanstore_admin_ai_insights_v1';
+
+export function loadSavedAiInsights(): SavedAiReportInsight[] {
+  try {
+    const raw = window.localStorage.getItem(ADMIN_INSIGHTS_ARCHIVE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is SavedAiReportInsight =>
+        Boolean(item) &&
+        typeof item.id === 'string' &&
+        typeof item.insightText === 'string' &&
+        typeof item.periodLabel === 'string'
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function saveAiInsightToArchive(
+  entry: Omit<SavedAiReportInsight, 'id' | 'createdAtIso' | 'createdAtLabel'>
+): SavedAiReportInsight[] {
+  const existing = loadSavedAiInsights();
+  const now = new Date();
+  const newItem: SavedAiReportInsight = {
+    id: `ins-${now.getTime()}`,
+    createdAtIso: now.toISOString(),
+    createdAtLabel: now.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    ...entry,
+  };
+  const next = [newItem, ...existing].slice(0, 30);
+  try {
+    window.localStorage.setItem(ADMIN_INSIGHTS_ARCHIVE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage quota errors
+  }
+  return next;
+}
+
+export function deleteSavedAiInsight(id: string): SavedAiReportInsight[] {
+  const next = loadSavedAiInsights().filter((item) => item.id !== id);
+  try {
+    window.localStorage.setItem(ADMIN_INSIGHTS_ARCHIVE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage errors
+  }
+  return next;
 }

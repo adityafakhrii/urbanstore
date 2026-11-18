@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { PRODUCT_CATEGORIES } from '../../data/products';
 import {
@@ -13,11 +14,19 @@ import {
   fetchVariantsAdmin,
   formatRupiah,
 } from '../../services/supabaseService';
-import { generateAdminBusinessInsight } from '../../services/aiAssistantService';
+import {
+  SavedAiReportInsight,
+  deleteSavedAiInsight,
+  generateAdminBusinessInsight,
+  loadSavedAiInsights,
+  saveAiInsightToArchive,
+} from '../../services/aiAssistantService';
 import { getOrderStatusBadge, getOrderStatusLabel } from '../../utils/payment';
+import { exportSalesReportPdf } from '../../utils/reportPdf';
 import {
   AlertBanner,
   Button,
+  ConfirmDialog,
   CustomSelect,
   DatePickerField,
   StatusBadge,
@@ -41,6 +50,7 @@ function escapeCsvCell(val: unknown): string {
 }
 
 export const AdminReportsPage: React.FC = () => {
+  const { profile } = useAuth();
   const { products, showToast } = useStore();
 
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
@@ -59,6 +69,12 @@ export const AdminReportsPage: React.FC = () => {
   const [scopeMode, setScopeMode] = useState<ScopeMode>('confirmed');
 
   const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [aiSavedCurrent, setAiSavedCurrent] = useState(false);
+  const [savedInsights, setSavedInsights] = useState<SavedAiReportInsight[]>(() =>
+    loadSavedAiInsights()
+  );
+  const [activeArchivedId, setActiveArchivedId] = useState<string | null>(null);
+  const [confirmDeleteInsightId, setConfirmDeleteInsightId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [generatingAi, setGeneratingAi] = useState(false);
 
@@ -434,7 +450,57 @@ export const AdminReportsPage: React.FC = () => {
     }
 
     setAiInsight(res.insight);
-    showToast('Analisa insight bisnis AI siap!');
+    setAiSavedCurrent(false);
+    showToast('Analisa & strategi bisnis AI siap!');
+  };
+
+  const handleSaveCurrentInsight = () => {
+    if (!aiInsight || aiSavedCurrent) return;
+    const nextList = saveAiInsightToArchive({
+      periodLabel: dateRange.label,
+      netRevenueFormatted: formatRupiah(analytics.netRevenue),
+      confirmedOrdersCount: analytics.confirmedCount,
+      aovFormatted: formatRupiah(analytics.aov),
+      insightText: aiInsight,
+    });
+    setSavedInsights(nextList);
+    setAiSavedCurrent(true);
+    if (nextList[0]) setActiveArchivedId(nextList[0].id);
+    showToast('Insight AI berhasil disimpan ke Arsip Laporan!');
+  };
+
+  const handleDownloadPdf = () => {
+    const scopeLabel =
+      scopeMode === 'confirmed'
+        ? 'Hanya Transaksi Lunas'
+        : scopeMode === 'valid'
+        ? 'Lunas + Pending Aktif'
+        : 'Semua Status (Termasuk Batal)';
+
+    const downloadedAt = exportSalesReportPdf({
+      periodLabel: dateRange.label,
+      scopeLabel,
+      downloadedBy: profile?.full_name || 'Administrator',
+      netRevenue: analytics.netRevenue,
+      confirmedCount: analytics.confirmedCount,
+      aov: analytics.aov,
+      totalUnitsSold: analytics.totalUnitsSold,
+      completionRatePct: analytics.completionRatePct,
+      closedCount: analytics.closedCount,
+      pendingAmount: analytics.pendingAmount,
+      pendingCount: analytics.pendingCount,
+      totalDiscount: analytics.totalDiscount,
+      totalShipping: analytics.totalShipping,
+      categoryList: analytics.categoryList,
+      totalCatRev: analytics.totalCatRev,
+      topRegions: analytics.topRegions,
+      paymentList: analytics.paymentList,
+      topProducts: analytics.topProducts,
+      slowMovingProducts: analytics.slowMovingProducts,
+      scopedOrders,
+      aiInsightText: aiInsight,
+    });
+    showToast(`PDF Laporan diunduh (${downloadedAt} WIB).`);
   };
 
   return (
@@ -461,9 +527,9 @@ export const AdminReportsPage: React.FC = () => {
             <span className="material-symbols-outlined text-[16px]">download</span>
             Export CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <span className="material-symbols-outlined text-[16px]">print</span>
-            Cetak / PDF
+          <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={loading}>
+            <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+            Download PDF
           </Button>
           <Button
             variant="primary"
@@ -544,27 +610,133 @@ export const AdminReportsPage: React.FC = () => {
       {aiError && <AlertBanner variant="error">{aiError}</AlertBanner>}
 
       {aiInsight && (
-        <section className="bg-surface-sand/80 border border-secondary/35 rounded-2xl p-5 sm:p-6 space-y-3">
-          <div className="flex items-center justify-between gap-3 border-b border-border-ecru pb-3">
+        <section className="bg-surface-sand/80 border border-secondary/35 rounded-2xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-ecru pb-3">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[20px] text-secondary">
                 auto_awesome
               </span>
-              <h2 className="font-headline-sm text-base text-primary">
-                Insight Strategis AI — {dateRange.label}
-              </h2>
+              <div>
+                <h2 className="font-headline-sm text-base text-primary">
+                  Insight &amp; Strategi Penjualan AI — {dateRange.label}
+                </h2>
+                <p className="text-[11px] text-text-muted">
+                  Mencakup kondisi toko, hal yang perlu ditingkatkan, dan strategi ke depan.
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setAiInsight(null)}
-              className="text-xs text-text-muted hover:text-primary cursor-pointer print:hidden"
-            >
-              Tutup
-            </button>
+            <div className="flex items-center gap-2 print:hidden">
+              <Button
+                variant={aiSavedCurrent ? 'success' : 'outline'}
+                size="sm"
+                onClick={handleSaveCurrentInsight}
+                disabled={aiSavedCurrent}
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {aiSavedCurrent ? 'bookmark_added' : 'bookmark_add'}
+                </span>
+                {aiSavedCurrent ? 'Tersimpan di Arsip' : 'Simpan Insight'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setAiInsight(null)}
+                className="px-2.5 py-1.5 text-xs text-text-muted hover:text-primary cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
           <p className="text-xs sm:text-sm text-primary leading-relaxed whitespace-pre-line">
             {aiInsight}
           </p>
+        </section>
+      )}
+
+      {/* Saved AI Insights Archive */}
+      {savedInsights.length > 0 && (
+        <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4 print:hidden">
+          <div className="flex items-center justify-between border-b border-border-ecru pb-3">
+            <div>
+              <h2 className="font-headline-sm text-base text-primary">
+                Arsip Insight &amp; Strategi AI Tersimpan ({savedInsights.length})
+              </h2>
+              <p className="text-[11px] text-text-muted">
+                Klik item arsip untuk membaca ulang analisa periode sebelumnya atau memuatnya ke laporan PDF.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {savedInsights.map((item) => {
+              const isExpanded = activeArchivedId === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className="border border-border-ecru rounded-xl bg-surface/60 overflow-hidden"
+                >
+                  <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveArchivedId(isExpanded ? null : item.id)}
+                      className="text-left flex-1 min-w-0 cursor-pointer"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold text-primary">
+                          {item.periodLabel}
+                        </span>
+                        <StatusBadge
+                          label={`${item.netRevenueFormatted} · ${item.confirmedOrdersCount} order`}
+                        />
+                      </div>
+                      <p className="text-[11px] text-text-muted mt-0.5">
+                        Disimpan pada {item.createdAtLabel} · AOV {item.aovFormatted}
+                      </p>
+                    </button>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setAiInsight(item.insightText);
+                          setAiSavedCurrent(true);
+                          showToast('Insight arsip dimuat ke tampilan aktif & siap ikut terunduh di PDF.');
+                        }}
+                      >
+                        Pakai di Laporan
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveArchivedId(isExpanded ? null : item.id)}
+                        className="p-1.5 rounded-full text-text-muted hover:text-primary hover:bg-surface-sand cursor-pointer"
+                        aria-label="Lihat isi insight"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {isExpanded ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteInsightId(item.id)}
+                        className="p-1.5 rounded-full text-text-muted hover:text-error hover:bg-error-container/40 cursor-pointer"
+                        aria-label="Hapus arsip insight"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete_outline</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-2 border-t border-border-ecru/60 bg-surface-card">
+                      <p className="text-xs text-primary leading-relaxed whitespace-pre-line">
+                        {item.insightText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
 
@@ -958,6 +1130,23 @@ export const AdminReportsPage: React.FC = () => {
           </table>
         </div>
       </section>
+
+      <ConfirmDialog
+        isOpen={Boolean(confirmDeleteInsightId)}
+        title="Hapus Arsip Insight AI?"
+        description="Catatan analisa & strategi bisnis ini akan dihapus permanen dari arsip tersimpan."
+        confirmLabel="Ya, Hapus Arsip"
+        cancelLabel="Batal"
+        onCancel={() => setConfirmDeleteInsightId(null)}
+        onConfirm={() => {
+          if (confirmDeleteInsightId) {
+            setSavedInsights(deleteSavedAiInsight(confirmDeleteInsightId));
+            if (activeArchivedId === confirmDeleteInsightId) setActiveArchivedId(null);
+            showToast('Arsip insight AI dihapus.');
+          }
+          setConfirmDeleteInsightId(null);
+        }}
+      />
     </div>
   );
 };
