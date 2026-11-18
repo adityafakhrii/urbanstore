@@ -6,12 +6,15 @@ import {
   AI_CHAT_DAILY_LIMIT,
   AiChatMessage,
   AiQuotaState,
+  clearAiChatHistory,
   consumeAiQuota,
   formatResetCountdown,
   getAiQuotaState,
+  loadAiChatHistory,
+  saveAiChatHistory,
   sendCustomerAiMessage,
 } from '../services/aiAssistantService';
-import { AlertBanner } from './ui';
+import { AlertBanner, ConfirmDialog } from './ui';
 
 const QUICK_PROMPTS = [
   'Hitung size buat TB 170cm BB 62kg',
@@ -31,20 +34,36 @@ export const CustomerAiChatWidget: React.FC = () => {
   const { products } = useStore();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<AiChatMessage[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<AiChatMessage[]>(() => {
+    const saved = loadAiChatHistory(user?.id);
+    return saved.length > 0 ? [WELCOME_MESSAGE, ...saved] : [WELCOME_MESSAGE];
+  });
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [sizeGuides, setSizeGuides] = useState<SizeGuideRow[]>([]);
   const [quota, setQuota] = useState<AiQuotaState>(() => getAiQuotaState(user?.id));
   const [nowTick, setNowTick] = useState<number>(() => Date.now());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevUserIdRef = useRef<string | undefined>(user?.id);
 
-  // Sync quota when auth user changes (guest <-> member)
+  // Sync quota & saved chat history when auth user changes (guest <-> member)
   useEffect(() => {
     setQuota(getAiQuotaState(user?.id));
+    if (prevUserIdRef.current !== user?.id) {
+      prevUserIdRef.current = user?.id;
+      const saved = loadAiChatHistory(user?.id);
+      setMessages(saved.length > 0 ? [WELCOME_MESSAGE, ...saved] : [WELCOME_MESSAGE]);
+      setErrorMsg(null);
+    }
   }, [user?.id]);
+
+  // Persist chat history across page refreshes & browser restarts
+  useEffect(() => {
+    saveAiChatHistory(messages, user?.id);
+  }, [messages, user?.id]);
 
   // Real-time 1-second timer to display live reset countdown & auto-reset quota when 24h elapses
   useEffect(() => {
@@ -184,14 +203,27 @@ export const CustomerAiChatWidget: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              aria-label="Tutup chat AI"
-              className="p-1.5 rounded-full text-on-primary/80 hover:text-on-primary hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {messages.some((m) => m.id !== 'welcome') && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearOpen(true)}
+                  title="Hapus Riwayat Chat"
+                  aria-label="Hapus Riwayat Chat"
+                  className="p-1.5 rounded-full text-on-primary/75 hover:text-on-primary hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">delete_outline</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                aria-label="Tutup chat AI"
+                className="p-1.5 rounded-full text-on-primary/80 hover:text-on-primary hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
           </div>
 
           {/* Messages Body */}
@@ -310,6 +342,21 @@ export const CustomerAiChatWidget: React.FC = () => {
           </span>
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmClearOpen}
+        title="Hapus Riwayat Chat?"
+        description="Seluruh percakapan di jendela chat ini akan dihapus. Sisa kuota chat harian (maks 5 chat per 24 jam) tidak berubah."
+        confirmLabel="Ya, Hapus Chat"
+        cancelLabel="Batal"
+        onCancel={() => setConfirmClearOpen(false)}
+        onConfirm={() => {
+          clearAiChatHistory(user?.id);
+          setMessages([WELCOME_MESSAGE]);
+          setErrorMsg(null);
+          setConfirmClearOpen(false);
+        }}
+      />
     </div>
   );
 };

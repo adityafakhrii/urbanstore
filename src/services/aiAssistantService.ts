@@ -36,6 +36,50 @@ function getQuotaStorageKey(userId?: string | null): string {
   return userId ? `urbanstore_ai_quota_user_${userId}` : 'urbanstore_ai_quota_guest';
 }
 
+function getHistoryStorageKey(userId?: string | null): string {
+  return userId ? `urbanstore_ai_history_user_${userId}` : 'urbanstore_ai_history_guest';
+}
+
+export function loadAiChatHistory(userId?: string | null): AiChatMessage[] {
+  try {
+    const raw = window.localStorage.getItem(getHistoryStorageKey(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is AiChatMessage =>
+        Boolean(item) &&
+        typeof item.id === 'string' &&
+        (item.role === 'user' || item.role === 'assistant') &&
+        typeof item.text === 'string' &&
+        typeof item.timestamp === 'string'
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function saveAiChatHistory(messages: AiChatMessage[], userId?: string | null): void {
+  try {
+    const toStore = messages.filter((m) => m.id !== 'welcome');
+    if (toStore.length === 0) {
+      window.localStorage.removeItem(getHistoryStorageKey(userId));
+      return;
+    }
+    window.localStorage.setItem(getHistoryStorageKey(userId), JSON.stringify(toStore));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function clearAiChatHistory(userId?: string | null): void {
+  try {
+    window.localStorage.removeItem(getHistoryStorageKey(userId));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function getAiQuotaState(userId?: string | null): AiQuotaState {
   const key = getQuotaStorageKey(userId);
   try {
