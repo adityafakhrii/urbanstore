@@ -37,6 +37,7 @@ export const CustomerAiChatWidget: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sizeGuides, setSizeGuides] = useState<SizeGuideRow[]>([]);
   const [quota, setQuota] = useState<AiQuotaState>(() => getAiQuotaState(user?.id));
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +45,20 @@ export const CustomerAiChatWidget: React.FC = () => {
   useEffect(() => {
     setQuota(getAiQuotaState(user?.id));
   }, [user?.id]);
+
+  // Real-time 1-second timer to display live reset countdown & auto-reset quota when 24h elapses
+  useEffect(() => {
+    if (!isOpen || !quota.resetAt) return;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setNowTick(now);
+      if (quota.resetAt && now >= quota.resetAt) {
+        setQuota(getAiQuotaState(user?.id));
+        setErrorMsg(null);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isOpen, quota.resetAt, user?.id]);
 
   // Load size guide data once when chat opens
   useEffect(() => {
@@ -138,6 +153,10 @@ export const CustomerAiChatWidget: React.FC = () => {
     void handleSend();
   };
 
+  void nowTick;
+  const resetCompact = quota.resetAt ? formatResetCountdown(quota.resetAt, 'compact') : '';
+  const resetLong = quota.resetAt ? formatResetCountdown(quota.resetAt, 'long') : '';
+
   return (
     <div className="fixed bottom-5 right-5 z-40 print:hidden">
       {/* Chat Window */}
@@ -158,8 +177,9 @@ export const CustomerAiChatWidget: React.FC = () => {
                 <h2 className="font-headline-sm text-sm text-on-primary truncate">
                   UrbanStore Stylist &amp; CS
                 </h2>
-                <p className="text-[11px] text-on-primary/75">
-                  Sisa kuota: {quota.remaining}/{quota.limit} chat (24 jam)
+                <p className="text-[11px] text-on-primary/80 tabular-nums">
+                  Sisa kuota: {quota.remaining}/{quota.limit} chat
+                  {resetCompact ? ` · Reset ${resetCompact}` : ' (24 jam)'}
                 </p>
               </div>
             </div>
@@ -235,8 +255,8 @@ export const CustomerAiChatWidget: React.FC = () => {
             <div className="px-4 pt-3 bg-surface-card border-t border-border-ecru">
               {quota.isExhausted ? (
                 <AlertBanner variant="warning">
-                  Batas maksimal {AI_CHAT_DAILY_LIMIT} chat per 24 jam telah tercapai. Dapat
-                  digunakan lagi dalam {formatResetCountdown(quota.resetAt)}.
+                  Batas maksimal {AI_CHAT_DAILY_LIMIT} chat per 24 jam telah tercapai. Kuota
+                  otomatis tereset dalam <strong className="tabular-nums">{resetLong}</strong>.
                 </AlertBanner>
               ) : (
                 errorMsg && <AlertBanner variant="error">{errorMsg}</AlertBanner>

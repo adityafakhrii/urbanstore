@@ -104,14 +104,27 @@ export function consumeAiQuota(userId?: string | null): AiQuotaState {
   return getAiQuotaState(userId);
 }
 
-export function formatResetCountdown(resetAt: number | null): string {
+export function formatResetCountdown(
+  resetAt: number | null,
+  style: 'long' | 'compact' = 'long'
+): string {
   if (!resetAt) return '';
-  const diffMs = Math.max(0, resetAt - Date.now());
-  const totalMinutes = Math.ceil(diffMs / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  if (hours > 0) return `${hours} jam ${mins} menit`;
-  return `${mins} menit`;
+  const totalSeconds = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (style === 'compact') {
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(
+      secs
+    ).padStart(2, '0')}`;
+  }
+
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours} jam`);
+  if (mins > 0 || hours > 0) parts.push(`${mins} menit`);
+  parts.push(`${secs} detik`);
+  return parts.join(' ');
 }
 
 /**
