@@ -7,7 +7,7 @@ export const ToastBanner: React.FC = () => {
   if (!toastMessage) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 bg-primary text-on-primary px-5 py-3.5 rounded-2xl shadow-xl border border-white/15 flex items-center gap-3 max-w-sm animate-fade-in print:hidden">
+    <div className="fixed bottom-20 right-5 z-50 bg-primary text-on-primary px-5 py-3.5 rounded-2xl shadow-xl border border-white/15 flex items-center gap-3 max-w-sm animate-fade-in print:hidden">
       <span className="material-symbols-outlined text-[18px] text-secondary-container shrink-0">
         check_circle
       </span>

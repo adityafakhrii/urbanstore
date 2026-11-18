@@ -4,6 +4,7 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { SizeGuideModal } from '../components/SizeGuideModal';
 import { ToastBanner } from '../components/ToastBanner';
+import { CustomerAiChatWidget } from '../components/CustomerAiChatWidget';
 import { useStore } from '../context/StoreContext';
 
 export const StorefrontLayout: React.FC = () => {
@@ -17,6 +18,7 @@ export const StorefrontLayout: React.FC = () => {
       </main>
       <Footer />
       <SizeGuideModal isOpen={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} />
+      <CustomerAiChatWidget />
       <ToastBanner />
     </div>
   );
