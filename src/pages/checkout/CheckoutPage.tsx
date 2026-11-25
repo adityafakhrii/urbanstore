@@ -119,11 +119,13 @@ export const CheckoutPage: React.FC = () => {
     }
   };
 
+  const isPickup = courier === 'free';
+
   const handleCompleteCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0 || submitting) return;
 
-    if (!province.trim()) {
+    if (!isPickup && !province.trim()) {
       setCheckoutError('Pilih provinsi pengiriman terlebih dahulu.');
       return;
     }
@@ -142,6 +144,12 @@ export const CheckoutPage: React.FC = () => {
     setWhatsappError(null);
     setCheckoutError(null);
 
+    const resolvedProvince = isPickup ? '' : province.trim();
+    const resolvedCity = isPickup ? 'Ambil di Tempat (Atelier UrbanStore)' : city.trim();
+    const resolvedDistrict = isPickup ? '' : district.trim();
+    const resolvedAddress = isPickup ? 'Ambil Langsung di Tempat (Atelier UrbanStore)' : address.trim();
+    const resolvedPostalCode = isPickup ? '-' : postalCode.trim();
+
     if (useSupabaseDb) {
       setSubmitting(true);
       setSubmittingLabel('Menyimpan Pesanan & Mengunci Stok...');
@@ -149,11 +157,11 @@ export const CheckoutPage: React.FC = () => {
         fullName: fullName.trim(),
         email: email.trim(),
         whatsapp: whatsapp.trim(),
-        province: province.trim(),
-        city: city.trim(),
-        district: district.trim(),
-        address: address.trim(),
-        postalCode: postalCode.trim(),
+        province: resolvedProvince,
+        city: resolvedCity,
+        district: resolvedDistrict,
+        address: resolvedAddress,
+        postalCode: resolvedPostalCode,
         deliveryNotes: deliveryNotes.trim(),
         courier,
         paymentMethod: 'Mayar Payment Gateway',
@@ -214,11 +222,11 @@ export const CheckoutPage: React.FC = () => {
       fullName: fullName.trim(),
       email: email.trim(),
       whatsapp: whatsapp.trim(),
-      province: province.trim(),
-      city: city.trim(),
-      district: district.trim(),
-      address: address.trim(),
-      postalCode: postalCode.trim(),
+      province: resolvedProvince,
+      city: resolvedCity,
+      district: resolvedDistrict,
+      address: resolvedAddress,
+      postalCode: resolvedPostalCode,
       deliveryNotes: deliveryNotes.trim(),
       courier,
       paymentMethod: 'Mayar Payment Gateway',
@@ -332,119 +340,128 @@ export const CheckoutPage: React.FC = () => {
 
           <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
-              02 · Alamat Pengiriman Lengkap
+              02 · Layanan Pengiriman (Pilih Opsi Ongkir)
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CustomSelect
-                label="Provinsi"
-                required
-                value={province}
-                onChange={setProvince}
-                options={provinceOptions}
-                placeholder="Pilih Provinsi"
-              />
-              <InputField
-                label="Kota / Kabupaten"
-                required
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Contoh: Jakarta Selatan / Kota Bandung"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                {
+                  id: 'free' as const,
+                  label: 'Ambil di Tempat (Gratis Ongkir)',
+                  cost: 'Rp 0 · Ambil Langsung di Toko',
+                },
+                {
+                  id: 'reguler' as const,
+                  label: 'Reguler (2-4 Hari)',
+                  cost: subtotal >= 500000 ? 'Gratis' : formatRupiah(18000),
+                },
+                { id: 'sameday' as const, label: 'Same-Day Jabodetabek', cost: formatRupiah(20000) },
+                { id: 'instant' as const, label: 'Instant (2-3 Jam)', cost: formatRupiah(35000) },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setCourier(opt.id)}
+                  className={`p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
+                    courier === opt.id
+                      ? 'border-primary bg-surface-sand ring-2 ring-primary/10'
+                      : 'border-border-ecru bg-surface hover:border-primary/50'
+                  }`}
+                >
+                  <p className="text-xs font-medium text-primary">{opt.label}</p>
+                  <p className="text-[11px] text-secondary mt-0.5 font-medium">{opt.cost}</p>
+                </button>
+              ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField
-                label="Kecamatan"
-                required
-                type="text"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                placeholder="Contoh: Kebayoran Baru"
-              />
-              <InputField
-                label="Kode Pos"
-                required
-                type="text"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                placeholder="12190"
-              />
-            </div>
-
-            <TextareaField
-              label="Alamat Lengkap (Jalan, No. Rumah, RT/RW, Patokan)"
-              required
-              rows={3}
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Jl. Senopati No. 18, RT 02/RW 03, samping toko kopi"
-            />
-
-            <InputField
-              label="Catatan Pengiriman (Opsional)"
-              type="text"
-              value={deliveryNotes}
-              onChange={(e) => setDeliveryNotes(e.target.value)}
-              placeholder="Misal: Titip ke satpam jika rumah kosong"
-            />
+            {isPickup && (
+              <div className="space-y-4 pt-1">
+                <AlertBanner variant="info" title="Ambil Langsung di Tempat (Gratis Ongkir)">
+                  Gratis ongkos kirim karena pesanan diambil langsung ke lokasi toko/atelier
+                  UrbanStore. Form alamat pengiriman disembunyikan karena tidak diperlukan. Info
+                  kesiapan pengambilan akan dikirim melalui WhatsApp setelah pembayaran terkonfirmasi
+                  lunas.
+                </AlertBanner>
+                <InputField
+                  label="Catatan Pengambilan (Opsional)"
+                  type="text"
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder="Misal: Rencana ambil besok sore / diambil oleh kurir pribadi"
+                />
+              </div>
+            )}
           </section>
+
+          {!isPickup && (
+            <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-4">
+              <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
+                03 · Alamat Pengiriman Lengkap
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomSelect
+                  label="Provinsi"
+                  required
+                  value={province}
+                  onChange={setProvince}
+                  options={provinceOptions}
+                  placeholder="Pilih Provinsi"
+                />
+                <InputField
+                  label="Kota / Kabupaten"
+                  required
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Contoh: Jakarta Selatan / Kota Bandung"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <InputField
+                  label="Kecamatan"
+                  required
+                  type="text"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  placeholder="Contoh: Kebayoran Baru"
+                />
+                <InputField
+                  label="Kode Pos"
+                  required
+                  type="text"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="12190"
+                />
+              </div>
+
+              <TextareaField
+                label="Alamat Lengkap (Jalan, No. Rumah, RT/RW, Patokan)"
+                required
+                rows={3}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Jl. Senopati No. 18, RT 02/RW 03, samping toko kopi"
+              />
+
+              <InputField
+                label="Catatan Pengiriman (Opsional)"
+                type="text"
+                value={deliveryNotes}
+                onChange={(e) => setDeliveryNotes(e.target.value)}
+                placeholder="Misal: Titip ke satpam jika rumah kosong"
+              />
+            </section>
+          )}
 
           <section className="bg-surface-card border border-border-ecru rounded-2xl p-5 sm:p-6 space-y-5">
             <h2 className="font-label-uppercase text-[11px] uppercase tracking-widest text-secondary border-b border-border-ecru pb-3">
-              03 · Kurir &amp; Metode Pembayaran
+              {isPickup ? '03' : '04'} · Metode Pembayaran Otomatis
             </h2>
 
             <div>
-              <p className="font-body-sm text-xs font-medium text-text-muted mb-2">
-                Layanan Pengiriman (Hitung Ongkir)
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {[
-                  {
-                    id: 'free' as const,
-                    label: 'Ambil di Tempat (Gratis Ongkir)',
-                    cost: 'Rp 0 · Ambil Langsung di Toko',
-                  },
-                  {
-                    id: 'reguler' as const,
-                    label: 'Reguler (2-4 Hari)',
-                    cost: subtotal >= 500000 ? 'Gratis' : formatRupiah(18000),
-                  },
-                  { id: 'sameday' as const, label: 'Same-Day Jabodetabek', cost: formatRupiah(20000) },
-                  { id: 'instant' as const, label: 'Instant (2-3 Jam)', cost: formatRupiah(35000) },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setCourier(opt.id)}
-                    className={`p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
-                      courier === opt.id
-                        ? 'border-primary bg-surface-sand ring-2 ring-primary/10'
-                        : 'border-border-ecru bg-surface hover:border-primary/50'
-                    }`}
-                  >
-                    <p className="text-xs font-medium text-primary">{opt.label}</p>
-                    <p className="text-[11px] text-secondary mt-0.5 font-medium">{opt.cost}</p>
-                  </button>
-                ))}
-              </div>
-              {courier === 'free' && (
-                <div className="mt-3">
-                  <AlertBanner variant="info" title="Ambil Langsung di Tempat (Gratis Ongkir)">
-                    Gratis ongkos kirim karena pesanan diambil langsung ke lokasi toko/atelier
-                    UrbanStore. Info kesiapan pengambilan akan dikirim melalui WhatsApp setelah
-                    pembayaran terkonfirmasi lunas.
-                  </AlertBanner>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className="font-body-sm text-xs font-medium text-text-muted mb-2">
-                Metode Pembayaran Otomatis
-              </p>
               <div className="p-4 border-2 border-primary bg-surface-sand/60 rounded-2xl space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-0.5">
