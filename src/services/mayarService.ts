@@ -39,7 +39,33 @@ export interface SyncAllMayarResponse {
   error?: string;
 }
 
-async function postMayarApi<T>(url: string, body: unknown, accessToken?: string): Promise<T> {
+function extractErrorMessage(raw: unknown, status: number): string | undefined {
+  if (!raw) return undefined;
+  if (typeof raw === 'string') return raw.trim() || undefined;
+  if (typeof raw === 'object') {
+    const obj = raw as Record<string, unknown>;
+    const msg =
+      (typeof obj.message === 'string' && obj.message) ||
+      (typeof obj.messages === 'string' && obj.messages) ||
+      (typeof obj.error === 'string' && obj.error);
+    if (msg) {
+      const code = typeof obj.code === 'string' && obj.code ? `[${obj.code}] ` : '';
+      return `${code}${msg}`;
+    }
+    try {
+      return JSON.stringify(obj);
+    } catch {
+      return `Error server (HTTP ${status}).`;
+    }
+  }
+  return String(raw);
+}
+
+async function postMayarApi<T extends { ok?: boolean; error?: string }>(
+  url: string,
+  body: unknown,
+  accessToken?: string
+): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -58,7 +84,7 @@ async function postMayarApi<T>(url: string, body: unknown, accessToken?: string)
   let parsed: Record<string, unknown> = {};
   try {
     const json = JSON.parse(text);
-    if (json && typeof json === 'object') {
+    if (json && typeof json === 'object' && !Array.isArray(json)) {
       parsed = json as Record<string, unknown>;
     }
   } catch {
@@ -68,11 +94,16 @@ async function postMayarApi<T>(url: string, body: unknown, accessToken?: string)
     };
   }
 
-  if (!res.ok && !parsed.error) {
-    parsed.error = `Permintaan ke Mayar gagal (HTTP ${res.status}).`;
-  }
+  const normalizedError =
+    extractErrorMessage(parsed.error, res.status) ||
+    (!res.ok ? extractErrorMessage(parsed.message ?? parsed, res.status) : undefined) ||
+    (!res.ok ? `Permintaan ke Mayar gagal (HTTP ${res.status}).` : undefined);
 
-  return parsed as T;
+  return {
+    ...parsed,
+    ok: res.ok && parsed.ok !== false,
+    ...(normalizedError ? { error: normalizedError } : {}),
+  } as T;
 }
 
 export async function createMayarPaymentForOrder(params: {

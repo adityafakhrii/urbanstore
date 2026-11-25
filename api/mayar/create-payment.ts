@@ -1,14 +1,12 @@
+import type { ApiRequest, ApiResponse, DbOrderRow } from '../_lib/mayar.js';
 import {
-  type ApiRequest,
-  type ApiResponse,
-  type DbOrderRow,
   createMayarInvoice,
   expireOrderInSupabase,
   getRequestOrigin,
   getSupabaseAdminClient,
   readJsonBody,
   sendJson,
-} from '../_lib/mayar';
+} from '../_lib/mayar.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method === 'OPTIONS') {

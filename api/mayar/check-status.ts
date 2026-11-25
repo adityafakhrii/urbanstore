@@ -1,14 +1,12 @@
+import type { ApiRequest, ApiResponse, DbOrderRow } from '../_lib/mayar.js';
 import {
-  type ApiRequest,
-  type ApiResponse,
-  type DbOrderRow,
   confirmOrderPaidInSupabase,
   expireOrderInSupabase,
   fetchMayarPaymentStatus,
   getSupabaseAdminClient,
   readJsonBody,
   sendJson,
-} from '../_lib/mayar';
+} from '../_lib/mayar.js';
 
 async function verifySingleOrder(
   supabaseAdmin: NonNullable<ReturnType<typeof getSupabaseAdminClient>['client']>,

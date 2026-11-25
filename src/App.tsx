@@ -7,6 +7,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { AdminRoute } from './routes/AdminRoute';
 import { GuestRoute } from './routes/GuestRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { HomePage } from './pages/public/HomePage';
 import { CatalogPage } from './pages/public/CatalogPage';
@@ -72,8 +73,9 @@ const PageLoader: React.FC = () => (
 
 export function App() {
   return (
-    <StoreProvider>
-      <Suspense fallback={<PageLoader />}>
+    <ErrorBoundary>
+      <StoreProvider>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public Storefront & Customer Flows */}
           <Route element={<StorefrontLayout />}>
@@ -134,6 +136,7 @@ export function App() {
         </Routes>
       </Suspense>
     </StoreProvider>
+    </ErrorBoundary>
   );
 }
 

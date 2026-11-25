@@ -1,7 +1,5 @@
+import type { ApiRequest, ApiResponse, DbOrderRow } from '../_lib/mayar.js';
 import {
-  type ApiRequest,
-  type ApiResponse,
-  type DbOrderRow,
   confirmOrderPaidInSupabase,
   fetchMayarPaymentStatus,
   getMayarConfig,
@@ -10,7 +8,7 @@ import {
   readJsonBody,
   sendJson,
   timingSafeEqualStrings,
-} from '../_lib/mayar';
+} from '../_lib/mayar.js';
 
 function extractWebhookEventName(body: Record<string, unknown>): string {
   if (typeof body.event === 'string') return body.event.trim().toLowerCase();

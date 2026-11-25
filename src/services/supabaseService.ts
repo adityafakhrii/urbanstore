@@ -596,13 +596,18 @@ function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
   };
 }
 
-const ORDER_SELECT_COLUMNS_WITH_MAYAR =
+const ORDER_SELECT_FULL =
   'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, payment_gateway, subtotal, discount, shipping_cost, total, status, tracking_number, shipping_expedition, payment_proof_url, payment_expires_at, paid_at, mayar_invoice_id, mayar_transaction_id, mayar_payment_link, mayar_payment_status, mayar_payment_method, mayar_verified_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
+
+const ORDER_SELECT_MAYAR_NO_EXP =
+  'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, payment_gateway, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, mayar_invoice_id, mayar_transaction_id, mayar_payment_link, mayar_payment_status, mayar_payment_method, mayar_verified_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
 
 const ORDER_SELECT_COLUMNS_LEGACY =
   'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
 
-function isMissingExpeditionColError(err: { code?: string; message?: string } | null): boolean {
+let preferredOrderSelectCols = ORDER_SELECT_FULL;
+
+function isMissingColumnError(err: { code?: string; message?: string } | null): boolean {
   if (!err) return false;
   const msg = err.message || '';
   return (
@@ -610,58 +615,82 @@ function isMissingExpeditionColError(err: { code?: string; message?: string } | 
     err.code === 'PGRST204' ||
     msg.includes('shipping_expedition') ||
     msg.includes('mayar_') ||
-    msg.includes('payment_gateway')
+    msg.includes('payment_gateway') ||
+    msg.includes('does not exist')
   );
+}
+
+function isMissingExpeditionColError(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false;
+  const msg = err.message || '';
+  return (
+    err.code === '42703' ||
+    err.code === 'PGRST204' ||
+    msg.includes('shipping_expedition')
+  );
+}
+
+async function selectOrdersSafe(
+  applyFilter: (q: ReturnType<NonNullable<typeof supabase>['from']>) => PromiseLike<{
+    data: unknown;
+    error: { code?: string; message?: string } | null;
+  }>
+): Promise<unknown[] | null> {
+  if (!supabase) return null;
+  const candidates = Array.from(
+    new Set([preferredOrderSelectCols, ORDER_SELECT_FULL, ORDER_SELECT_MAYAR_NO_EXP, ORDER_SELECT_COLUMNS_LEGACY])
+  );
+
+  for (const cols of candidates) {
+    const res = await applyFilter(supabase.from('orders').select(cols) as never);
+    if (!res.error) {
+      preferredOrderSelectCols = cols;
+      if (Array.isArray(res.data)) return res.data;
+      return res.data ? [res.data] : [];
+    }
+    if (!isMissingColumnError(res.error)) {
+      return null;
+    }
+  }
+  return null;
 }
 
 export async function fetchCustomerOrders(userId: string): Promise<OrderRecord[]> {
   if (!supabase) return [];
-  const primary = await supabase
-    .from('orders')
-    .select(ORDER_SELECT_COLUMNS_WITH_MAYAR)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-
-  let rows: unknown[] | null = primary.data as unknown[] | null;
-  let queryError = primary.error;
-
-  if (isMissingExpeditionColError(queryError)) {
-    const fallback = await supabase
-      .from('orders')
-      .select(ORDER_SELECT_COLUMNS_LEGACY)
+  const rows = await selectOrdersSafe((q) =>
+    (q as unknown as {
+      eq: (col: string, val: string) => {
+        order: (col: string, opts: { ascending: boolean }) => PromiseLike<{
+          data: unknown;
+          error: { code?: string; message?: string } | null;
+        }>;
+      };
+    })
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    rows = fallback.data as unknown[] | null;
-    queryError = fallback.error;
-  }
+      .order('created_at', { ascending: false })
+  );
 
-  if (queryError || !rows) return [];
+  if (!rows) return [];
   return rows.map((row) => mapDbOrderToOrderRecord(row as Record<string, unknown>));
 }
 
 export async function fetchOrderByNumberFromDb(orderNumber: string): Promise<OrderRecord | null> {
   if (!supabase) return null;
-  const primary = await supabase
-    .from('orders')
-    .select(ORDER_SELECT_COLUMNS_WITH_MAYAR)
-    .eq('order_number', orderNumber)
-    .maybeSingle();
-
-  let row: unknown = primary.data;
-  let queryError = primary.error;
-
-  if (isMissingExpeditionColError(queryError)) {
-    const fallback = await supabase
-      .from('orders')
-      .select(ORDER_SELECT_COLUMNS_LEGACY)
+  const rows = await selectOrdersSafe((q) =>
+    (q as unknown as {
+      eq: (col: string, val: string) => {
+        maybeSingle: () => PromiseLike<{
+          data: unknown;
+          error: { code?: string; message?: string } | null;
+        }>;
+      };
+    })
       .eq('order_number', orderNumber)
-      .maybeSingle();
-    row = fallback.data;
-    queryError = fallback.error;
-  }
+      .maybeSingle()
+  );
 
-  if (queryError || !row) return null;
-  return mapDbOrderToOrderRecord(row as Record<string, unknown>);
+  if (!rows || rows.length === 0) return null;
+  return mapDbOrderToOrderRecord(rows[0] as Record<string, unknown>);
 }
 
 export async function subscribeNewsletterInDb(email: string): Promise<{ ok: boolean; error?: string }> {

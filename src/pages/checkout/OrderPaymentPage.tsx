@@ -21,6 +21,22 @@ import {
 } from '../../utils/payment';
 import { AlertBanner, Button, StatusBadge, getButtonClassName } from '../../components/ui';
 
+function toSafeErrorString(val: unknown): string | null {
+  if (!val) return null;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    const obj = val as Record<string, unknown>;
+    if (typeof obj.message === 'string') return obj.message;
+    if (typeof obj.error === 'string') return obj.error;
+    try {
+      return JSON.stringify(obj);
+    } catch {
+      return 'Terjadi kesalahan pada gateway pembayaran.';
+    }
+  }
+  return String(val);
+}
+
 export const OrderPaymentPage: React.FC = () => {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const location = useLocation();
@@ -34,8 +50,8 @@ export const OrderPaymentPage: React.FC = () => {
   const [creatingLink, setCreatingLink] = useState<boolean>(false);
   const [checkingStatus, setCheckingStatus] = useState<boolean>(false);
   const [gatewayError, setGatewayError] = useState<string | null>(() => {
-    const state = location.state as { mayarInitError?: string } | null;
-    return state?.mayarInitError || null;
+    const state = location.state as { mayarInitError?: unknown } | null;
+    return toSafeErrorString(state?.mayarInitError);
   });
 
   const order = fetchedOrder || localMatch || null;
@@ -89,7 +105,7 @@ export const OrderPaymentPage: React.FC = () => {
 
       if (!res.ok) {
         if (!silent) {
-          setGatewayError(res.error || 'Gagal mengecek status pembayaran dari Mayar.id.');
+          setGatewayError(toSafeErrorString(res.error) || 'Gagal mengecek status pembayaran dari Mayar.id.');
         }
         return;
       }
@@ -168,7 +184,7 @@ export const OrderPaymentPage: React.FC = () => {
     setCreatingLink(false);
 
     if (!res.ok) {
-      setGatewayError(res.error || 'Gagal membuat link pembayaran Mayar.id.');
+      setGatewayError(toSafeErrorString(res.error) || 'Gagal membuat link pembayaran Mayar.id.');
       if (res.expired) {
         await refreshOrderFromDb();
         void loadCatalog();

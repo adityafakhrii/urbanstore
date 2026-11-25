@@ -2,6 +2,10 @@
 -- 008: Add Free Shipping Option ('free') to courier_type & place_order RPC
 -- ============================================================================
 
+-- 0. Ensure shipping_expedition exists even if 004 was skipped
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS shipping_expedition text;
+
 -- 1. Extend courier_type enum safely
 ALTER TYPE public.courier_type ADD VALUE IF NOT EXISTS 'free';
 
