@@ -5,6 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { ToastBanner } from '../components/ToastBanner';
 import { Button, getButtonClassName } from '../components/ui';
 import { BRAND_ASSETS } from '../data/products';
+import { handleImageError } from '../utils/storage';
 
 const ADMIN_NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -13,6 +14,7 @@ const ADMIN_NAV_ITEMS = [
   { to: '/admin/products', label: 'Products & Inventory', icon: 'inventory_2' },
   { to: '/admin/promos', label: 'Promos', icon: 'local_offer' },
   { to: '/admin/subscribers', label: 'Subscribers', icon: 'mail' },
+  { to: '/admin/account', label: 'Pengaturan Akun', icon: 'manage_accounts' },
 ];
 
 export const AdminLayout: React.FC = () => {
@@ -69,12 +71,28 @@ export const AdminLayout: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-border-ecru space-y-3">
-          <div className="px-2">
-            <p className="text-xs font-medium text-primary truncate">
-              {profile?.full_name || 'Administrator'}
-            </p>
-            <p className="text-[11px] text-text-muted truncate">{user?.email || 'Admin Session'}</p>
-          </div>
+          <Link
+            to="/admin/account"
+            className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-surface-sand transition-colors group"
+          >
+            <img
+              src={
+                (user?.user_metadata?.avatar_url as string) ||
+                (user?.user_metadata?.picture as string) ||
+                BRAND_ASSETS.avatar
+              }
+              alt={profile?.full_name || 'Admin'}
+              referrerPolicy="no-referrer"
+              onError={handleImageError}
+              className="w-8 h-8 rounded-full object-cover border border-border-ecru shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-primary truncate group-hover:underline">
+                {profile?.full_name || 'Administrator'}
+              </p>
+              <p className="text-[11px] text-text-muted truncate">{user?.email || 'Admin Session'}</p>
+            </div>
+          </Link>
           <div className="flex flex-col gap-2">
             <Link
               to="/"

@@ -55,6 +55,9 @@ const AdminPromosPage = lazy(() =>
 const AdminSubscribersPage = lazy(() =>
   import('./pages/admin/AdminSubscribersPage').then((m) => ({ default: m.AdminSubscribersPage }))
 );
+const AdminAccountPage = lazy(() =>
+  import('./pages/admin/AdminAccountPage').then((m) => ({ default: m.AdminAccountPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
@@ -122,6 +125,7 @@ export function App() {
               <Route path="products/:productId/edit" element={<AdminProductFormPage />} />
               <Route path="promos" element={<AdminPromosPage />} />
               <Route path="subscribers" element={<AdminSubscribersPage />} />
+              <Route path="account" element={<AdminAccountPage />} />
             </Route>
           </Route>
 
