@@ -23,6 +23,7 @@ Schema berada di [001_urbanstore_schema.sql](file:///d:/Projects/Vibe%20Coding%2
    - `004_shipping_expedition.sql`
    - `005_seed_19_products.sql`
    - `006_google_oauth_rbac.sql`
+   - `007_mayar_payment_gateway.sql`
 3. Jalankan isi file `supabase/seed.sql`.
 
 ## 3. Setup Google Cloud Console & Supabase Google Provider

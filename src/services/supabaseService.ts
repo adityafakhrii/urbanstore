@@ -19,6 +19,13 @@ export interface OrderItemSummary {
   lineTotal: number;
 }
 
+export type PaymentMethodType =
+  | 'Mayar Payment Gateway'
+  | 'QRIS'
+  | 'BCA Virtual Account'
+  | 'Mandiri'
+  | 'Visa / Mastercard';
+
 export interface OrderRecord {
   id: string;
   dbId?: string;
@@ -33,7 +40,8 @@ export interface OrderRecord {
   postalCode?: string;
   deliveryNotes?: string;
   courier: 'reguler' | 'sameday' | 'instant';
-  paymentMethod: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
+  paymentMethod: PaymentMethodType;
+  paymentGateway?: string;
   subtotal?: number;
   discount?: number;
   shippingCost?: number;
@@ -45,6 +53,12 @@ export interface OrderRecord {
   paymentProofUrl?: string;
   paymentExpiresAt?: string;
   paidAt?: string;
+  mayarInvoiceId?: string;
+  mayarTransactionId?: string;
+  mayarPaymentLink?: string;
+  mayarPaymentStatus?: string;
+  mayarPaymentMethod?: string;
+  mayarVerifiedAt?: string;
   items?: OrderItemSummary[];
 }
 
@@ -97,7 +111,8 @@ export interface AdminOrderRow {
   postal_code: string;
   delivery_notes: string;
   courier: 'reguler' | 'sameday' | 'instant';
-  payment_method: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
+  payment_method: PaymentMethodType;
+  payment_gateway?: string | null;
   promo_code: string | null;
   subtotal: number;
   discount: number;
@@ -109,6 +124,13 @@ export interface AdminOrderRow {
   payment_proof_url: string | null;
   payment_expires_at: string;
   paid_at: string | null;
+  mayar_invoice_id?: string | null;
+  mayar_transaction_id?: string | null;
+  mayar_payment_link?: string | null;
+  mayar_payment_status?: string | null;
+  mayar_payment_method?: string | null;
+  mayar_verified_at?: string | null;
+  stock_deducted?: boolean | null;
   created_at: string;
   order_items?: {
     id: string;
@@ -414,7 +436,7 @@ export async function placeOrderInDb(payload: {
   postalCode: string;
   deliveryNotes: string;
   courier: 'reguler' | 'sameday' | 'instant';
-  paymentMethod: 'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard';
+  paymentMethod: PaymentMethodType;
   promoCode: string | null;
   items: CartItem[];
 }): Promise<{ order?: OrderRecord; error?: string }> {
@@ -542,6 +564,7 @@ function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
     deliveryNotes: (row.delivery_notes as string) || '',
     courier: row.courier as OrderRecord['courier'],
     paymentMethod: row.payment_method as OrderRecord['paymentMethod'],
+    paymentGateway: (row.payment_gateway as string | null) ?? undefined,
     subtotal: row.subtotal as number,
     discount: row.discount as number,
     shippingCost: row.shipping_cost as number,
@@ -553,6 +576,12 @@ function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
     paymentProofUrl: (row.payment_proof_url as string | null) ?? undefined,
     paymentExpiresAt: (row.payment_expires_at as string | null) ?? undefined,
     paidAt: (row.paid_at as string | null) ?? undefined,
+    mayarInvoiceId: (row.mayar_invoice_id as string | null) ?? undefined,
+    mayarTransactionId: (row.mayar_transaction_id as string | null) ?? undefined,
+    mayarPaymentLink: (row.mayar_payment_link as string | null) ?? undefined,
+    mayarPaymentStatus: (row.mayar_payment_status as string | null) ?? undefined,
+    mayarPaymentMethod: (row.mayar_payment_method as string | null) ?? undefined,
+    mayarVerifiedAt: (row.mayar_verified_at as string | null) ?? undefined,
     items: rawItems.map((i) => ({
       productName: i.product_name,
       productSku: i.product_sku,
@@ -565,18 +594,21 @@ function mapDbOrderToOrderRecord(row: Record<string, unknown>): OrderRecord {
   };
 }
 
-const ORDER_SELECT_COLUMNS_WITH_EXPEDITION =
-  'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, shipping_expedition, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
+const ORDER_SELECT_COLUMNS_WITH_MAYAR =
+  'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, payment_gateway, subtotal, discount, shipping_cost, total, status, tracking_number, shipping_expedition, payment_proof_url, payment_expires_at, paid_at, mayar_invoice_id, mayar_transaction_id, mayar_payment_link, mayar_payment_status, mayar_payment_method, mayar_verified_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
 
 const ORDER_SELECT_COLUMNS_LEGACY =
   'id, order_number, created_at, full_name, email, whatsapp, province, city, district, address, postal_code, delivery_notes, courier, payment_method, subtotal, discount, shipping_cost, total, status, tracking_number, payment_proof_url, payment_expires_at, paid_at, order_items(product_name, product_sku, size, color, unit_price, quantity, line_total)';
 
 function isMissingExpeditionColError(err: { code?: string; message?: string } | null): boolean {
   if (!err) return false;
+  const msg = err.message || '';
   return (
     err.code === '42703' ||
     err.code === 'PGRST204' ||
-    (err.message || '').includes('shipping_expedition')
+    msg.includes('shipping_expedition') ||
+    msg.includes('mayar_') ||
+    msg.includes('payment_gateway')
   );
 }
 
@@ -584,7 +616,7 @@ export async function fetchCustomerOrders(userId: string): Promise<OrderRecord[]
   if (!supabase) return [];
   const primary = await supabase
     .from('orders')
-    .select(ORDER_SELECT_COLUMNS_WITH_EXPEDITION)
+    .select(ORDER_SELECT_COLUMNS_WITH_MAYAR)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -609,7 +641,7 @@ export async function fetchOrderByNumberFromDb(orderNumber: string): Promise<Ord
   if (!supabase) return null;
   const primary = await supabase
     .from('orders')
-    .select(ORDER_SELECT_COLUMNS_WITH_EXPEDITION)
+    .select(ORDER_SELECT_COLUMNS_WITH_MAYAR)
     .eq('order_number', orderNumber)
     .maybeSingle();
 

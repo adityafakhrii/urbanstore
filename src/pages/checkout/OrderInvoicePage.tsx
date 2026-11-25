@@ -6,7 +6,7 @@ import {
   fetchOrderByNumberFromDb,
   formatRupiah,
 } from '../../services/supabaseService';
-import { getInvoiceStamp } from '../../utils/payment';
+import { formatPaymentMethodLabel, getInvoiceStamp } from '../../utils/payment';
 import { Button, getButtonClassName } from '../../components/ui';
 
 export const OrderInvoicePage: React.FC = () => {
@@ -149,8 +149,24 @@ export const OrderInvoicePage: React.FC = () => {
             </p>
             <p>
               <span className="text-text-muted">Metode Bayar:</span>{' '}
-              <strong className="text-primary">{order.paymentMethod}</strong>
+              <strong className="text-primary">
+                {formatPaymentMethodLabel(order.paymentMethod, order.mayarPaymentMethod)}
+              </strong>
             </p>
+            {order.mayarTransactionId && (
+              <p>
+                <span className="text-text-muted">Mayar TX ID:</span>{' '}
+                <strong className="font-mono text-primary">{order.mayarTransactionId}</strong>
+              </p>
+            )}
+            {order.mayarVerifiedAt && (
+              <p>
+                <span className="text-text-muted">Verifikasi Mayar:</span>{' '}
+                <strong className="text-status-stock">
+                  Otomatis ({new Date(order.mayarVerifiedAt).toLocaleString('id-ID')})
+                </strong>
+              </p>
+            )}
             <p>
               <span className="text-text-muted">Layanan Kurir:</span>{' '}
               <strong className="text-primary">

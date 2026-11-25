@@ -8,7 +8,8 @@ import {
   placeOrderInDb,
   validatePromoInDb,
 } from '../../services/supabaseService';
-import { INDO_PROVINCES } from '../../utils/payment';
+import { createMayarPaymentForOrder } from '../../services/mayarService';
+import { INDO_PROVINCES, MAYAR_SUPPORTED_CHANNELS } from '../../utils/payment';
 import { handleImageError } from '../../utils/storage';
 import {
   AlertBanner,
@@ -25,6 +26,7 @@ export const CheckoutPage: React.FC = () => {
   const {
     cartItems,
     useSupabaseDb,
+    loadCatalog,
     updateQuantity,
     removeCartItem,
     clearCart,
@@ -47,10 +49,8 @@ export const CheckoutPage: React.FC = () => {
   const [postalCode, setPostalCode] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [courier, setCourier] = useState<'reguler' | 'sameday' | 'instant'>('reguler');
-  const [paymentMethod, setPaymentMethod] = useState<
-    'QRIS' | 'BCA Virtual Account' | 'Mandiri' | 'Visa / Mastercard'
-  >('BCA Virtual Account');
   const [submitting, setSubmitting] = useState(false);
+  const [submittingLabel, setSubmittingLabel] = useState('Membuat Pesanan...');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -139,6 +139,7 @@ export const CheckoutPage: React.FC = () => {
 
     if (useSupabaseDb) {
       setSubmitting(true);
+      setSubmittingLabel('Menyimpan Pesanan & Mengunci Stok...');
       const res = await placeOrderInDb({
         fullName: fullName.trim(),
         email: email.trim(),
@@ -150,21 +151,50 @@ export const CheckoutPage: React.FC = () => {
         postalCode: postalCode.trim(),
         deliveryNotes: deliveryNotes.trim(),
         courier,
-        paymentMethod,
+        paymentMethod: 'Mayar Payment Gateway',
         promoCode: promoApplied?.code ?? null,
         items: cartItems,
       });
-      setSubmitting(false);
 
       if (res.error || !res.order) {
+        setSubmitting(false);
         setCheckoutError(res.error || 'Jaringan lagi ngadat nih. Santai, klik coba lagi ya.');
         return;
       }
 
-      addOrder(res.order);
+      // Refresh catalog stock right after atomic DB reservation
+      void loadCatalog();
+
+      setSubmittingLabel('Menghubungkan ke Mayar.id...');
+      const mayarRes = await createMayarPaymentForOrder({
+        orderId: res.order.dbId,
+        orderNumber: res.order.id,
+      });
+      setSubmitting(false);
+
+      const finalOrder: OrderRecord = {
+        ...res.order,
+        paymentGateway: 'mayar',
+        mayarInvoiceId: mayarRes.invoiceId,
+        mayarTransactionId: mayarRes.transactionId,
+        mayarPaymentLink: mayarRes.paymentLink,
+        mayarPaymentStatus: mayarRes.alreadyPaid ? 'paid' : 'unpaid',
+        paymentExpiresAt: mayarRes.expiredAt || res.order.paymentExpiresAt,
+      };
+
+      addOrder(finalOrder);
       clearCart();
-      showToast(`Pesanan ${res.order.id} berhasil dibuat!`);
-      navigate(`/orders/${encodeURIComponent(res.order.id)}/payment`, { replace: true });
+
+      if (mayarRes.ok && mayarRes.paymentLink) {
+        showToast(`Pesanan ${finalOrder.id} siap dibayar melalui Mayar.id!`);
+      } else {
+        showToast(`Pesanan ${finalOrder.id} dibuat. Klik ulang buat link Mayar di halaman bayar.`);
+      }
+
+      navigate(`/orders/${encodeURIComponent(finalOrder.id)}/payment`, {
+        replace: true,
+        state: mayarRes.error ? { mayarInitError: mayarRes.error } : undefined,
+      });
       return;
     }
 
@@ -186,7 +216,8 @@ export const CheckoutPage: React.FC = () => {
       postalCode: postalCode.trim(),
       deliveryNotes: deliveryNotes.trim(),
       courier,
-      paymentMethod,
+      paymentMethod: 'Mayar Payment Gateway',
+      paymentGateway: 'mayar',
       subtotal,
       discount,
       shippingCost,
@@ -393,30 +424,38 @@ export const CheckoutPage: React.FC = () => {
 
             <div>
               <p className="font-body-sm text-xs font-medium text-text-muted mb-2">
-                Metode Pembayaran (Transfer / QRIS)
+                Metode Pembayaran Otomatis
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(
-                  ['BCA Virtual Account', 'Mandiri', 'QRIS', 'Visa / Mastercard'] as const
-                ).map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPaymentMethod(method)}
-                    className={`p-3.5 border rounded-xl text-left flex items-center justify-between transition-all cursor-pointer ${
-                      paymentMethod === method
-                        ? 'border-primary bg-surface-sand ring-2 ring-primary/10'
-                        : 'border-border-ecru bg-surface hover:border-primary/50'
-                    }`}
-                  >
-                    <span className="text-xs font-medium text-primary">{method}</span>
-                    {paymentMethod === method && (
-                      <span className="material-symbols-outlined text-[18px] text-primary">
+              <div className="p-4 border-2 border-primary bg-surface-sand/60 rounded-2xl space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-headline-sm text-sm text-primary">
+                        Mayar.id Payment Gateway
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-status-stock/15 text-status-stock font-label-uppercase text-[9px] uppercase tracking-wider font-semibold">
+                        Verifikasi Otomatis
+                      </span>
+                    </div>
+                    <p className="font-body-sm text-xs text-text-muted">
+                      Pilih channel pembayaran favoritmu langsung di halaman checkout aman Mayar.id tanpa perlu upload bukti transfer.
+                    </p>
+                  </div>
+                  <span className="material-symbols-outlined text-[22px] text-primary shrink-0">
+                    verified_user
+                  </span>
+                </div>
+
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-2 border-t border-border-ecru text-[11px] text-primary">
+                  {MAYAR_SUPPORTED_CHANNELS.map((ch) => (
+                    <li key={ch} className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px] text-status-stock">
                         check_circle
                       </span>
-                    )}
-                  </button>
-                ))}
+                      <span>{ch}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </section>
@@ -535,11 +574,11 @@ export const CheckoutPage: React.FC = () => {
             fullWidth
             disabled={submitting}
           >
-            {submitting ? 'Membuat Pesanan...' : 'Buat Pesanan Sekarang'}
+            {submitting ? submittingLabel : 'Lanjut Bayar via Mayar.id'}
           </Button>
 
           <p className="text-[11px] text-text-muted text-center">
-            Batas waktu pembayaran adalah 60 menit setelah pesanan dibuat.
+            Batas waktu pembayaran 60 menit. Status pesanan &amp; stok terupdate otomatis setelah pembayaran berhasil.
           </p>
         </aside>
       </div>

@@ -45,35 +45,25 @@ export const ORDER_STATUS_OPTIONS_ID: { value: OrderStatusType; label: string }[
   { value: 'expired', label: 'Kedaluwarsa' },
 ];
 
-export const PAYMENT_ACCOUNTS: Record<
-  OrderRecord['paymentMethod'],
-  { bank: string; accountNumber: string; accountHolder: string; note: string }
-> = {
-  'BCA Virtual Account': {
-    bank: 'Bank BCA',
-    accountNumber: '522088914401',
-    accountHolder: 'PT UrbanStore Atelier Indonesia',
-    note: 'Transfer sesuai nominal tepat hingga digit terakhir via m-BCA / KlikBCA / ATM.',
-  },
-  Mandiri: {
-    bank: 'Bank Mandiri',
-    accountNumber: '1240009811223',
-    accountHolder: 'PT UrbanStore Atelier Indonesia',
-    note: 'Transfer via Livin by Mandiri atau ATM Bersama sebelum batas waktu berakhir.',
-  },
-  QRIS: {
-    bank: 'QRIS UrbanStore Official',
-    accountNumber: 'ID10293847561',
-    accountHolder: 'UrbanStore Atelier Jakarta',
-    note: 'Bayar melalui GoPay, OVO, DANA, ShopeePay, atau Mobile Banking berlogo QRIS.',
-  },
-  'Visa / Mastercard': {
-    bank: 'Transfer Konfirmasi Manual / BCA',
-    accountNumber: '522088914401',
-    accountHolder: 'PT UrbanStore Atelier Indonesia',
-    note: 'Sementara dapat melakukan transfer konfirmasi ke rekening resmi UrbanStore di atas.',
-  },
-};
+export const MAYAR_SUPPORTED_CHANNELS = [
+  'QRIS (GoPay, OVO, DANA, ShopeePay, Mobile Banking)',
+  'Virtual Account (BCA, Mandiri, BNI, BRI, Permata)',
+  'E-Wallet & Kartu Kredit / Debit',
+  'Minimarket (Alfamart / Indomaret)',
+];
+
+export function formatPaymentMethodLabel(
+  paymentMethod?: string,
+  mayarPaymentMethod?: string | null
+): string {
+  if (mayarPaymentMethod && mayarPaymentMethod.trim()) {
+    return `Mayar.id (${mayarPaymentMethod.trim()})`;
+  }
+  if (!paymentMethod || paymentMethod === 'Mayar Payment Gateway') {
+    return 'Mayar.id Payment Gateway';
+  }
+  return paymentMethod;
+}
 
 export function getRemainingSeconds(expiresAt?: string): number {
   if (!expiresAt) return 0;

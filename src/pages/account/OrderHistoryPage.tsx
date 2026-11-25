@@ -5,6 +5,7 @@ import { useStore } from '../../context/StoreContext';
 import { formatRupiah } from '../../services/supabaseService';
 import {
   formatCountdown,
+  formatPaymentMethodLabel,
   getOrderStatusBadge,
   getRemainingSeconds,
   isOrderPaymentExpired,
@@ -93,7 +94,8 @@ export const OrderHistoryPage: React.FC = () => {
                     )}
                   </div>
                   <p className="text-xs text-text-muted">
-                    {order.createdAt} · {order.itemsCount} item · Metode: {order.paymentMethod}
+                    {order.createdAt} · {order.itemsCount} item · Metode:{' '}
+                    {formatPaymentMethodLabel(order.paymentMethod, order.mayarPaymentMethod)}
                   </p>
                   <p className="text-sm font-semibold text-primary pt-0.5">
                     Total: {formatRupiah(order.total)}
@@ -112,7 +114,7 @@ export const OrderHistoryPage: React.FC = () => {
                     className={getButtonClassName({ variant: 'primary', size: 'sm' })}
                   >
                     {order.status === 'pending' && !expired
-                      ? 'Bayar / Upload Bukti'
+                      ? 'Bayar via Mayar.id'
                       : 'Detail Pembayaran'}
                   </Link>
                   <Link

@@ -220,7 +220,7 @@ export const AdminDashboardPage: React.FC = () => {
           >
             {[
               metrics.waitingVerificationCount > 0
-                ? `${metrics.waitingVerificationCount} pesanan menunggu verifikasi bukti transfer`
+                ? `${metrics.waitingVerificationCount} pesanan legacy menunggu verifikasi pembayaran`
                 : null,
               metrics.paidNoTrackingCount > 0
                 ? `${metrics.paidNoTrackingCount} pesanan lunas belum diinput nomor resi`
