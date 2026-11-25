@@ -85,6 +85,10 @@ export const Header: React.FC = () => {
   };
 
   const formattedCartCount = totalCartCount < 10 ? `0${totalCartCount}` : `${totalCartCount}`;
+  const userAvatarSrc =
+    (user?.user_metadata?.avatar_url as string) ||
+    (user?.user_metadata?.picture as string) ||
+    BRAND_ASSETS.avatar;
 
   return (
     <header className="sticky top-0 w-full z-50 print:hidden">
@@ -246,7 +250,7 @@ export const Header: React.FC = () => {
 
               <Link
                 to={user ? '/account' : '/login'}
-                title={user ? `${profile?.full_name || user.email} (${isAdmin ? 'Admin' : 'Customer'})` : 'Masuk / Daftar'}
+                title={user ? `${profile?.full_name || user.email} (${isAdmin ? 'Admin' : 'Customer'})` : 'Lanjutkan dengan Google'}
                 aria-label="Akun Saya"
                 className="flex items-center gap-1.5 pl-1"
               >
@@ -255,7 +259,7 @@ export const Header: React.FC = () => {
                   className="w-8 h-8 rounded-full object-cover border border-border-ecru"
                   referrerPolicy="no-referrer"
                   onError={handleImageError}
-                  src={BRAND_ASSETS.avatar}
+                  src={userAvatarSrc}
                 />
                 <span className="hidden sm:inline-block font-label-uppercase text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-border-ecru bg-surface-card text-primary">
                   {user ? (isAdmin ? 'ADMIN' : 'MEMBER') : 'MASUK'}
@@ -308,7 +312,7 @@ export const Header: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="font-label-uppercase text-label-uppercase uppercase py-1.5 border-b border-border-ecru/50 text-primary"
               >
-                {user ? `Akun: ${profile?.full_name || user.email}` : 'Masuk / Daftar Akun →'}
+                {user ? `Akun: ${profile?.full_name || user.email}` : 'Lanjutkan dengan Google →'}
               </Link>
               <button
                 type="button"

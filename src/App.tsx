@@ -16,6 +16,7 @@ import { AboutPage } from './pages/public/AboutPage';
 import { CartPage } from './pages/public/CartPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 
 const CheckoutPage = lazy(() =>
   import('./pages/checkout/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))
@@ -102,6 +103,11 @@ export function App() {
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
             </Route>
+          </Route>
+
+          {/* Google OAuth Callback Route */}
+          <Route element={<AuthLayout />}>
+            <Route path="auth/callback" element={<AuthCallbackPage />} />
           </Route>
 
           {/* Isolated Admin Console Routes */}

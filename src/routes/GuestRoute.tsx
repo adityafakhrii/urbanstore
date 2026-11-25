@@ -16,7 +16,7 @@ export const GuestRoute: React.FC = () => {
 
   if (user) {
     const redirect = searchParams.get('redirect');
-    if (redirect && redirect.startsWith('/')) {
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
       return <Navigate to={redirect} replace />;
     }
     return <Navigate to={isAdmin ? '/admin/dashboard' : '/'} replace />;

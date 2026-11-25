@@ -1,13 +1,33 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getOAuthRedirectUrl } from '../lib/supabase';
 import type { UserProfile, UserRole } from '../services/supabaseService';
 
-interface SignUpParams {
-  email: string;
-  password: string;
-  fullName: string;
-  whatsapp: string;
+const OAUTH_REDIRECT_STORAGE_KEY = 'urbanstore_oauth_redirect';
+
+export function savePendingOAuthRedirect(path: string | null) {
+  try {
+    if (path && path.startsWith('/') && !path.startsWith('//')) {
+      sessionStorage.setItem(OAUTH_REDIRECT_STORAGE_KEY, path);
+    } else {
+      sessionStorage.removeItem(OAUTH_REDIRECT_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore sessionStorage restriction errors
+  }
+}
+
+export function consumePendingOAuthRedirect(): string | null {
+  try {
+    const val = sessionStorage.getItem(OAUTH_REDIRECT_STORAGE_KEY);
+    sessionStorage.removeItem(OAUTH_REDIRECT_STORAGE_KEY);
+    if (val && val.startsWith('/') && !val.startsWith('//')) {
+      return val;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 interface AuthContextValue {
@@ -18,39 +38,64 @@ interface AuthContextValue {
   isCustomer: boolean;
   loading: boolean;
   isConfigured: boolean;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (params: SignUpParams) => Promise<{ error?: string; needsEmailConfirmation?: boolean }>;
+  signInWithGoogle: (redirectPath?: string | null) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  updateProfile: (updates: Partial<Omit<UserProfile, 'id' | 'email' | 'role'>>) => Promise<{ error?: string }>;
+  updateProfile: (
+    updates: Partial<Omit<UserProfile, 'id' | 'email' | 'role'>>
+  ) => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const PROFILE_SELECT_COLS =
+  'id, email, full_name, whatsapp, role, default_province, default_city, default_district, default_address, default_postal_code';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(isSupabaseConfigured);
+  const profileRef = useRef<UserProfile | null>(null);
 
-  const loadProfile = useCallback(async (authUser: User | null) => {
-    if (!authUser || !supabase) {
-      setProfile(null);
-      return;
-    }
+  const setProfileState = useCallback((next: UserProfile | null) => {
+    profileRef.current = next;
+    setProfile(next);
+  }, []);
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(
-        'id, email, full_name, whatsapp, role, default_province, default_city, default_district, default_address, default_postal_code'
-      )
-      .eq('id', authUser.id)
-      .maybeSingle();
+  const loadProfile = useCallback(
+    async (authUser: User | null) => {
+      if (!authUser || !supabase) {
+        setProfileState(null);
+        return;
+      }
 
-    if (error || !data) {
-      setProfile({
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_COLS)
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      if (data && !error) {
+        setProfileState(data as UserProfile);
+        return;
+      }
+
+      // Fallback RPC if profile row was not yet created by trigger
+      const ensured = await supabase.rpc('ensure_user_profile');
+      if (ensured.data && !ensured.error) {
+        setProfileState(ensured.data as UserProfile);
+        return;
+      }
+
+      const metaName =
+        (authUser.user_metadata?.full_name as string) ||
+        (authUser.user_metadata?.name as string) ||
+        '';
+
+      setProfileState({
         id: authUser.id,
         email: authUser.email || '',
-        full_name: (authUser.user_metadata?.full_name as string) || '',
+        full_name: metaName,
         whatsapp: (authUser.user_metadata?.whatsapp as string) || '',
         role: 'customer',
         default_province: '',
@@ -59,11 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         default_address: '',
         default_postal_code: '',
       });
-      return;
-    }
-
-    setProfile(data as UserProfile);
-  }, []);
+    },
+    [setProfileState]
+  );
 
   useEffect(() => {
     if (!supabase) {
@@ -73,85 +116,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let mounted = true;
 
+    const syncSession = async (sessionUser: User | null) => {
+      if (!mounted) return;
+      setUser(sessionUser);
+      if (sessionUser) {
+        await loadProfile(sessionUser);
+      } else {
+        setProfileState(null);
+      }
+      if (mounted) setLoading(false);
+    };
+
     supabase.auth
       .getSession()
-      .then(async ({ data }) => {
-        if (!mounted) return;
-        const sessionUser = data.session?.user ?? null;
-        setUser(sessionUser);
-        await loadProfile(sessionUser);
-        if (mounted) setLoading(false);
-      })
+      .then(({ data }) => syncSession(data.session?.user ?? null))
       .catch(() => {
         if (mounted) setLoading(false);
       });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       const nextUser = session?.user ?? null;
-      setUser(nextUser);
-      void loadProfile(nextUser);
+
+      if (event === 'SIGNED_OUT' || !nextUser) {
+        setUser(null);
+        setProfileState(null);
+        setLoading(false);
+        return;
+      }
+
+      // Avoid flashing routes/403 while profile & role for a newly signed-in user are still loading
+      if (profileRef.current?.id !== nextUser.id) {
+        setLoading(true);
+      }
+      void syncSession(nextUser);
     });
 
     return () => {
       mounted = false;
       subscription.subscription.unsubscribe();
     };
-  }, [loadProfile]);
+  }, [loadProfile, setProfileState]);
 
-  const signIn = async (email: string, password: string): Promise<{ error?: string }> => {
+  const signInWithGoogle = async (redirectPath?: string | null): Promise<{ error?: string }> => {
     if (!supabase) return { error: 'Supabase belum terkonfigurasi.' };
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error) {
-      return {
-        error:
-          error.message === 'Invalid login credentials'
-            ? 'Email atau password salah. Cek lagi ya!'
-            : error.message,
-      };
-    }
-    if (data.user) {
-      setUser(data.user);
-      await loadProfile(data.user);
-    }
-    return {};
-  };
 
-  const signUp = async ({
-    email,
-    password,
-    fullName,
-    whatsapp,
-  }: SignUpParams): Promise<{ error?: string; needsEmailConfirmation?: boolean }> => {
-    if (!supabase) return { error: 'Supabase belum terkonfigurasi.' };
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
+    savePendingOAuthRedirect(redirectPath ?? null);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
       options: {
-        data: {
-          full_name: fullName.trim(),
-          whatsapp: whatsapp.trim(),
+        redirectTo: getOAuthRedirectUrl('/auth/callback'),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
         },
       },
     });
+
     if (error) {
+      savePendingOAuthRedirect(null);
       return { error: error.message };
     }
-    if (data.user && data.session) {
-      setUser(data.user);
-      await loadProfile(data.user);
-      return { needsEmailConfirmation: false };
-    }
-    return { needsEmailConfirmation: true };
+
+    return {};
   };
 
   const signOut = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
-    setProfile(null);
+    setProfileState(null);
   };
 
   const refreshProfile = async () => {
@@ -180,8 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isCustomer: role === 'customer',
         loading,
         isConfigured: isSupabaseConfigured,
-        signIn,
-        signUp,
+        signInWithGoogle,
         signOut,
         refreshProfile,
         updateProfile,

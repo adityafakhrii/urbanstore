@@ -83,7 +83,8 @@ export const ProfilePage: React.FC = () => {
             Halo, {profile?.full_name || user?.email || 'Member'}
           </h1>
           <p className="font-body-sm text-xs text-text-muted mt-1">
-            {user?.email} · Role: <strong className="uppercase">{isAdmin ? 'Admin' : 'Customer'}</strong>
+            {user?.email} · Google Account · Role:{' '}
+            <strong className="uppercase">{isAdmin ? 'Admin' : 'Customer'}</strong>
           </p>
         </div>
 

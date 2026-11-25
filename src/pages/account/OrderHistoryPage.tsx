@@ -46,7 +46,7 @@ export const OrderHistoryPage: React.FC = () => {
         <AlertBanner variant="info">
           Menampilkan pesanan dari sesi browser ini.{' '}
           <Link to="/login?redirect=/account/orders" className="text-primary underline font-medium">
-            Masuk akun
+            Masuk dengan Google
           </Link>{' '}
           untuk sinkronisasi lintas perangkat.
         </AlertBanner>
