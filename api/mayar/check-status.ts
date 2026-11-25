@@ -1,5 +1,6 @@
 import type { ApiRequest, ApiResponse, DbOrderRow } from '../_lib/mayar.js';
 import {
+  authorizeOrderAccess,
   confirmOrderPaidInSupabase,
   expireOrderInSupabase,
   fetchMayarPaymentStatus,
@@ -151,7 +152,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  const body = await readJsonBody(req);
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    const status = (err as { statusCode?: number })?.statusCode === 413 ? 413 : 400;
+    sendJson(res, status, {
+      ok: false,
+      error: status === 413 ? 'Ukuran payload terlalu besar.' : 'Format request tidak valid.',
+    });
+    return;
+  }
+
   const syncAllPending = body.syncAllPending === true;
 
   // Batch sync for Admin Console (requires valid Admin Supabase JWT)
@@ -227,6 +239,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  const result = await verifySingleOrder(supabaseAdmin, orderData as DbOrderRow);
+  const order = orderData as DbOrderRow;
+  const authCheck = await authorizeOrderAccess(req, supabaseAdmin, order, orderId);
+  if (!authCheck.authorized) {
+    sendJson(res, authCheck.statusCode || 403, {
+      ok: false,
+      error: authCheck.error || 'Akses pesanan ditolak.',
+    });
+    return;
+  }
+
+  const result = await verifySingleOrder(supabaseAdmin, order);
   sendJson(res, 200, { ok: true, ...result });
 }

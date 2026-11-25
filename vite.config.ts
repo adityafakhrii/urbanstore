@@ -6,19 +6,21 @@ import { defineConfig, type Plugin } from 'vite';
 
 dotenv.config();
 
-const MAYAR_DEV_ROUTES: Record<string, string> = {
+const DEV_API_ROUTES: Record<string, string> = {
   '/api/mayar/create-payment': '/api/mayar/create-payment.ts',
   '/api/mayar/check-status': '/api/mayar/check-status.ts',
   '/api/mayar/webhook': '/api/mayar/webhook.ts',
+  '/api/ai/chat': '/api/ai/chat.ts',
+  '/api/ai/admin': '/api/ai/admin.ts',
 };
 
-function mayarDevApiPlugin(): Plugin {
+function devApiPlugin(): Plugin {
   return {
-    name: 'urbanstore-mayar-dev-api',
+    name: 'urbanstore-dev-api',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const pathname = (req.url || '').split('?')[0];
-        const modulePath = MAYAR_DEV_ROUTES[pathname];
+        const modulePath = DEV_API_ROUTES[pathname];
         if (!modulePath) {
           next();
           return;
@@ -31,12 +33,13 @@ function mayarDevApiPlugin(): Plugin {
           }
           next();
         } catch (err) {
+          console.error('[urbanstore-dev-api]', pathname, err);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.end(
             JSON.stringify({
               ok: false,
-              error: err instanceof Error ? err.message : 'Internal Mayar API dev error',
+              error: 'Terjadi kesalahan internal pada server API.',
             })
           );
         }
@@ -47,14 +50,11 @@ function mayarDevApiPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), mayarDevApiPlugin()],
+    plugins: [react(), tailwindcss(), devApiPlugin()],
     envPrefix: [
       'VITE_',
       'SUPABASE_PROJECT_',
       'SUPABASE_PUBLISHABLE_',
-      'GEMINI_',
-      'ADMIN_GEMINI_',
-      'CS_GEMINI_',
     ],
     resolve: {
       alias: {

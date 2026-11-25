@@ -1,5 +1,6 @@
 import type { ApiRequest, ApiResponse, DbOrderRow } from '../_lib/mayar.js';
 import {
+  authorizeOrderAccess,
   createMayarInvoice,
   expireOrderInSupabase,
   getRequestOrigin,
@@ -26,7 +27,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  const body = await readJsonBody(req);
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    const status = (err as { statusCode?: number })?.statusCode === 413 ? 413 : 400;
+    sendJson(res, status, {
+      ok: false,
+      error: status === 413 ? 'Ukuran payload terlalu besar.' : 'Format request tidak valid.',
+    });
+    return;
+  }
+
   const orderNumber = typeof body.orderNumber === 'string' ? body.orderNumber.trim() : '';
   const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
   const forceRecreate = body.forceRecreate === true;
@@ -51,6 +63,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   const order = orderData as DbOrderRow;
+
+  const authCheck = await authorizeOrderAccess(req, supabaseAdmin, order, orderId);
+  if (!authCheck.authorized) {
+    sendJson(res, authCheck.statusCode || 403, {
+      ok: false,
+      error: authCheck.error || 'Akses pesanan ditolak.',
+    });
+    return;
+  }
 
   // Already paid / fulfilled -> return current status without creating duplicate Mayar invoice
   if (['paid', 'packed', 'shipped', 'delivered'].includes(order.status)) {

@@ -1,3 +1,4 @@
+import { supabase } from '../lib/supabase';
 import type { OrderStatusType } from './supabaseService';
 
 export interface CreateMayarPaymentResponse {
@@ -106,13 +107,28 @@ async function postMayarApi<T extends { ok?: boolean; error?: string }>(
   } as T;
 }
 
+async function resolveCurrentAccessToken(): Promise<string | undefined> {
+  if (!supabase) return undefined;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function createMayarPaymentForOrder(params: {
   orderId?: string;
   orderNumber?: string;
   forceRecreate?: boolean;
 }): Promise<CreateMayarPaymentResponse> {
   try {
-    return await postMayarApi<CreateMayarPaymentResponse>('/api/mayar/create-payment', params);
+    const accessToken = await resolveCurrentAccessToken();
+    return await postMayarApi<CreateMayarPaymentResponse>(
+      '/api/mayar/create-payment',
+      params,
+      accessToken
+    );
   } catch (err) {
     return {
       ok: false,
@@ -126,7 +142,12 @@ export async function checkMayarPaymentStatus(params: {
   orderNumber?: string;
 }): Promise<CheckMayarStatusResponse> {
   try {
-    return await postMayarApi<CheckMayarStatusResponse>('/api/mayar/check-status', params);
+    const accessToken = await resolveCurrentAccessToken();
+    return await postMayarApi<CheckMayarStatusResponse>(
+      '/api/mayar/check-status',
+      params,
+      accessToken
+    );
   } catch (err) {
     return {
       ok: false,

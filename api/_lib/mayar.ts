@@ -70,11 +70,29 @@ export function sendJson(res: ApiResponse, statusCode: number, payload: unknown)
   res.end(JSON.stringify(payload));
 }
 
-export async function readJsonBody(req: ApiRequest): Promise<Record<string, unknown>> {
+const DEFAULT_MAX_BODY_BYTES = 64 * 1024; // 64 KB
+
+function createPayloadTooLargeError(): Error & { statusCode: number } {
+  const err = new Error('Payload terlalu besar.') as Error & { statusCode: number };
+  err.statusCode = 413;
+  return err;
+}
+
+export async function readJsonBody(
+  req: ApiRequest,
+  maxBytes = DEFAULT_MAX_BODY_BYTES
+): Promise<Record<string, unknown>> {
   if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    const serializedLen = Buffer.byteLength(JSON.stringify(req.body), 'utf8');
+    if (serializedLen > maxBytes) {
+      throw createPayloadTooLargeError();
+    }
     return req.body as Record<string, unknown>;
   }
   if (typeof req.body === 'string') {
+    if (Buffer.byteLength(req.body, 'utf8') > maxBytes) {
+      throw createPayloadTooLargeError();
+    }
     try {
       const parsed = JSON.parse(req.body);
       return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
@@ -83,6 +101,9 @@ export async function readJsonBody(req: ApiRequest): Promise<Record<string, unkn
     }
   }
   if (Buffer.isBuffer(req.body)) {
+    if (req.body.length > maxBytes) {
+      throw createPayloadTooLargeError();
+    }
     try {
       const parsed = JSON.parse(req.body.toString('utf8'));
       return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
@@ -91,12 +112,25 @@ export async function readJsonBody(req: ApiRequest): Promise<Record<string, unkn
     }
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    let settled = false;
+
     req.on('data', (chunk: Buffer | string) => {
-      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+      if (settled) return;
+      const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+      totalBytes += buf.length;
+      if (totalBytes > maxBytes) {
+        settled = true;
+        reject(createPayloadTooLargeError());
+        return;
+      }
+      chunks.push(buf);
     });
     req.on('end', () => {
+      if (settled) return;
+      settled = true;
       if (chunks.length === 0) {
         resolve({});
         return;
@@ -108,8 +142,50 @@ export async function readJsonBody(req: ApiRequest): Promise<Record<string, unkn
         resolve({});
       }
     });
-    req.on('error', () => resolve({}));
+    req.on('error', () => {
+      if (settled) return;
+      settled = true;
+      resolve({});
+    });
   });
+}
+
+function normalizeOrigin(raw: string): string | null {
+  try {
+    const parsed = new URL(raw.trim());
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
+function isLocalDevOrigin(origin: string): boolean {
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
+function getAllowedOrigins(): string[] {
+  const candidates: string[] = [];
+  const addRaw = (val?: string) => {
+    if (!val) return;
+    const trimmed = val.trim();
+    if (!trimmed || trimmed === 'MY_APP_URL') return;
+    const normalized = normalizeOrigin(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+    );
+    if (normalized) candidates.push(normalized);
+  };
+
+  addRaw(process.env.APP_URL);
+  addRaw(process.env.VITE_APP_URL);
+  if (process.env.ALLOWED_ORIGINS) {
+    process.env.ALLOWED_ORIGINS.split(',').forEach((entry) => addRaw(entry));
+  }
+  addRaw(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  addRaw(process.env.VERCEL_URL);
+  addRaw('https://urbanstore-vcb.vercel.app');
+
+  return Array.from(new Set(candidates));
 }
 
 export function getQueryParam(req: ApiRequest, key: string): string | null {
@@ -129,26 +205,81 @@ export function getQueryParam(req: ApiRequest, key: string): string | null {
 }
 
 export function getRequestOrigin(req: ApiRequest): string {
+  const allowlist = getAllowedOrigins();
+  const isProd = process.env.NODE_ENV === 'production';
+
   const originHeader = req.headers.origin;
-  if (typeof originHeader === 'string' && /^https?:\/\//i.test(originHeader)) {
-    return originHeader.replace(/\/+$/, '');
-  }
-  const forwardedHost = req.headers['x-forwarded-host'];
-  const host = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost) || req.headers.host;
-  const forwardedProto = req.headers['x-forwarded-proto'];
-  const proto =
-    (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) ||
-    (host && host.includes('localhost') ? 'http' : 'https');
-
-  if (host) {
-    return `${proto}://${host}`.replace(/\/+$/, '');
+  if (typeof originHeader === 'string') {
+    const normalized = normalizeOrigin(originHeader);
+    if (normalized && (allowlist.includes(normalized) || (!isProd && isLocalDevOrigin(normalized)))) {
+      return normalized;
+    }
   }
 
-  const configured = (process.env.VITE_APP_URL || process.env.APP_URL || '').trim().replace(/\/+$/, '');
-  if (configured && configured !== 'MY_APP_URL') {
-    return configured;
+  const hostHeader = req.headers.host;
+  if (typeof hostHeader === 'string' && hostHeader.trim()) {
+    const proto = hostHeader.includes('localhost') || hostHeader.startsWith('127.0.0.1') ? 'http' : 'https';
+    const normalizedHost = normalizeOrigin(`${proto}://${hostHeader.trim()}`);
+    if (
+      normalizedHost &&
+      (allowlist.includes(normalizedHost) || (!isProd && isLocalDevOrigin(normalizedHost)))
+    ) {
+      return normalizedHost;
+    }
   }
-  return 'http://localhost:3000';
+
+  return allowlist[0] || 'https://urbanstore-vcb.vercel.app';
+}
+
+export async function authorizeOrderAccess(
+  req: ApiRequest,
+  supabaseAdmin: SupabaseClient,
+  order: DbOrderRow,
+  suppliedOrderId?: string
+): Promise<{ authorized: boolean; statusCode?: number; error?: string }> {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+  if (token) {
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (!authErr && authData.user) {
+      if (order.user_id && authData.user.id === order.user_id) {
+        return { authorized: true };
+      }
+
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (profileData?.role === 'admin') {
+        return { authorized: true };
+      }
+    }
+  }
+
+  if (order.user_id) {
+    return {
+      authorized: false,
+      statusCode: token ? 403 : 401,
+      error: token
+        ? 'Anda tidak memiliki akses ke pesanan ini.'
+        : 'Autentikasi diperlukan untuk mengakses pesanan ini.',
+    };
+  }
+
+  // Guest order (user_id IS NULL): require exact secret order UUID (order.id), not only guessable order_number
+  const trimmedId = (suppliedOrderId || '').trim();
+  if (trimmedId && timingSafeEqualStrings(trimmedId, order.id)) {
+    return { authorized: true };
+  }
+
+  return {
+    authorized: false,
+    statusCode: 403,
+    error: 'Akses pesanan ditolak. Diperlukan ID pesanan yang valid.',
+  };
 }
 
 export function getSupabaseAdminClient(): { client?: SupabaseClient; error?: string } {

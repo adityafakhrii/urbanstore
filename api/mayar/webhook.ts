@@ -39,23 +39,40 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  // 1. Validate webhook shared secret token (configured via ?token=... on Mayar Dashboard)
+  // 1. Validate webhook shared secret token (fail-closed if MAYAR_WEBHOOK_TOKEN is not configured)
   const { webhookToken, apiKey } = getMayarConfig();
-  if (webhookToken) {
-    const queryToken = (getQueryParam(req, 'token') || '').trim();
-    const headerToken =
-      getHeaderString(req, 'x-mayar-token') ||
-      getHeaderString(req, 'x-callback-token') ||
-      getHeaderString(req, 'authorization').replace(/^Bearer\s+/i, '');
-    const suppliedToken = queryToken || headerToken;
-
-    if (!suppliedToken || !timingSafeEqualStrings(suppliedToken, webhookToken)) {
-      sendJson(res, 401, { ok: false, error: 'Webhook token tidak valid.' });
-      return;
-    }
+  if (!webhookToken) {
+    sendJson(res, 500, {
+      ok: false,
+      error: 'MAYAR_WEBHOOK_TOKEN belum dikonfigurasi di server.',
+    });
+    return;
   }
 
-  const body = await readJsonBody(req);
+  const queryToken = (getQueryParam(req, 'token') || '').trim();
+  const headerToken =
+    getHeaderString(req, 'x-mayar-token') ||
+    getHeaderString(req, 'x-callback-token') ||
+    getHeaderString(req, 'authorization').replace(/^Bearer\s+/i, '');
+  const suppliedToken = queryToken || headerToken;
+
+  if (!suppliedToken || !timingSafeEqualStrings(suppliedToken, webhookToken)) {
+    sendJson(res, 401, { ok: false, error: 'Webhook token tidak valid.' });
+    return;
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    const status = (err as { statusCode?: number })?.statusCode === 413 ? 413 : 400;
+    sendJson(res, status, {
+      ok: false,
+      error: status === 413 ? 'Ukuran payload terlalu besar.' : 'Format request tidak valid.',
+    });
+    return;
+  }
+
   const eventName = extractWebhookEventName(body);
 
   // 2. Allow Mayar Dashboard "Test URL" ping to pass with HTTP 200
@@ -153,39 +170,57 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  // 4. Verify payment status directly with Mayar API (defense-in-depth against spoofed webhooks)
+  // 4. Strictly verify payment status directly with Mayar API (fail-closed against spoofed webhooks)
+  if (!apiKey) {
+    sendJson(res, 500, { ok: false, error: 'MAYAR_API_KEY belum dikonfigurasi di server.' });
+    return;
+  }
+
   let verifiedByMayarApi = false;
   let verifiedMethod = paymentMethod;
   let verifiedPaidAt: string | null = null;
   let verifiedTxId = transactionId || matchedOrder.mayar_transaction_id || null;
   let verifiedInvoiceId = invoiceId || matchedOrder.mayar_invoice_id || null;
 
-  if (apiKey && (verifiedInvoiceId || verifiedTxId)) {
-    const apiCheck = await fetchMayarPaymentStatus({
-      invoiceId: verifiedInvoiceId,
-      transactionId: verifiedTxId,
+  if (!verifiedInvoiceId && !verifiedTxId) {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'Webhook tidak memiliki referensi invoiceId atau transactionId Mayar.',
     });
-    if (apiCheck.ok) {
-      if (apiCheck.state === 'paid') {
-        verifiedByMayarApi = true;
-        verifiedMethod = apiCheck.paymentMethod || verifiedMethod;
-        verifiedPaidAt = apiCheck.paidAtIso || verifiedPaidAt;
-        verifiedTxId = apiCheck.transactionId || verifiedTxId;
-        verifiedInvoiceId = apiCheck.invoiceId || verifiedInvoiceId;
-      } else if (apiCheck.state === 'unpaid' || apiCheck.state === 'expired') {
-        sendJson(res, 200, {
-          ok: true,
-          ignored: true,
-          reason: `mayar_api_reports_${apiCheck.state}`,
-          orderNumber: matchedOrder.order_number,
-        });
-        return;
-      }
-    }
+    return;
   }
 
-  const webhookIndicatesPaid = ['success', 'paid', 'settled', 'completed'].includes(webhookStatus);
-  if (!verifiedByMayarApi && !webhookIndicatesPaid) {
+  const apiCheck = await fetchMayarPaymentStatus({
+    invoiceId: verifiedInvoiceId,
+    transactionId: verifiedTxId,
+  });
+
+  if (!apiCheck.ok) {
+    // Return 502 so Mayar retries webhook delivery when upstream API is temporarily unreachable
+    sendJson(res, 502, {
+      ok: false,
+      error: 'Gagal memverifikasi status pembayaran ke API Mayar.id.',
+    });
+    return;
+  }
+
+  if (apiCheck.state === 'paid') {
+    verifiedByMayarApi = true;
+    verifiedMethod = apiCheck.paymentMethod || verifiedMethod;
+    verifiedPaidAt = apiCheck.paidAtIso || verifiedPaidAt;
+    verifiedTxId = apiCheck.transactionId || verifiedTxId;
+    verifiedInvoiceId = apiCheck.invoiceId || verifiedInvoiceId;
+  } else {
+    sendJson(res, 200, {
+      ok: true,
+      ignored: true,
+      reason: `mayar_api_reports_${apiCheck.state}`,
+      orderNumber: matchedOrder.order_number,
+    });
+    return;
+  }
+
+  if (!verifiedByMayarApi) {
     sendJson(res, 200, {
       ok: true,
       ignored: true,
