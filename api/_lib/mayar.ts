@@ -338,7 +338,7 @@ export async function createMayarInvoice(order: DbOrderRow, redirectUrl: string)
       mayarItems.push({
         quantity: 1,
         rate: Math.round(order.shipping_cost),
-        description: `Ongkos Kirim (${order.courier.toUpperCase()})`,
+        description: `Ongkos Kirim (${order.courier === 'free' ? 'Ambil di Tempat' : order.courier.toUpperCase()})`,
       });
     }
   }

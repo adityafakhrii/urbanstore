@@ -488,12 +488,16 @@ export const OrderPaymentPage: React.FC = () => {
                 : formatCourierLabel(order.courier)}
             </p>
             <p className="text-text-muted mt-0.5">
-              No. Resi:{' '}
-              {order.trackingNumber ? (
-                <span className="font-mono text-primary font-medium">{order.trackingNumber}</span>
-              ) : (
-                'Menunggu pengiriman'
-              )}
+              {order.courier === 'free'
+                ? 'Pengambilan langsung ke tempat barang (Atelier UrbanStore) — Gratis Ongkir.'
+                : order.trackingNumber ? (
+                    <>
+                      No. Resi:{' '}
+                      <span className="font-mono text-primary font-medium">{order.trackingNumber}</span>
+                    </>
+                  ) : (
+                    'No. Resi: Menunggu pengiriman'
+                  )}
             </p>
           </div>
         </div>

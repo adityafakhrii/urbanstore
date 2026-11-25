@@ -404,8 +404,8 @@ export const CheckoutPage: React.FC = () => {
                 {[
                   {
                     id: 'free' as const,
-                    label: 'Gratis Ongkir (3-6 Hari)',
-                    cost: 'Rp 0 (Tanpa Min. Belanja)',
+                    label: 'Ambil di Tempat (Gratis Ongkir)',
+                    cost: 'Rp 0 · Ambil Langsung di Toko',
                   },
                   {
                     id: 'reguler' as const,
@@ -430,6 +430,15 @@ export const CheckoutPage: React.FC = () => {
                   </button>
                 ))}
               </div>
+              {courier === 'free' && (
+                <div className="mt-3">
+                  <AlertBanner variant="info" title="Ambil Langsung di Tempat (Gratis Ongkir)">
+                    Gratis ongkos kirim karena pesanan diambil langsung ke lokasi toko/atelier
+                    UrbanStore. Info kesiapan pengambilan akan dikirim melalui WhatsApp setelah
+                    pembayaran terkonfirmasi lunas.
+                  </AlertBanner>
+                </div>
+              )}
             </div>
 
             <div>

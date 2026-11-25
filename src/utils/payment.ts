@@ -53,7 +53,7 @@ export const MAYAR_SUPPORTED_CHANNELS = [
 ];
 
 export function formatCourierLabel(courier?: string): string {
-  if (courier === 'free') return 'GRATIS ONGKIR';
+  if (courier === 'free') return 'AMBIL DI TEMPAT (GRATIS ONGKIR)';
   return (courier || 'reguler').toUpperCase();
 }
 
