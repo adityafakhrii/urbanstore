@@ -52,6 +52,11 @@ export const MAYAR_SUPPORTED_CHANNELS = [
   'Minimarket (Alfamart / Indomaret)',
 ];
 
+export function formatCourierLabel(courier?: string): string {
+  if (courier === 'free') return 'GRATIS ONGKIR';
+  return (courier || 'reguler').toUpperCase();
+}
+
 export function formatPaymentMethodLabel(
   paymentMethod?: string,
   mayarPaymentMethod?: string | null

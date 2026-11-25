@@ -6,7 +6,7 @@ import {
   fetchOrderByNumberFromDb,
   formatRupiah,
 } from '../../services/supabaseService';
-import { formatPaymentMethodLabel, getInvoiceStamp } from '../../utils/payment';
+import { formatCourierLabel, formatPaymentMethodLabel, getInvoiceStamp } from '../../utils/payment';
 import { Button, getButtonClassName } from '../../components/ui';
 
 export const OrderInvoicePage: React.FC = () => {
@@ -171,8 +171,8 @@ export const OrderInvoicePage: React.FC = () => {
               <span className="text-text-muted">Layanan Kurir:</span>{' '}
               <strong className="text-primary">
                 {order.shippingExpedition
-                  ? `${order.shippingExpedition} (${order.courier.toUpperCase()})`
-                  : order.courier.toUpperCase()}
+                  ? `${order.shippingExpedition} (${formatCourierLabel(order.courier)})`
+                  : formatCourierLabel(order.courier)}
               </strong>
             </p>
             {order.trackingNumber && (

@@ -3,13 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import {
+  CourierType,
   OrderRecord,
   formatRupiah,
   placeOrderInDb,
   validatePromoInDb,
 } from '../../services/supabaseService';
 import { createMayarPaymentForOrder } from '../../services/mayarService';
-import { INDO_PROVINCES, MAYAR_SUPPORTED_CHANNELS } from '../../utils/payment';
+import {
+  INDO_PROVINCES,
+  MAYAR_SUPPORTED_CHANNELS,
+  formatCourierLabel,
+} from '../../utils/payment';
 import { handleImageError } from '../../utils/storage';
 import {
   AlertBanner,
@@ -48,7 +53,7 @@ export const CheckoutPage: React.FC = () => {
   const [address, setAddress] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [courier, setCourier] = useState<'reguler' | 'sameday' | 'instant'>('reguler');
+  const [courier, setCourier] = useState<CourierType>('reguler');
   const [submitting, setSubmitting] = useState(false);
   const [submittingLabel, setSubmittingLabel] = useState('Membuat Pesanan...');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -75,7 +80,7 @@ export const CheckoutPage: React.FC = () => {
   const subtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   const discount = promoApplied ? promoApplied.amount : 0;
   const shippingCost =
-    subtotal === 0
+    subtotal === 0 || courier === 'free'
       ? 0
       : courier === 'instant'
       ? 35000
@@ -395,8 +400,13 @@ export const CheckoutPage: React.FC = () => {
               <p className="font-body-sm text-xs font-medium text-text-muted mb-2">
                 Layanan Pengiriman (Hitung Ongkir)
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
+                  {
+                    id: 'free' as const,
+                    label: 'Gratis Ongkir (3-6 Hari)',
+                    cost: 'Rp 0 (Tanpa Min. Belanja)',
+                  },
                   {
                     id: 'reguler' as const,
                     label: 'Reguler (2-4 Hari)',
@@ -557,7 +567,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
             )}
             <div className="flex justify-between text-text-muted">
-              <span>Ongkos Kirim ({courier})</span>
+              <span>Ongkos Kirim ({formatCourierLabel(courier)})</span>
               <span>{shippingCost === 0 ? 'GRATIS' : formatRupiah(shippingCost)}</span>
             </div>
             <div className="flex justify-between text-base font-semibold text-primary pt-3 border-t border-border-ecru">

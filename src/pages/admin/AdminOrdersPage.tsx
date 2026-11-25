@@ -15,6 +15,7 @@ import {
 import {
   EXPEDITION_OPTIONS,
   ORDER_STATUS_OPTIONS_ID,
+  formatCourierLabel,
   formatPaymentMethodLabel,
   getOrderStatusBadge,
 } from '../../utils/payment';
@@ -457,7 +458,7 @@ export const AdminOrdersPage: React.FC = () => {
                     <p className="text-sm font-bold text-primary">{formatRupiah(ord.total)}</p>
                     <p className="text-[11px] text-text-muted">
                       {formatPaymentMethodLabel(ord.payment_method, ord.mayar_payment_method)} ·{' '}
-                      {ord.courier.toUpperCase()}
+                      {formatCourierLabel(ord.courier)}
                     </p>
                   </div>
                 </div>

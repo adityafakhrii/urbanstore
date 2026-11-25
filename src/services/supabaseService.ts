@@ -19,6 +19,8 @@ export interface OrderItemSummary {
   lineTotal: number;
 }
 
+export type CourierType = 'free' | 'reguler' | 'sameday' | 'instant';
+
 export type PaymentMethodType =
   | 'Mayar Payment Gateway'
   | 'QRIS'
@@ -39,7 +41,7 @@ export interface OrderRecord {
   address: string;
   postalCode?: string;
   deliveryNotes?: string;
-  courier: 'reguler' | 'sameday' | 'instant';
+  courier: CourierType;
   paymentMethod: PaymentMethodType;
   paymentGateway?: string;
   subtotal?: number;
@@ -110,7 +112,7 @@ export interface AdminOrderRow {
   address: string;
   postal_code: string;
   delivery_notes: string;
-  courier: 'reguler' | 'sameday' | 'instant';
+  courier: CourierType;
   payment_method: PaymentMethodType;
   payment_gateway?: string | null;
   promo_code: string | null;
@@ -435,7 +437,7 @@ export async function placeOrderInDb(payload: {
   address: string;
   postalCode: string;
   deliveryNotes: string;
-  courier: 'reguler' | 'sameday' | 'instant';
+  courier: CourierType;
   paymentMethod: PaymentMethodType;
   promoCode: string | null;
   items: CartItem[];

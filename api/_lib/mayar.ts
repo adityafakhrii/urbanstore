@@ -37,7 +37,7 @@ export interface DbOrderRow {
   address: string;
   postal_code: string;
   delivery_notes: string;
-  courier: 'reguler' | 'sameday' | 'instant';
+  courier: 'free' | 'reguler' | 'sameday' | 'instant';
   payment_method: string;
   payment_gateway?: string | null;
   promo_code: string | null;

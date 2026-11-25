@@ -13,6 +13,7 @@ import {
 import {
   MAYAR_SUPPORTED_CHANNELS,
   formatCountdown,
+  formatCourierLabel,
   formatPaymentMethodLabel,
   getOrderStatusBadge,
   getRemainingSeconds,
@@ -483,8 +484,8 @@ export const OrderPaymentPage: React.FC = () => {
             <p className="text-text-muted mb-1">Ekspedisi &amp; No. Resi</p>
             <p className="text-primary font-medium">
               {order.shippingExpedition
-                ? `${order.shippingExpedition} (${order.courier.toUpperCase()})`
-                : order.courier.toUpperCase()}
+                ? `${order.shippingExpedition} (${formatCourierLabel(order.courier)})`
+                : formatCourierLabel(order.courier)}
             </p>
             <p className="text-text-muted mt-0.5">
               No. Resi:{' '}
